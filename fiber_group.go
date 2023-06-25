@@ -118,7 +118,7 @@ func (r *FiberGroup) getFiberRoutesWithMiddlewares() fiber.Router {
 	r.prefix = ""
 	fiberGroup := r.instance.Group(prefix)
 
-	var middlewares []interface{}
+	var middlewares []any
 	fiberOriginMiddlewares := middlewaresToFiberHandlers(r.originMiddlewares)
 	fiberMiddlewares := middlewaresToFiberHandlers(r.middlewares)
 	fiberLastMiddlewares := middlewaresToFiberHandlers(r.lastMiddlewares)
