@@ -116,19 +116,20 @@ func (r *FiberGroup) StaticFS(relativePath string, fs http.FileSystem) {
 func (r *FiberGroup) getFiberRoutesWithMiddlewares() fiber.Router {
 	prefix := pathToFiberPath(r.originPrefix + "/" + r.prefix)
 	r.prefix = ""
-	FiberGroup := r.instance.Group(prefix)
+	fiberGroup := r.instance.Group(prefix)
 
-	var middlewares []fiber.Handler
+	var middlewares []interface{}
 	fiberOriginMiddlewares := middlewaresToFiberHandlers(r.originMiddlewares)
 	fiberMiddlewares := middlewaresToFiberHandlers(r.middlewares)
 	fiberLastMiddlewares := middlewaresToFiberHandlers(r.lastMiddlewares)
 	middlewares = append(middlewares, fiberOriginMiddlewares...)
 	middlewares = append(middlewares, fiberMiddlewares...)
 	middlewares = append(middlewares, fiberLastMiddlewares...)
+
 	if len(middlewares) > 0 {
-		return FiberGroup.Use(middlewares)
+		return fiberGroup.Use(middlewares...)
 	} else {
-		return FiberGroup
+		return fiberGroup
 	}
 }
 
