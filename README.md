@@ -1,5 +1,13 @@
 # Fiber
 
+[![Doc](https://pkg.go.dev/badge/github.com/goravel/fiber)](https://pkg.go.dev/github.com/goravel/fiber)
+[![Go](https://img.shields.io/github/go-mod/go-version/goravel/fiber)](https://go.dev/)
+[![Release](https://img.shields.io/github/release/goravel/fiber.svg)](https://github.com/goravel/fiber/releases)
+[![Test](https://github.com/goravel/fiber/actions/workflows/test.yml/badge.svg)](https://github.com/goravel/fiber/actions)
+[![Report Card](https://goreportcard.com/badge/github.com/goravel/fiber)](https://goreportcard.com/report/github.com/goravel/fiber)
+[![Codecov](https://codecov.io/gh/goravel/fiber/branch/master/graph/badge.svg)](https://codecov.io/gh/goravel/fiber)
+![License](https://img.shields.io/github/license/goravel/fiber)
+
 Fiber http driver for Goravel.
 
 This driver is still in development, please do not use it in production.
@@ -8,7 +16,7 @@ This driver is still in development, please do not use it in production.
 
 | goravel/fiber | goravel/framework |
 |---------------|-------------------|
-| v1.0.0        | v1.13.0           |
+| v1.0.3        | v1.13.0           |
 
 ## Install
 
@@ -43,6 +51,8 @@ import (
 "drivers": map[string]any{
     ...
     "fiber": map[string]any{
+        // prefork mode, see https://docs.gofiber.io/api/fiber/#config
+        "prefork": false,
         "http": func() (http.Context, error) {
             return fiberfacades.Http(), nil
         },
