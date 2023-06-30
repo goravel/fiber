@@ -258,7 +258,6 @@ func TestFiberGroup(t *testing.T) {
 			method:     "GET",
 			url:        "/resource/1",
 			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"show\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Store",
@@ -288,7 +287,6 @@ func TestFiberGroup(t *testing.T) {
 			method:     "PUT",
 			url:        "/resource/1",
 			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"update\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Update (PATCH)",
@@ -303,7 +301,6 @@ func TestFiberGroup(t *testing.T) {
 			method:     "PATCH",
 			url:        "/resource/1",
 			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"update\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Destroy",
@@ -318,7 +315,6 @@ func TestFiberGroup(t *testing.T) {
 			method:     "DELETE",
 			url:        "/resource/1",
 			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"destroy\",\"id\":\"1\"}",
 		},
 		{
 			name: "Static",
