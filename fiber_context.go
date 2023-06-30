@@ -5,9 +5,17 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 
 	"github.com/goravel/framework/contracts/http"
 )
+
+func Background() http.Context {
+	app := fiber.New()
+	httpCtx := app.AcquireCtx(&fasthttp.RequestCtx{})
+
+	return NewFiberContext(httpCtx)
+}
 
 type FiberContext struct {
 	instance *fiber.Ctx
@@ -38,8 +46,8 @@ func (c *FiberContext) Response() http.Response {
 }
 
 func (c *FiberContext) WithValue(key string, value any) {
-	ctx := c.instance.UserContext()
-	_ = context.WithValue(ctx, ctxKey(key), value)
+	ctx := context.WithValue(c.instance.UserContext(), ctxKey(key), value)
+	c.instance.SetUserContext(ctx)
 }
 
 func (c *FiberContext) Context() context.Context {
@@ -59,7 +67,11 @@ func (c *FiberContext) Err() error {
 }
 
 func (c *FiberContext) Value(key any) any {
-	return c.instance.UserContext().Value(key)
+	if keyStr, ok := key.(string); ok {
+		return c.instance.UserContext().Value(ctxKey(keyStr))
+	}
+
+	return nil
 }
 
 func (c *FiberContext) Instance() *fiber.Ctx {

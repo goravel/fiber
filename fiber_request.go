@@ -111,9 +111,11 @@ func (r *FiberRequest) Header(key string, defaultValue ...string) string {
 }
 
 func (r *FiberRequest) Headers() http.Header {
-	// Fiber does not support http.Header
-	//return r.instance.Request().Header
-	return nil
+	result := http.Header{}
+	r.instance.Request().Header.VisitAll(func(key, value []byte) {
+		result.Add(string(key), string(value))
+	})
+	return result
 }
 
 func (r *FiberRequest) Host() string {

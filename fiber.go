@@ -48,6 +48,11 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 	}
 
 	return &FiberRoute{
+		Route: NewFiberGroup(app,
+			"",
+			[]httpcontract.Middleware{},
+			[]httpcontract.Middleware{FiberResponseMiddleware()},
+		),
 		config:   config,
 		instance: app,
 	}
@@ -135,10 +140,10 @@ func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
 
-// ServeHTTP implement http.Handler interface
-// ServeHTTP 实现 http.Handler 接口
-func (r *FiberRoute) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	// TODO: implement
+// Test for unit test
+// Test 用于单元测试
+func (r *FiberRoute) Test(request *http.Request) (*http.Response, error) {
+	return r.instance.Test(request)
 }
 
 // outputRoutes output all routes
