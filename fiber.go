@@ -51,7 +51,7 @@ func (r *FiberRoute) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware 设置全局中间件
 func (r *FiberRoute) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	if len(middlewares) > 0 {
-		r.instance.Use(middlewaresToFiberHandlers(middlewares))
+		r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
 	}
 	r.Route = NewFiberGroup(
 		r.instance,
