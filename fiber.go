@@ -27,12 +27,16 @@ type FiberRoute struct {
 // NewFiberRoute 创建新的光纤路由实例
 func NewFiberRoute(config config.Config) *FiberRoute {
 	app := fiber.New(fiber.Config{
-		EnableIPValidation: true,
-		EnablePrintRoutes:  true,
-		StreamRequestBody:  true,
-		ServerHeader:       "Goravel",
-		JSONEncoder:        sonic.Marshal,
-		JSONDecoder:        sonic.Unmarshal,
+		AppName:               ConfigFacade.GetString("app.name", "Goravel"),
+		DisableStartupMessage: true,
+		ReadBufferSize:        16384,
+		Prefork:               true,
+		EnableIPValidation:    true,
+		EnablePrintRoutes:     true,
+		StreamRequestBody:     true,
+		ServerHeader:          "Goravel",
+		JSONEncoder:           sonic.Marshal,
+		JSONDecoder:           sonic.Unmarshal,
 	})
 	app.Use(recover.New())
 	return &FiberRoute{
