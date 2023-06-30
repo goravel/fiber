@@ -62,6 +62,10 @@ func (r *FiberResponse) Success() httpcontract.ResponseSuccess {
 	return NewFiberSuccess(r.instance)
 }
 
+func (r *FiberResponse) Status(code int) httpcontract.ResponseStatus {
+	return NewFiberStatus(r.instance, code)
+}
+
 func (r *FiberResponse) Writer() http.ResponseWriter {
 	// Fiber doesn't support this
 	return nil
@@ -84,6 +88,32 @@ func (r *FiberSuccess) Json(obj any) {
 }
 
 func (r *FiberSuccess) String(format string, values ...any) {
+	if len(values) == 0 {
+		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
+		return
+	}
+
+	_ = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
+}
+
+type FiberStatus struct {
+	instance *fiber.Ctx
+	status   int
+}
+
+func NewFiberStatus(instance *fiber.Ctx, code int) httpcontract.ResponseSuccess {
+	return &FiberStatus{instance, code}
+}
+
+func (r *FiberStatus) Data(contentType string, data []byte) {
+	_ = r.instance.Status(r.status).Type(contentType).Send(data)
+}
+
+func (r *FiberStatus) Json(obj any) {
+	_ = r.instance.Status(r.status).JSON(obj)
+}
+
+func (r *FiberStatus) String(format string, values ...any) {
 	if len(values) == 0 {
 		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
 		return
