@@ -31,7 +31,6 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 		ReadBufferSize:        16384,
 		Prefork:               true,
 		EnableIPValidation:    true,
-		EnablePrintRoutes:     false,
 		StreamRequestBody:     true,
 		ServerHeader:          "Goravel",
 		JSONEncoder:           sonic.Marshal,
