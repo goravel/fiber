@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gookit/color"
 
@@ -37,6 +38,15 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 		JSONDecoder:           sonic.Unmarshal,
 	})
 	app.Use(recover.New())
+
+	if ConfigFacade.GetBool("app.debug", false) {
+		app.Use(logger.New(logger.Config{
+			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
+			TimeZone:   ConfigFacade.GetString("app.timezone", "UTC"),
+			TimeFormat: "2006/01/02 - 15:04:05",
+		}))
+	}
+
 	return &FiberRoute{
 		config:   config,
 		instance: app,

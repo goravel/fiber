@@ -46,26 +46,21 @@ func (r *FiberRequest) AbortWithStatusJson(code int, jsonObj any) {
 }
 
 func (r *FiberRequest) All() map[string]any {
-	var (
-		dataMap  = make(map[string]any)
-		queryMap = make(map[string]string)
-	)
-
-	queryMap = r.instance.Queries()
+	data := make(map[string]any)
 
 	var mu sync.RWMutex
-	for k, v := range queryMap {
+	for k, v := range r.instance.Queries() {
 		mu.Lock()
-		dataMap[k] = v
+		data[k] = v
 		mu.Unlock()
 	}
 	for k, v := range r.postData {
 		mu.Lock()
-		dataMap[k] = v
+		data[k] = v
 		mu.Unlock()
 	}
 
-	return dataMap
+	return data
 }
 
 func (r *FiberRequest) Bind(obj any) error {
@@ -91,7 +86,7 @@ func (r *FiberRequest) File(name string) (filesystemcontract.File, error) {
 
 func (r *FiberRequest) FullUrl() string {
 	prefix := "https://"
-	if r.instance.Secure() == false {
+	if !r.instance.Secure() {
 		prefix = "http://"
 	}
 

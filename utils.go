@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
@@ -36,12 +35,6 @@ func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
 		handler(NewFiberContext(fiberCtx))
 		return nil
 	}
-}
-
-func getDebugLog(config config.Config) fiber.Handler {
-	// TODO: add debug log
-
-	return nil
 }
 
 func colonToBracket(relativePath string) string {

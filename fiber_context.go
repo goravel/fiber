@@ -37,7 +37,7 @@ func (c *FiberContext) Response() http.Response {
 
 func (c *FiberContext) WithValue(key string, value any) {
 	ctx := c.instance.UserContext()
-	ctx = context.WithValue(ctx, key, value)
+	_ = context.WithValue(ctx, key, value)
 }
 
 func (c *FiberContext) Context() context.Context {
