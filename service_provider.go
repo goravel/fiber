@@ -28,6 +28,7 @@ type ServiceProvider struct {
 }
 
 func (receiver *ServiceProvider) Register(app foundation.Application) {
+	ConfigFacade = app.MakeConfig()
 	App = app
 
 	app.Bind(HttpBinding, func(app foundation.Application) (any, error) {
@@ -39,7 +40,6 @@ func (receiver *ServiceProvider) Register(app foundation.Application) {
 }
 
 func (receiver *ServiceProvider) Boot(app foundation.Application) {
-	ConfigFacade = app.MakeConfig()
 	CacheFacade = app.MakeCache()
 	LogFacade = app.MakeLog()
 	ValidationFacade = app.MakeValidation()

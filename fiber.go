@@ -2,7 +2,6 @@ package fiber
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/bytedance/sonic"
@@ -27,12 +26,14 @@ type FiberRoute struct {
 // NewFiberRoute 创建新的光纤路由实例
 func NewFiberRoute(config config.Config) *FiberRoute {
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
+		AppName:               ConfigFacade.GetString("app.name", "Goravel"),
 		ReadBufferSize:        16384,
 		Prefork:               true,
 		EnableIPValidation:    true,
 		StreamRequestBody:     true,
 		ServerHeader:          "Goravel",
+		DisableStartupMessage: !ConfigFacade.GetBool("app.debug", false),
+		EnablePrintRoutes:     ConfigFacade.GetBool("app.debug", false),
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
 	})
@@ -80,7 +81,6 @@ func (r *FiberRoute) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
-	r.outputRoutes()
 	color.Greenln("[HTTP] Listening and serving HTTP on " + host[0])
 
 	return r.instance.Listen(host[0])
@@ -119,7 +119,6 @@ func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
-	r.outputRoutes()
 	color.Greenln("[HTTPS] Listening and serving HTTPS on " + host)
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
@@ -129,14 +128,4 @@ func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
 // ServeHTTP 实现 http.Handler 接口
 func (r *FiberRoute) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	// TODO: implement
-}
-
-// outputRoutes output all routes
-// outputRoutes 输出所有路由
-func (r *FiberRoute) outputRoutes() {
-	if r.config.GetBool("app.debug") && !runningInConsole() {
-		for _, item := range r.instance.GetRoutes() {
-			fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
-		}
-	}
 }
