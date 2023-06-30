@@ -14,6 +14,8 @@ type FiberContext struct {
 	request  http.Request
 }
 
+type ctxKey string
+
 func NewFiberContext(ctx *fiber.Ctx) http.Context {
 	return &FiberContext{instance: ctx}
 }
@@ -37,7 +39,7 @@ func (c *FiberContext) Response() http.Response {
 
 func (c *FiberContext) WithValue(key string, value any) {
 	ctx := c.instance.UserContext()
-	_ = context.WithValue(ctx, key, value)
+	_ = context.WithValue(ctx, ctxKey(key), value)
 }
 
 func (c *FiberContext) Context() context.Context {
