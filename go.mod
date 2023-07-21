@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/bytedance/sonic v1.9.2
 	github.com/gofiber/fiber/v2 v2.48.0
-	github.com/gookit/color v1.5.3
+	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.4.6
 	github.com/goravel/framework v1.12.5
 	github.com/spf13/cast v1.5.1
