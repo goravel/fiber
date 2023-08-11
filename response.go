@@ -58,11 +58,11 @@ func (r *Response) String(code int, format string, values ...any) {
 }
 
 func (r *Response) Success() httpcontract.ResponseSuccess {
-	return NewFiberSuccess(r.instance)
+	return NewSuccess(r.instance)
 }
 
 func (r *Response) Status(code int) httpcontract.ResponseStatus {
-	return NewFiberStatus(r.instance, code)
+	return NewStatus(r.instance, code)
 }
 
 func (r *Response) Writer() http.ResponseWriter {
@@ -74,23 +74,23 @@ func (r *Response) Flush() {
 	r.instance.Fresh()
 }
 
-type FiberSuccess struct {
+type Success struct {
 	instance *fiber.Ctx
 }
 
-func NewFiberSuccess(instance *fiber.Ctx) httpcontract.ResponseSuccess {
-	return &FiberSuccess{instance}
+func NewSuccess(instance *fiber.Ctx) httpcontract.ResponseSuccess {
+	return &Success{instance}
 }
 
-func (r *FiberSuccess) Data(contentType string, data []byte) {
+func (r *Success) Data(contentType string, data []byte) {
 	_ = r.instance.Type(contentType).Send(data)
 }
 
-func (r *FiberSuccess) Json(obj any) {
+func (r *Success) Json(obj any) {
 	_ = r.instance.Status(http.StatusOK).JSON(obj)
 }
 
-func (r *FiberSuccess) String(format string, values ...any) {
+func (r *Success) String(format string, values ...any) {
 	if len(values) == 0 {
 		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
 		return
@@ -99,24 +99,24 @@ func (r *FiberSuccess) String(format string, values ...any) {
 	_ = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
 }
 
-type FiberStatus struct {
+type Status struct {
 	instance *fiber.Ctx
 	status   int
 }
 
-func NewFiberStatus(instance *fiber.Ctx, code int) httpcontract.ResponseSuccess {
-	return &FiberStatus{instance, code}
+func NewStatus(instance *fiber.Ctx, code int) httpcontract.ResponseSuccess {
+	return &Status{instance, code}
 }
 
-func (r *FiberStatus) Data(contentType string, data []byte) {
+func (r *Status) Data(contentType string, data []byte) {
 	_ = r.instance.Status(r.status).Type(contentType).Send(data)
 }
 
-func (r *FiberStatus) Json(obj any) {
+func (r *Status) Json(obj any) {
 	_ = r.instance.Status(r.status).JSON(obj)
 }
 
-func (r *FiberStatus) String(format string, values ...any) {
+func (r *Status) String(format string, values ...any) {
 	if len(values) == 0 {
 		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
 		return
