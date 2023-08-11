@@ -10,13 +10,11 @@
 
 Fiber http driver for Goravel.
 
-This driver is still in development, please do not use it in production.
-
 ## Version
 
 | goravel/fiber | goravel/framework |
 |---------------|-------------------|
-| v1.0.3        | v1.13.0           |
+| v1.1.x        | v1.13.x           |
 
 ## Install
 
