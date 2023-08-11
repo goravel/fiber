@@ -384,7 +384,7 @@ func TestRunTLSWithCert(t *testing.T) {
 	}
 }
 
-func TestFiberRequest(t *testing.T) {
+func TestRequest(t *testing.T) {
 	var (
 		fiber      *FiberRoute
 		req        *http.Request
@@ -1557,7 +1557,7 @@ func TestFiberRequest(t *testing.T) {
 	}
 }
 
-func TestFiberResponse(t *testing.T) {
+func TestResponse(t *testing.T) {
 	var (
 		fiber      *FiberRoute
 		req        *http.Request

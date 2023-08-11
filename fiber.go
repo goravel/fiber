@@ -52,7 +52,7 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 		Route: NewFiberGroup(app,
 			"",
 			[]httpcontract.Middleware{},
-			[]httpcontract.Middleware{FiberResponseMiddleware()},
+			[]httpcontract.Middleware{ResponseMiddleware()},
 		),
 		config:   config,
 		instance: app,
@@ -75,7 +75,7 @@ func (r *FiberRoute) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		r.instance,
 		"",
 		[]httpcontract.Middleware{},
-		[]httpcontract.Middleware{FiberResponseMiddleware()},
+		[]httpcontract.Middleware{ResponseMiddleware()},
 	)
 }
 
@@ -139,6 +139,11 @@ func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
 	color.Greenln("[HTTPS] Listening and serving HTTPS on " + host)
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
+}
+
+// ServeHTTP serve http request (Not support)
+// ServeHTTP 服务 HTTP 请求 (不支持)
+func (r *FiberRoute) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
 // Test for unit test

@@ -21,7 +21,7 @@ import (
 	"github.com/goravel/framework/validation"
 )
 
-type FiberRequest struct {
+type Request struct {
 	ctx        *FiberContext
 	instance   *fiber.Ctx
 	postData   map[string]any
@@ -29,24 +29,24 @@ type FiberRequest struct {
 	validation validatecontract.Validation
 }
 
-func NewFiberRequest(ctx *FiberContext, log log.Log, validation validatecontract.Validation) httpcontract.Request {
+func NewRequest(ctx *FiberContext, log log.Log, validation validatecontract.Validation) httpcontract.Request {
 	postData, err := getPostData(ctx)
 	if err != nil {
 		LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
 	}
 
-	return &FiberRequest{ctx: ctx, instance: ctx.instance, postData: postData, log: log, validation: validation}
+	return &Request{ctx: ctx, instance: ctx.instance, postData: postData, log: log, validation: validation}
 }
 
-func (r *FiberRequest) AbortWithStatus(code int) {
+func (r *Request) AbortWithStatus(code int) {
 	_ = r.instance.Status(code).Send(nil)
 }
 
-func (r *FiberRequest) AbortWithStatusJson(code int, jsonObj any) {
+func (r *Request) AbortWithStatusJson(code int, jsonObj any) {
 	_ = r.instance.Status(code).JSON(jsonObj)
 }
 
-func (r *FiberRequest) All() map[string]any {
+func (r *Request) All() map[string]any {
 	data := make(map[string]any)
 
 	var mu sync.RWMutex
@@ -64,11 +64,11 @@ func (r *FiberRequest) All() map[string]any {
 	return data
 }
 
-func (r *FiberRequest) Bind(obj any) error {
+func (r *Request) Bind(obj any) error {
 	return r.instance.BodyParser(obj)
 }
 
-func (r *FiberRequest) Form(key string, defaultValue ...string) string {
+func (r *Request) Form(key string, defaultValue ...string) string {
 	if len(defaultValue) == 0 {
 		return r.instance.FormValue(key)
 	}
@@ -76,7 +76,7 @@ func (r *FiberRequest) Form(key string, defaultValue ...string) string {
 	return r.instance.FormValue(key, defaultValue[0])
 }
 
-func (r *FiberRequest) File(name string) (filesystemcontract.File, error) {
+func (r *Request) File(name string) (filesystemcontract.File, error) {
 	file, err := r.instance.FormFile(name)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (r *FiberRequest) File(name string) (filesystemcontract.File, error) {
 	return filesystem.NewFileFromRequest(file)
 }
 
-func (r *FiberRequest) FullUrl() string {
+func (r *Request) FullUrl() string {
 	prefix := "https://"
 	if !r.instance.Secure() {
 		prefix = "http://"
@@ -98,7 +98,7 @@ func (r *FiberRequest) FullUrl() string {
 	return prefix + r.instance.Hostname() + r.instance.OriginalURL()
 }
 
-func (r *FiberRequest) Header(key string, defaultValue ...string) string {
+func (r *Request) Header(key string, defaultValue ...string) string {
 	header := r.instance.Get(key)
 	if header != "" {
 		return header
@@ -111,7 +111,7 @@ func (r *FiberRequest) Header(key string, defaultValue ...string) string {
 	return defaultValue[0]
 }
 
-func (r *FiberRequest) Headers() http.Header {
+func (r *Request) Headers() http.Header {
 	result := http.Header{}
 	r.instance.Request().Header.VisitAll(func(key, value []byte) {
 		result.Add(string(key), string(value))
@@ -120,11 +120,11 @@ func (r *FiberRequest) Headers() http.Header {
 	return result
 }
 
-func (r *FiberRequest) Host() string {
+func (r *Request) Host() string {
 	return r.instance.Hostname()
 }
 
-func (r *FiberRequest) Json(key string, defaultValue ...string) string {
+func (r *Request) Json(key string, defaultValue ...string) string {
 	data := make(map[string]any)
 	err := sonic.Unmarshal(r.instance.Body(), &data)
 
@@ -135,15 +135,15 @@ func (r *FiberRequest) Json(key string, defaultValue ...string) string {
 	return cast.ToString(data[key])
 }
 
-func (r *FiberRequest) Method() string {
+func (r *Request) Method() string {
 	return r.instance.Method()
 }
 
-func (r *FiberRequest) Next() {
+func (r *Request) Next() {
 	_ = r.instance.Next()
 }
 
-func (r *FiberRequest) Query(key string, defaultValue ...string) string {
+func (r *Request) Query(key string, defaultValue ...string) string {
 	if len(defaultValue) > 0 {
 		return r.instance.Query(key, defaultValue[0])
 	}
@@ -151,7 +151,7 @@ func (r *FiberRequest) Query(key string, defaultValue ...string) string {
 	return r.instance.Query(key)
 }
 
-func (r *FiberRequest) QueryInt(key string, defaultValue ...int) int {
+func (r *Request) QueryInt(key string, defaultValue ...int) int {
 	if r.instance.Query(key) != "" {
 		return cast.ToInt(r.instance.Query(key))
 	}
@@ -163,7 +163,7 @@ func (r *FiberRequest) QueryInt(key string, defaultValue ...int) int {
 	return 0
 }
 
-func (r *FiberRequest) QueryInt64(key string, defaultValue ...int64) int64 {
+func (r *Request) QueryInt64(key string, defaultValue ...int64) int64 {
 	if r.instance.Query(key) != "" {
 		return cast.ToInt64(r.instance.Query(key))
 	}
@@ -175,7 +175,7 @@ func (r *FiberRequest) QueryInt64(key string, defaultValue ...int64) int64 {
 	return 0
 }
 
-func (r *FiberRequest) QueryBool(key string, defaultValue ...bool) bool {
+func (r *Request) QueryBool(key string, defaultValue ...bool) bool {
 	if r.instance.Query(key) != "" {
 		return stringToBool(r.instance.Query(key))
 	}
@@ -187,31 +187,31 @@ func (r *FiberRequest) QueryBool(key string, defaultValue ...bool) bool {
 	return false
 }
 
-func (r *FiberRequest) QueryArray(key string) []string {
+func (r *Request) QueryArray(key string) []string {
 	queries := r.instance.Queries()
 	return []string{queries[key]}
 }
 
-func (r *FiberRequest) QueryMap(key string) map[string]string {
+func (r *Request) QueryMap(key string) map[string]string {
 	return r.instance.Queries()
 }
 
-func (r *FiberRequest) Queries() map[string]string {
+func (r *Request) Queries() map[string]string {
 	return r.instance.Queries()
 }
 
-func (r *FiberRequest) Origin() *http.Request {
+func (r *Request) Origin() *http.Request {
 	var req http.Request
 	_ = fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true)
 
 	return &req
 }
 
-func (r *FiberRequest) Path() string {
+func (r *Request) Path() string {
 	return r.instance.Path()
 }
 
-func (r *FiberRequest) Input(key string, defaultValue ...string) string {
+func (r *Request) Input(key string, defaultValue ...string) string {
 	if value, exist := r.postData[key]; exist {
 		return cast.ToString(value)
 	}
@@ -228,7 +228,7 @@ func (r *FiberRequest) Input(key string, defaultValue ...string) string {
 	return value
 }
 
-func (r *FiberRequest) InputInt(key string, defaultValue ...int) int {
+func (r *Request) InputInt(key string, defaultValue ...int) int {
 	value := r.Input(key)
 	if value == "" && len(defaultValue) > 0 {
 		return defaultValue[0]
@@ -237,7 +237,7 @@ func (r *FiberRequest) InputInt(key string, defaultValue ...int) int {
 	return cast.ToInt(value)
 }
 
-func (r *FiberRequest) InputInt64(key string, defaultValue ...int64) int64 {
+func (r *Request) InputInt64(key string, defaultValue ...int64) int64 {
 	value := r.Input(key)
 	if value == "" && len(defaultValue) > 0 {
 		return defaultValue[0]
@@ -246,7 +246,7 @@ func (r *FiberRequest) InputInt64(key string, defaultValue ...int64) int64 {
 	return cast.ToInt64(value)
 }
 
-func (r *FiberRequest) InputBool(key string, defaultValue ...bool) bool {
+func (r *Request) InputBool(key string, defaultValue ...bool) bool {
 	value := r.Input(key)
 	if value == "" && len(defaultValue) > 0 {
 		return defaultValue[0]
@@ -255,31 +255,31 @@ func (r *FiberRequest) InputBool(key string, defaultValue ...bool) bool {
 	return stringToBool(value)
 }
 
-func (r *FiberRequest) Ip() string {
+func (r *Request) Ip() string {
 	return r.instance.IP()
 }
 
-func (r *FiberRequest) Route(key string) string {
+func (r *Request) Route(key string) string {
 	return r.instance.Params(key)
 }
 
-func (r *FiberRequest) RouteInt(key string) int {
+func (r *Request) RouteInt(key string) int {
 	val := r.instance.Params(key)
 
 	return cast.ToInt(val)
 }
 
-func (r *FiberRequest) RouteInt64(key string) int64 {
+func (r *Request) RouteInt64(key string) int64 {
 	val := r.instance.Params(key)
 
 	return cast.ToInt64(val)
 }
 
-func (r *FiberRequest) Url() string {
+func (r *Request) Url() string {
 	return r.instance.OriginalURL()
 }
 
-func (r *FiberRequest) Validate(rules map[string]string, options ...validatecontract.Option) (validatecontract.Validator, error) {
+func (r *Request) Validate(rules map[string]string, options ...validatecontract.Option) (validatecontract.Validator, error) {
 	if len(rules) == 0 {
 		return nil, errors.New("rules can't be empty")
 	}
@@ -309,7 +309,7 @@ func (r *FiberRequest) Validate(rules map[string]string, options ...validatecont
 	return validation.NewValidator(v, dataFace), nil
 }
 
-func (r *FiberRequest) ValidateRequest(request httpcontract.FormRequest) (validatecontract.Errors, error) {
+func (r *Request) ValidateRequest(request httpcontract.FormRequest) (validatecontract.Errors, error) {
 	if err := request.Authorize(r.ctx); err != nil {
 		return nil, err
 	}

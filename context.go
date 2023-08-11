@@ -30,14 +30,14 @@ func NewFiberContext(ctx *fiber.Ctx) http.Context {
 
 func (c *FiberContext) Request() http.Request {
 	if c.request == nil {
-		c.request = NewFiberRequest(c, LogFacade, ValidationFacade)
+		c.request = NewRequest(c, LogFacade, ValidationFacade)
 	}
 
 	return c.request
 }
 
 func (c *FiberContext) Response() http.Response {
-	return NewFiberResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
+	return NewResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
 }
 
 func (c *FiberContext) WithValue(key string, value any) {

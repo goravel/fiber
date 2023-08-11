@@ -8,46 +8,46 @@ import (
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
-type FiberResponse struct {
+type Response struct {
 	instance *fiber.Ctx
 	origin   httpcontract.ResponseOrigin
 }
 
-func NewFiberResponse(instance *fiber.Ctx, origin httpcontract.ResponseOrigin) *FiberResponse {
-	return &FiberResponse{instance, origin}
+func NewResponse(instance *fiber.Ctx, origin httpcontract.ResponseOrigin) *Response {
+	return &Response{instance, origin}
 }
 
-func (r *FiberResponse) Data(code int, contentType string, data []byte) {
+func (r *Response) Data(code int, contentType string, data []byte) {
 	_ = r.instance.Status(code).Type(contentType).Send(data)
 }
 
-func (r *FiberResponse) Download(filepath, filename string) {
+func (r *Response) Download(filepath, filename string) {
 	_ = r.instance.Download(filepath, filename)
 }
 
-func (r *FiberResponse) File(filepath string) {
+func (r *Response) File(filepath string) {
 	_ = r.instance.SendFile(filepath)
 }
 
-func (r *FiberResponse) Header(key, value string) httpcontract.Response {
+func (r *Response) Header(key, value string) httpcontract.Response {
 	r.instance.Set(key, value)
 
 	return r
 }
 
-func (r *FiberResponse) Json(code int, obj any) {
+func (r *Response) Json(code int, obj any) {
 	_ = r.instance.Status(code).JSON(obj)
 }
 
-func (r *FiberResponse) Origin() httpcontract.ResponseOrigin {
+func (r *Response) Origin() httpcontract.ResponseOrigin {
 	return r.origin
 }
 
-func (r *FiberResponse) Redirect(code int, location string) {
+func (r *Response) Redirect(code int, location string) {
 	_ = r.instance.Redirect(location, code)
 }
 
-func (r *FiberResponse) String(code int, format string, values ...any) {
+func (r *Response) String(code int, format string, values ...any) {
 	if len(values) == 0 {
 		_ = r.instance.Status(code).Type(format).SendString(format)
 		return
@@ -56,20 +56,20 @@ func (r *FiberResponse) String(code int, format string, values ...any) {
 	_ = r.instance.Status(code).Type(format).SendString(values[0].(string))
 }
 
-func (r *FiberResponse) Success() httpcontract.ResponseSuccess {
+func (r *Response) Success() httpcontract.ResponseSuccess {
 	return NewFiberSuccess(r.instance)
 }
 
-func (r *FiberResponse) Status(code int) httpcontract.ResponseStatus {
+func (r *Response) Status(code int) httpcontract.ResponseStatus {
 	return NewFiberStatus(r.instance, code)
 }
 
-func (r *FiberResponse) Writer() http.ResponseWriter {
+func (r *Response) Writer() http.ResponseWriter {
 	// Fiber doesn't support this
 	return nil
 }
 
-func (r *FiberResponse) Flush() {
+func (r *Response) Flush() {
 	r.instance.Fresh()
 }
 
@@ -124,7 +124,7 @@ func (r *FiberStatus) String(format string, values ...any) {
 	_ = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
 }
 
-func FiberResponseMiddleware() httpcontract.Middleware {
+func ResponseMiddleware() httpcontract.Middleware {
 	return func(ctx httpcontract.Context) {
 		switch ctx := ctx.(type) {
 		case *FiberContext:

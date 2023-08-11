@@ -1,7 +1,6 @@
 package fiber
 
 import (
-	"os"
 	"regexp"
 	"strings"
 
@@ -65,10 +64,4 @@ func mergeSlashForPath(path string) string {
 	path = strings.ReplaceAll(path, "//", "/")
 
 	return strings.ReplaceAll(path, "//", "/")
-}
-
-func runningInConsole() bool {
-	args := os.Args
-
-	return len(args) >= 2 && args[1] == "artisan"
 }
