@@ -29,21 +29,21 @@ type Route struct {
 // NewRoute 创建新的光纤路由实例
 func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
-		AppName:               ConfigFacade.GetString("app.name", "Goravel"),
+		AppName:               config.GetString("app.name", "Goravel"),
 		ReadBufferSize:        16384,
-		Prefork:               ConfigFacade.GetBool("http.drivers.fiber.prefork", false),
+		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
 		EnableIPValidation:    true,
 		ServerHeader:          "Goravel",
-		DisableStartupMessage: !ConfigFacade.GetBool("app.debug", false),
+		DisableStartupMessage: !config.GetBool("app.debug", false),
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
 	})
 	app.Use(recover.New())
 
-	if ConfigFacade.GetBool("app.debug", false) {
+	if config.GetBool("app.debug", false) {
 		app.Use(logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
-			TimeZone:   ConfigFacade.GetString("app.timezone", "UTC"),
+			TimeZone:   config.GetString("app.timezone", "UTC"),
 			TimeFormat: "2006/01/02 - 15:04:05",
 		}))
 	}
