@@ -44,7 +44,7 @@ import (
     fiberfacades "github.com/goravel/fiber/facades"
 )
 
-"driver": "fiber",
+"default": "fiber",
 
 "drivers": map[string]any{
     ...
