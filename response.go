@@ -127,7 +127,7 @@ func (r *FiberStatus) String(format string, values ...any) {
 func ResponseMiddleware() httpcontract.Middleware {
 	return func(ctx httpcontract.Context) {
 		switch ctx := ctx.(type) {
-		case *FiberContext:
+		case *Context:
 			ctx.Instance().Response().ResetBody()
 		}
 

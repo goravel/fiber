@@ -29,7 +29,7 @@ import (
 
 func TestFallback(t *testing.T) {
 	var (
-		fiber      *FiberRoute
+		fiber      *Route
 		mockConfig *configmock.Config
 	)
 	beforeEach := func() {
@@ -40,7 +40,7 @@ func TestFallback(t *testing.T) {
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		fiber = NewFiberRoute(mockConfig)
+		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name       string
@@ -85,7 +85,7 @@ func TestFallback(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	var mockConfig *configmock.Config
-	var route *FiberRoute
+	var route *Route
 
 	tests := []struct {
 		name        string
@@ -164,7 +164,7 @@ func TestRun(t *testing.T) {
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
-			route = NewFiberRoute(mockConfig)
+			route = NewRoute(mockConfig)
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -191,7 +191,7 @@ func TestRun(t *testing.T) {
 
 func TestRunTLS(t *testing.T) {
 	var mockConfig *configmock.Config
-	var route *FiberRoute
+	var route *Route
 
 	tests := []struct {
 		name        string
@@ -272,7 +272,7 @@ func TestRunTLS(t *testing.T) {
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
-			route = NewFiberRoute(mockConfig)
+			route = NewRoute(mockConfig)
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -303,7 +303,7 @@ func TestRunTLS(t *testing.T) {
 
 func TestRunTLSWithCert(t *testing.T) {
 	var mockConfig *configmock.Config
-	var route *FiberRoute
+	var route *Route
 
 	tests := []struct {
 		name        string
@@ -359,7 +359,7 @@ func TestRunTLSWithCert(t *testing.T) {
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
-			route = NewFiberRoute(mockConfig)
+			route = NewRoute(mockConfig)
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -386,7 +386,7 @@ func TestRunTLSWithCert(t *testing.T) {
 
 func TestRequest(t *testing.T) {
 	var (
-		fiber      *FiberRoute
+		fiber      *Route
 		req        *http.Request
 		mockConfig *configmock.Config
 	)
@@ -398,7 +398,7 @@ func TestRequest(t *testing.T) {
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		fiber = NewFiberRoute(mockConfig)
+		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name       string
@@ -1559,7 +1559,7 @@ func TestRequest(t *testing.T) {
 
 func TestResponse(t *testing.T) {
 	var (
-		fiber      *FiberRoute
+		fiber      *Route
 		req        *http.Request
 		mockConfig *configmock.Config
 	)
@@ -1571,7 +1571,7 @@ func TestResponse(t *testing.T) {
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		fiber = NewFiberRoute(mockConfig)
+		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name         string

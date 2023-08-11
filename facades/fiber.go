@@ -15,7 +15,7 @@ func Http() http.Context {
 		return nil
 	}
 
-	return instance.(*fiber.FiberContext)
+	return instance.(*fiber.Context)
 }
 
 func Route() route.Engine {
@@ -25,5 +25,5 @@ func Route() route.Engine {
 		return nil
 	}
 
-	return instance.(*fiber.FiberRoute)
+	return instance.(*fiber.Route)
 }

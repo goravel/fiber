@@ -22,14 +22,14 @@ import (
 )
 
 type Request struct {
-	ctx        *FiberContext
+	ctx        *Context
 	instance   *fiber.Ctx
 	postData   map[string]any
 	log        log.Log
 	validation validatecontract.Validation
 }
 
-func NewRequest(ctx *FiberContext, log log.Log, validation validatecontract.Validation) httpcontract.Request {
+func NewRequest(ctx *Context, log log.Log, validation validatecontract.Validation) httpcontract.Request {
 	postData, err := getPostData(ctx)
 	if err != nil {
 		LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
@@ -328,7 +328,7 @@ func (r *Request) ValidateRequest(request httpcontract.FormRequest) (validatecon
 	return validator.Errors(), nil
 }
 
-func getPostData(ctx *FiberContext) (map[string]any, error) {
+func getPostData(ctx *Context) (map[string]any, error) {
 	if len(ctx.instance.Request().Body()) == 0 {
 		return nil, nil
 	}

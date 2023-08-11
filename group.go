@@ -10,7 +10,7 @@ import (
 	"github.com/goravel/framework/contracts/route"
 )
 
-type FiberGroup struct {
+type Group struct {
 	instance          *fiber.App
 	originPrefix      string
 	prefix            string
@@ -19,8 +19,8 @@ type FiberGroup struct {
 	lastMiddlewares   []httpcontract.Middleware
 }
 
-func NewFiberGroup(instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Route {
-	return &FiberGroup{
+func NewGroup(instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Route {
+	return &Group{
 		instance:          instance,
 		originPrefix:      prefix,
 		originMiddlewares: originMiddlewares,
@@ -28,7 +28,7 @@ func NewFiberGroup(instance *fiber.App, prefix string, originMiddlewares []httpc
 	}
 }
 
-func (r *FiberGroup) Group(handler route.GroupFunc) {
+func (r *Group) Group(handler route.GroupFunc) {
 	var middlewares []httpcontract.Middleware
 	middlewares = append(middlewares, r.originMiddlewares...)
 	middlewares = append(middlewares, r.middlewares...)
@@ -36,84 +36,84 @@ func (r *FiberGroup) Group(handler route.GroupFunc) {
 	prefix := pathToFiberPath(r.originPrefix + "/" + r.prefix)
 	r.prefix = ""
 
-	handler(NewFiberGroup(r.instance, prefix, middlewares, r.lastMiddlewares))
+	handler(NewGroup(r.instance, prefix, middlewares, r.lastMiddlewares))
 }
 
-func (r *FiberGroup) Prefix(addr string) route.Route {
+func (r *Group) Prefix(addr string) route.Route {
 	r.prefix += "/" + addr
 
 	return r
 }
 
-func (r *FiberGroup) Middleware(middlewares ...httpcontract.Middleware) route.Route {
+func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Route {
 	r.middlewares = append(r.middlewares, middlewares...)
 
 	return r
 }
 
-func (r *FiberGroup) Any(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().All(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Any(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().All(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Get(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Get(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Get(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Get(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Post(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Post(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Post(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Post(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Delete(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Delete(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Delete(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Delete(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Patch(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Patch(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Patch(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Patch(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Put(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Put(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Put(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Put(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Options(relativePath string, handler httpcontract.HandlerFunc) {
-	r.getFiberRoutesWithMiddlewares().Options(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
+func (r *Group) Options(relativePath string, handler httpcontract.HandlerFunc) {
+	r.getRoutesWithMiddlewares().Options(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(handler)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Resource(relativePath string, controller httpcontract.ResourceController) {
-	r.getFiberRoutesWithMiddlewares().Get(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(controller.Index)}...)
-	r.getFiberRoutesWithMiddlewares().Post(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(controller.Store)}...)
-	r.getFiberRoutesWithMiddlewares().Get(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Show)}...)
-	r.getFiberRoutesWithMiddlewares().Put(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Update)}...)
-	r.getFiberRoutesWithMiddlewares().Patch(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Update)}...)
-	r.getFiberRoutesWithMiddlewares().Delete(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Destroy)}...)
+func (r *Group) Resource(relativePath string, controller httpcontract.ResourceController) {
+	r.getRoutesWithMiddlewares().Get(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(controller.Index)}...)
+	r.getRoutesWithMiddlewares().Post(pathToFiberPath(relativePath), []fiber.Handler{handlerToFiberHandler(controller.Store)}...)
+	r.getRoutesWithMiddlewares().Get(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Show)}...)
+	r.getRoutesWithMiddlewares().Put(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Update)}...)
+	r.getRoutesWithMiddlewares().Patch(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Update)}...)
+	r.getRoutesWithMiddlewares().Delete(pathToFiberPath(relativePath+"/{id}"), []fiber.Handler{handlerToFiberHandler(controller.Destroy)}...)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) Static(relativePath, root string) {
-	r.getFiberRoutesWithMiddlewares().Static(pathToFiberPath(relativePath), root)
+func (r *Group) Static(relativePath, root string) {
+	r.getRoutesWithMiddlewares().Static(pathToFiberPath(relativePath), root)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) StaticFile(relativePath, filepath string) {
-	r.getFiberRoutesWithMiddlewares().Static(pathToFiberPath(relativePath), filepath)
+func (r *Group) StaticFile(relativePath, filepath string) {
+	r.getRoutesWithMiddlewares().Static(pathToFiberPath(relativePath), filepath)
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) StaticFS(relativePath string, fs http.FileSystem) {
-	r.getFiberRoutesWithMiddlewares().Use(pathToFiberPath(relativePath), filesystem.New(filesystem.Config{
+func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
+	r.getRoutesWithMiddlewares().Use(pathToFiberPath(relativePath), filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
 	r.clearMiddlewares()
 }
 
-func (r *FiberGroup) getFiberRoutesWithMiddlewares() fiber.Router {
+func (r *Group) getRoutesWithMiddlewares() fiber.Router {
 	prefix := pathToFiberPath(r.originPrefix + "/" + r.prefix)
 	r.prefix = ""
 	fiberGroup := r.instance.Group(prefix)
@@ -133,6 +133,6 @@ func (r *FiberGroup) getFiberRoutesWithMiddlewares() fiber.Router {
 	}
 }
 
-func (r *FiberGroup) clearMiddlewares() {
+func (r *Group) clearMiddlewares() {
 	r.middlewares = []httpcontract.Middleware{}
 }

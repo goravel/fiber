@@ -54,9 +54,9 @@ func (c resourceController) Destroy(ctx httpcontract.Context) {
 	})
 }
 
-func TestFiberGroup(t *testing.T) {
+func TestGroup(t *testing.T) {
 	var (
-		fiber      *FiberRoute
+		fiber      *Route
 		mockConfig *configmock.Config
 	)
 	beforeEach := func() {
@@ -67,7 +67,7 @@ func TestFiberGroup(t *testing.T) {
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		fiber = NewFiberRoute(mockConfig)
+		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name       string

@@ -32,10 +32,10 @@ func (receiver *ServiceProvider) Register(app foundation.Application) {
 	App = app
 
 	app.Bind(HttpBinding, func(app foundation.Application) (any, error) {
-		return NewFiberContext(&fiber.Ctx{}), nil
+		return NewContext(&fiber.Ctx{}), nil
 	})
 	app.Bind(RouteBinding, func(app foundation.Application) (any, error) {
-		return NewFiberRoute(app.MakeConfig()), nil
+		return NewRoute(app.MakeConfig()), nil
 	})
 }
 

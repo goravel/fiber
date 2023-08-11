@@ -24,14 +24,14 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []any {
 
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewFiberContext(fiberCtx))
+		handler(NewContext(fiberCtx))
 		return nil
 	}
 }
 
 func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
 	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewFiberContext(fiberCtx))
+		handler(NewContext(fiberCtx))
 		return nil
 	}
 }

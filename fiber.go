@@ -17,17 +17,17 @@ import (
 	"github.com/goravel/framework/contracts/route"
 )
 
-// FiberRoute fiber route
-// FiberRoute 光纤路由
-type FiberRoute struct {
+// Route fiber route
+// Route 光纤路由
+type Route struct {
 	route.Route
 	config   config.Config
 	instance *fiber.App
 }
 
-// NewFiberRoute create new fiber route instance
-// NewFiberRoute 创建新的光纤路由实例
-func NewFiberRoute(config config.Config) *FiberRoute {
+// NewRoute create new fiber route instance
+// NewRoute 创建新的光纤路由实例
+func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
 		AppName:               ConfigFacade.GetString("app.name", "Goravel"),
 		ReadBufferSize:        16384,
@@ -48,8 +48,8 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 		}))
 	}
 
-	return &FiberRoute{
-		Route: NewFiberGroup(app,
+	return &Route{
+		Route: NewGroup(app,
 			"",
 			[]httpcontract.Middleware{},
 			[]httpcontract.Middleware{ResponseMiddleware()},
@@ -61,17 +61,17 @@ func NewFiberRoute(config config.Config) *FiberRoute {
 
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
-func (r *FiberRoute) Fallback(handler httpcontract.HandlerFunc) {
+func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 	r.instance.Use(handlerToFiberHandler(handler))
 }
 
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
-func (r *FiberRoute) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
+func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	if len(middlewares) > 0 {
 		r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
 	}
-	r.Route = NewFiberGroup(
+	r.Route = NewGroup(
 		r.instance,
 		"",
 		[]httpcontract.Middleware{},
@@ -81,7 +81,7 @@ func (r *FiberRoute) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 
 // Run run server
 // Run 运行服务器
-func (r *FiberRoute) Run(host ...string) error {
+func (r *Route) Run(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.host")
 		if defaultHost == "" {
@@ -104,7 +104,7 @@ func (r *FiberRoute) Run(host ...string) error {
 
 // RunTLS run TLS server
 // RunTLS 运行 TLS 服务器
-func (r *FiberRoute) RunTLS(host ...string) error {
+func (r *Route) RunTLS(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.tls.host")
 		if defaultHost == "" {
@@ -127,7 +127,7 @@ func (r *FiberRoute) RunTLS(host ...string) error {
 
 // RunTLSWithCert run TLS server with cert file and key file
 // RunTLSWithCert 使用证书文件和密钥文件运行 TLS 服务器
-func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
+func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	if host == "" {
 		return errors.New("host can't be empty")
 	}
@@ -143,18 +143,18 @@ func (r *FiberRoute) RunTLSWithCert(host, certFile, keyFile string) error {
 
 // ServeHTTP serve http request (Not support)
 // ServeHTTP 服务 HTTP 请求 (不支持)
-func (r *FiberRoute) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
 // Test for unit test
 // Test 用于单元测试
-func (r *FiberRoute) Test(request *http.Request) (*http.Response, error) {
+func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	return r.instance.Test(request)
 }
 
 // outputRoutes output all routes
 // outputRoutes 输出所有路由
-func (r *FiberRoute) outputRoutes() {
+func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.Env != support.EnvArtisan {
 		for _, item := range r.instance.GetRoutes() {
 			// filter some unnecessary methods
