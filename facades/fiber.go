@@ -8,7 +8,7 @@ import (
 	"github.com/goravel/framework/contracts/route"
 )
 
-func Http() http.Context {
+func Context() http.Context {
 	instance, err := fiber.App.Make(fiber.HttpBinding)
 	if err != nil {
 		log.Fatalln(err)
