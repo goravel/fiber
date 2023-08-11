@@ -29,9 +29,10 @@ type Route struct {
 // NewRoute 创建新的光纤路由实例
 func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
-		AppName:               config.GetString("app.name", "Goravel"),
-		ReadBufferSize:        16384,
-		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
+		AppName:        config.GetString("app.name", "Goravel"),
+		ReadBufferSize: 16384,
+		// Prefork auto enable if debug mode is disabled
+		Prefork:               !config.GetBool("app.debug", false),
 		EnableIPValidation:    true,
 		ServerHeader:          "Goravel",
 		DisableStartupMessage: !config.GetBool("app.debug", false),
