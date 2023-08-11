@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/valyala/fasthttp"
-
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
@@ -128,28 +126,26 @@ func (r *FiberStatus) String(format string, values ...any) {
 
 func FiberResponseMiddleware() httpcontract.Middleware {
 	return func(ctx httpcontract.Context) {
-		o := &ResponseOrigin{}
 		switch ctx := ctx.(type) {
 		case *FiberContext:
-			ctx.Instance().Response().Reset()
+			ctx.Instance().Response().ResetBody()
 		}
 
-		ctx.WithValue("responseOrigin", o)
 		ctx.Request().Next()
 	}
 }
 
 type ResponseOrigin struct {
-	*fasthttp.Response
+	*fiber.Ctx
 }
 
 func (w *ResponseOrigin) Body() *bytes.Buffer {
-	return bytes.NewBuffer(w.Response.Body())
+	return bytes.NewBuffer(w.Ctx.Response().Body())
 }
 
 func (w *ResponseOrigin) Header() http.Header {
 	result := http.Header{}
-	w.Response.Header.VisitAll(func(key, value []byte) {
+	w.Ctx.Response().Header.VisitAll(func(key, value []byte) {
 		result.Add(string(key), string(value))
 	})
 
@@ -157,9 +153,9 @@ func (w *ResponseOrigin) Header() http.Header {
 }
 
 func (w *ResponseOrigin) Size() int {
-	return len(w.Response.Body())
+	return len(w.Ctx.Response().Body())
 }
 
 func (w *ResponseOrigin) Status() int {
-	return w.Response.StatusCode()
+	return w.Ctx.Response().StatusCode()
 }

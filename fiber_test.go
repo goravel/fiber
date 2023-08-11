@@ -1765,8 +1765,7 @@ func TestFiberResponse(t *testing.T) {
 			expectBody:   "Goravel",
 			expectHeader: "goravel",
 		},
-		// fiber doesn't support this feature
-		/*{
+		{
 			name:   "Origin",
 			method: "GET",
 			url:    "/origin",
@@ -1794,7 +1793,7 @@ func TestFiberResponse(t *testing.T) {
 			},
 			expectCode: http.StatusOK,
 			expectBody: "Goravel",
-		},*/
+		},
 		{
 			name:   "Redirect",
 			method: "GET",

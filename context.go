@@ -37,12 +37,7 @@ func (c *FiberContext) Request() http.Request {
 }
 
 func (c *FiberContext) Response() http.Response {
-	responseOrigin := c.Value("responseOrigin")
-	if responseOrigin != nil {
-		return NewFiberResponse(c.instance, responseOrigin.(http.ResponseOrigin))
-	}
-
-	return NewFiberResponse(c.instance, &ResponseOrigin{Response: c.instance.Response()})
+	return NewFiberResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
 }
 
 func (c *FiberContext) WithValue(key string, value any) {
