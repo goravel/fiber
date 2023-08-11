@@ -39,7 +39,7 @@ func NewRequest(ctx *Context, log log.Log, validation validatecontract.Validatio
 }
 
 func (r *Request) AbortWithStatus(code int) {
-	_ = r.instance.Status(code).Send(nil)
+	_ = r.instance.SendStatus(code)
 }
 
 func (r *Request) AbortWithStatusJson(code int, jsonObj any) {
