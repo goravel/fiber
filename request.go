@@ -329,7 +329,7 @@ func (r *FiberRequest) ValidateRequest(request httpcontract.FormRequest) (valida
 }
 
 func getPostData(ctx *FiberContext) (map[string]any, error) {
-	if ctx.instance.Request().Body() == nil {
+	if len(ctx.instance.Request().Body()) == 0 {
 		return nil, nil
 	}
 
