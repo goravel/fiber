@@ -31,7 +31,7 @@ func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
 		AppName:               config.GetString("app.name", "Goravel"),
 		ReadBufferSize:        16384,
-		Prefork:               false,
+		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
 		EnableIPValidation:    true,
 		ServerHeader:          "Goravel",
 		DisableStartupMessage: !config.GetBool("app.debug", false),

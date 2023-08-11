@@ -35,6 +35,7 @@ func TestFallback(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
@@ -158,6 +159,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
 			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
@@ -265,6 +267,7 @@ func TestRunTLS(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
 			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
@@ -351,6 +354,7 @@ func TestRunTLSWithCert(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
 			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
@@ -389,6 +393,7 @@ func TestRequest(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
@@ -1561,6 +1566,7 @@ func TestResponse(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
