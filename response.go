@@ -2,10 +2,10 @@ package fiber
 
 import (
 	"bytes"
-	"io"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
@@ -71,6 +71,10 @@ func (r *FiberResponse) Writer() http.ResponseWriter {
 	return nil
 }
 
+func (r *FiberResponse) Flush() {
+	r.instance.Fresh()
+}
+
 type FiberSuccess struct {
 	instance *fiber.Ctx
 }
@@ -124,50 +128,38 @@ func (r *FiberStatus) String(format string, values ...any) {
 
 func FiberResponseMiddleware() httpcontract.Middleware {
 	return func(ctx httpcontract.Context) {
-		blw := &BodyWriter{body: bytes.NewBufferString("")}
+		o := &ResponseOrigin{}
 		switch ctx := ctx.(type) {
 		case *FiberContext:
-			// TODO: implement
-			blw.Writer = ctx.Instance().Response().BodyWriter()
+			ctx.Instance().Response().Reset()
 		}
 
-		ctx.WithValue("responseOrigin", blw)
+		ctx.WithValue("responseOrigin", o)
 		ctx.Request().Next()
 	}
 }
 
-type BodyWriter struct {
-	io.Writer
-	body *bytes.Buffer
+type ResponseOrigin struct {
+	*fasthttp.Response
 }
 
-func (w *BodyWriter) Header() http.Header {
-	//TODO implement me
-	panic("implement me")
+func (w *ResponseOrigin) Body() *bytes.Buffer {
+	return bytes.NewBuffer(w.Response.Body())
 }
 
-func (w *BodyWriter) Size() int {
-	//TODO implement me
-	panic("implement me")
+func (w *ResponseOrigin) Header() http.Header {
+	result := http.Header{}
+	w.Response.Header.VisitAll(func(key, value []byte) {
+		result.Add(string(key), string(value))
+	})
+
+	return result
 }
 
-func (w *BodyWriter) Status() int {
-	//TODO implement me
-	panic("implement me")
+func (w *ResponseOrigin) Size() int {
+	return len(w.Response.Body())
 }
 
-func (w *BodyWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-
-	return w.Writer.Write(b)
-}
-
-func (w *BodyWriter) WriteString(s string) (int, error) {
-	w.body.WriteString(s)
-
-	return w.Writer.Write([]byte(s))
-}
-
-func (w *BodyWriter) Body() *bytes.Buffer {
-	return w.Writer.(*bytes.Buffer)
+func (w *ResponseOrigin) Status() int {
+	return w.Response.StatusCode()
 }

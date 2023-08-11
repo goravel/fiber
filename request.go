@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gookit/validate"
 	"github.com/spf13/cast"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 
 	filesystemcontract "github.com/goravel/framework/contracts/filesystem"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -115,6 +116,7 @@ func (r *FiberRequest) Headers() http.Header {
 	r.instance.Request().Header.VisitAll(func(key, value []byte) {
 		result.Add(string(key), string(value))
 	})
+
 	return result
 }
 
@@ -199,8 +201,10 @@ func (r *FiberRequest) Queries() map[string]string {
 }
 
 func (r *FiberRequest) Origin() *http.Request {
-	// Fiber does not support http.Request
-	return nil
+	var req http.Request
+	_ = fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true)
+
+	return &req
 }
 
 func (r *FiberRequest) Path() string {

@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gookit/color"
+	"github.com/goravel/framework/support"
 
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -149,7 +150,7 @@ func (r *FiberRoute) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes output all routes
 // outputRoutes 输出所有路由
 func (r *FiberRoute) outputRoutes() {
-	if r.config.GetBool("app.debug") && !runningInConsole() {
+	if r.config.GetBool("app.debug") && support.Env != support.EnvArtisan {
 		for _, item := range r.instance.GetRoutes() {
 			// filter some unnecessary methods
 			if item.Method == "HEAD" || item.Method == "CONNECT" || item.Method == "TRACE" {

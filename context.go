@@ -42,7 +42,7 @@ func (c *FiberContext) Response() http.Response {
 		return NewFiberResponse(c.instance, responseOrigin.(http.ResponseOrigin))
 	}
 
-	return NewFiberResponse(c.instance, &BodyWriter{Writer: c.instance.Response().BodyWriter()})
+	return NewFiberResponse(c.instance, &ResponseOrigin{Response: c.instance.Response()})
 }
 
 func (c *FiberContext) WithValue(key string, value any) {
