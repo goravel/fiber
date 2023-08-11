@@ -3,6 +3,7 @@ package fiber
 import (
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/goravel/framework/contracts/config"
 	"github.com/goravel/framework/contracts/foundation"
 	"github.com/goravel/framework/contracts/log"
 	"github.com/goravel/framework/contracts/validation"
@@ -14,6 +15,7 @@ const RouteBinding = "goravel.route"
 var App foundation.Application
 
 var (
+	ConfigFacade     config.Config
 	LogFacade        log.Log
 	ValidationFacade validation.Validation
 )
@@ -33,6 +35,7 @@ func (receiver *ServiceProvider) Register(app foundation.Application) {
 }
 
 func (receiver *ServiceProvider) Boot(app foundation.Application) {
+	ConfigFacade = app.MakeConfig()
 	LogFacade = app.MakeLog()
 	ValidationFacade = app.MakeValidation()
 }
