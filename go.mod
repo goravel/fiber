@@ -1,6 +1,6 @@
 module github.com/goravel/fiber
 
-go 1.18
+go 1.20
 
 require (
 	github.com/bytedance/sonic v1.9.2

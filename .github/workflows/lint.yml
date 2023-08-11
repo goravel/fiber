@@ -15,7 +15,7 @@ jobs:
         with:
           go-version: 'stable'
           cache: false
-      - name: Lint 🎨
+      - name: Lint
         uses: golangci/golangci-lint-action@v3
         with:
           skip-cache: true
