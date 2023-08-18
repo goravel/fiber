@@ -875,6 +875,72 @@ func TestRequest(t *testing.T) {
 			expectCode: http.StatusOK,
 		},
 		{
+			name:   "Input - with point",
+			method: "POST",
+			url:    "/input7/1?id=2",
+			setup: func(method, url string) error {
+				fiber.Post("/input7/{id}", func(ctx httpcontract.Context) {
+					ctx.Response().Success().Json(httpcontract.Json{
+						"id": ctx.Request().Input("id.a"),
+					})
+				})
+
+				payload := strings.NewReader(`{
+					"id": {"a": "4"}
+				}`)
+				req, _ = http.NewRequest(method, url, payload)
+				req.Header.Set("Content-Type", "application/json")
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "{\"id\":\"3\"}",
+		},
+		{
+			name:   "InputArray",
+			method: "POST",
+			url:    "/input-array/1?id=2",
+			setup: func(method, url string) error {
+				fiber.Post("/input-array/{id}", func(ctx httpcontract.Context) {
+					ctx.Response().Success().Json(httpcontract.Json{
+						"id": ctx.Request().InputArray("id"),
+					})
+				})
+
+				payload := strings.NewReader(`{
+					"id": ["3", "4"]
+				}`)
+				req, _ = http.NewRequest(method, url, payload)
+				req.Header.Set("Content-Type", "application/json")
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "{\"id\":[\"3\",\"4\"]}",
+		},
+		{
+			name:   "InputMap",
+			method: "POST",
+			url:    "/input-map/1?id=2",
+			setup: func(method, url string) error {
+				fiber.Post("/input-map/{id}", func(ctx httpcontract.Context) {
+					ctx.Response().Success().Json(httpcontract.Json{
+						"id": ctx.Request().InputMap("id"),
+					})
+				})
+
+				payload := strings.NewReader(`{
+					"id": {"a": "3", "b": "4"}
+				}`)
+				req, _ = http.NewRequest(method, url, payload)
+				req.Header.Set("Content-Type", "application/json")
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "{\"id\":{\"a\":\"3\",\"b\":\"4\"}}",
+		},
+		{
 			name:   "InputInt",
 			method: "POST",
 			url:    "/input-int/1",

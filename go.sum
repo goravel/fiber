@@ -72,6 +72,10 @@ github.com/gookit/validate v1.5.1 h1:rPp64QZQJM+fysGFAhKpvekQAav4Ok6sjfTs9ZtxcpA
 github.com/gookit/validate v1.5.1/go.mod h1:SskOHUQokzMNt6T3r7N+N/4me/6fxDx+tmoXf/3ZQog=
 github.com/goravel/framework v1.12.1-0.20230811052558-c328850c24bf h1:adogk9GqHMZA83YQSqNGxr3jRM0nO23LQALQ4xuA0tQ=
 github.com/goravel/framework v1.12.1-0.20230811052558-c328850c24bf/go.mod h1:jG5khGOxNErPojZ0DO6mH1lJMa/wo2w+yYlRdtzMnN0=
+github.com/goravel/framework v1.12.1-0.20230818042157-6b62ca30c378 h1:H0iVWA1/reGozfFoET3Nzp4IecHls8lTTHMKluXWdgg=
+github.com/goravel/framework v1.12.1-0.20230818042157-6b62ca30c378/go.mod h1:gfOlLyy4FQO1m+rYZRrmsxrEp0+OBYniQS841Kc/VU4=
+github.com/goravel/framework v1.12.1-0.20230818042920-477a94b11cae h1:KX8YUd25dygY/4Bh/wmHiCNaUU5RFN4gwhbP16EKc9Q=
+github.com/goravel/framework v1.12.1-0.20230818042920-477a94b11cae/go.mod h1:gfOlLyy4FQO1m+rYZRrmsxrEp0+OBYniQS841Kc/VU4=
 github.com/imdario/mergo v0.3.13 h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk=
 github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK2O4oXg=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

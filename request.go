@@ -212,8 +212,18 @@ func (r *Request) Path() string {
 }
 
 func (r *Request) Input(key string, defaultValue ...string) string {
-	if value, exist := r.postData[key]; exist {
-		return cast.ToString(value)
+	keys := strings.Split(key, ".")
+	current := r.postData
+	for _, k := range keys {
+		value, found := current[k]
+		if !found {
+			return ""
+		}
+		if nestedMap, isMap := value.(map[string]any); isMap {
+			current = nestedMap
+		} else {
+			return cast.ToString(value)
+		}
 	}
 
 	if r.instance.Query(key) != "" {
@@ -221,11 +231,55 @@ func (r *Request) Input(key string, defaultValue ...string) string {
 	}
 
 	value := r.instance.Params(key)
-	if value == "" && len(defaultValue) > 0 {
+	if len(value) == 0 && len(defaultValue) > 0 {
 		return defaultValue[0]
 	}
 
 	return value
+}
+
+func (r *Request) InputArray(key string, defaultValue ...[]string) []string {
+	keys := strings.Split(key, ".")
+	current := r.postData
+	for _, k := range keys {
+		value, found := current[k]
+		if !found {
+			return []string{}
+		}
+		if nestedMap, isMap := value.(map[string]any); isMap {
+			current = nestedMap
+		} else {
+			return cast.ToStringSlice(value)
+		}
+	}
+
+	if len(defaultValue) > 0 {
+		return defaultValue[0]
+	} else {
+		return []string{}
+	}
+}
+
+func (r *Request) InputMap(key string, defaultValue ...map[string]string) map[string]string {
+	keys := strings.Split(key, ".")
+	current := r.postData
+	for _, k := range keys {
+		value, found := current[k]
+		if !found {
+			return map[string]string{}
+		}
+		if nestedMap, isMap := value.(map[string]string); isMap {
+			current = cast.ToStringMap(nestedMap)
+		} else {
+			return cast.ToStringMapString(value)
+		}
+	}
+
+	if len(defaultValue) > 0 {
+		return defaultValue[0]
+	} else {
+		return map[string]string{}
+	}
 }
 
 func (r *Request) InputInt(key string, defaultValue ...int) int {
