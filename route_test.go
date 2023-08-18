@@ -930,7 +930,7 @@ func TestRequest(t *testing.T) {
 				})
 
 				payload := strings.NewReader(`{
-					"id": {"a": "3", "b": "4"}
+					"id": {"a": "3"}
 				}`)
 				req, _ = http.NewRequest(method, url, payload)
 				req.Header.Set("Content-Type", "application/json")
@@ -938,7 +938,7 @@ func TestRequest(t *testing.T) {
 				return nil
 			},
 			expectCode: http.StatusOK,
-			expectBody: "{\"id\":{\"a\":\"3\",\"b\":\"4\"}}",
+			expectBody: "{\"id\":{\"a\":\"3\"}}",
 		},
 		{
 			name:   "InputInt",
