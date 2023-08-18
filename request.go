@@ -216,13 +216,12 @@ func (r *Request) Input(key string, defaultValue ...string) string {
 	current := r.postData
 	for _, k := range keys {
 		value, found := current[k]
-		if !found {
-			return ""
-		}
-		if nestedMap, isMap := value.(map[string]any); isMap {
-			current = nestedMap
-		} else {
-			return cast.ToString(value)
+		if found {
+			if nestedMap, isMap := value.(map[string]any); isMap {
+				current = nestedMap
+			} else {
+				return cast.ToString(value)
+			}
 		}
 	}
 
