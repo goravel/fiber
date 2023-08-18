@@ -343,6 +343,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 			return nil, fmt.Errorf("decode json [%v] error: %v", string(bodyBytes), err)
 		}
 	}
+
 	if contentType == "multipart/form-data" {
 		if form, err := ctx.instance.MultipartForm(); err == nil {
 			for k, v := range form.Value {
@@ -354,6 +355,13 @@ func getPostData(ctx *Context) (map[string]any, error) {
 				}
 			}
 		}
+	}
+
+	if contentType == "application/x-www-form-urlencoded" {
+		args := ctx.instance.Request().PostArgs()
+		args.VisitAll(func(key, value []byte) {
+			data[string(key)] = string(value)
+		})
 	}
 
 	return data, nil
