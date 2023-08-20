@@ -5,9 +5,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/valyala/fasthttp"
-
 	"github.com/goravel/framework/contracts/http"
+	"github.com/valyala/fasthttp"
 )
 
 func Background() http.Context {

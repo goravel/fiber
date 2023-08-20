@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gookit/color"
-
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -49,7 +49,9 @@ func NewRoute(config config.Config) *Route {
 	}
 
 	return &Route{
-		Route: NewGroup(app,
+		Route: NewGroup(
+			config,
+			app,
 			"",
 			[]httpcontract.Middleware{},
 			[]httpcontract.Middleware{ResponseMiddleware()},
@@ -68,10 +70,13 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
+	middlewares = append(middlewares, Tls())
+
 	if len(middlewares) > 0 {
-		r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
+		r.instance.Use(middlewaresToFiberHandlers(middlewares, "")...)
 	}
 	r.Route = NewGroup(
+		r.config,
 		r.instance,
 		"",
 		[]httpcontract.Middleware{},
@@ -133,6 +138,12 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	}
 	if certFile == "" || keyFile == "" {
 		return errors.New("certificate can't be empty")
+	}
+	if strings.HasPrefix(certFile, "/") {
+		certFile = "." + certFile
+	}
+	if strings.HasPrefix(keyFile, "/") {
+		keyFile = "." + keyFile
 	}
 
 	r.outputRoutes()
