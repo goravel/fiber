@@ -65,8 +65,7 @@ func (r *Response) Status(code int) httpcontract.ResponseStatus {
 }
 
 func (r *Response) Writer() http.ResponseWriter {
-	// Fiber doesn't support this
-	return nil
+	panic("not support")
 }
 
 func (r *Response) Flush() {

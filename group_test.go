@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	"github.com/gofiber/fiber/v2"
 	configmock "github.com/goravel/framework/contracts/config/mocks"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -569,7 +570,7 @@ func TestAddCorsMiddleware(t *testing.T) {
 	var (
 		group       *Group
 		mockConfig  *configmock.Config
-		middlewares []any
+		middlewares []fiber.Handler
 	)
 
 	beforeEach := func() {

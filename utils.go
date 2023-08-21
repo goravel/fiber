@@ -12,8 +12,8 @@ func pathToFiberPath(relativePath string) string {
 	return bracketToColon(mergeSlashForPath(relativePath))
 }
 
-func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware, prefix string) []any {
-	var fiberHandlers []any
+func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware, prefix string) []fiber.Handler {
+	var fiberHandlers []fiber.Handler
 	for _, item := range middlewares {
 		fiberHandlers = append(fiberHandlers, middlewareToFiberHandler(item, prefix))
 	}

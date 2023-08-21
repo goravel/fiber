@@ -123,7 +123,7 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 	r.prefix = ""
 	fiberGroup := r.instance.Group(prefix)
 
-	var middlewares []any
+	var middlewares []fiber.Handler
 	fiberOriginMiddlewares := middlewaresToFiberHandlers(r.originMiddlewares, fullPath)
 	fiberMiddlewares := middlewaresToFiberHandlers(r.middlewares, fullPath)
 	fiberLastMiddlewares := middlewaresToFiberHandlers(r.lastMiddlewares, fullPath)
@@ -132,18 +132,19 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 	middlewares = append(middlewares, fiberLastMiddlewares...)
 	middlewares = r.addCorsMiddleware(middlewares, fullPath)
 
-	if len(middlewares) > 0 {
-		fiberGroup = fiberGroup.Use(middlewares...)
+	var tempMiddlewares []any
+	for _, middleware := range middlewares {
+		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
-	return fiberGroup
+	return fiberGroup.Use(tempMiddlewares...)
 }
 
 func (r *Group) clearMiddlewares() {
 	r.middlewares = []httpcontract.Middleware{}
 }
 
-func (r *Group) addCorsMiddleware(middlewares []any, fullPath string) []any {
+func (r *Group) addCorsMiddleware(middlewares []fiber.Handler, fullPath string) []fiber.Handler {
 	corsPaths := r.config.Get("cors.paths").([]string)
 	for _, path := range corsPaths {
 		path = pathToFiberPath(path)

@@ -16,6 +16,7 @@ func Cors() httpcontract.Middleware {
 			for i, method := range allowedMethodConfigs {
 				if method == "*" {
 					allowedMethods = "GET,POST,HEAD,PUT,DELETE,PATCH"
+					break
 				}
 				if i == len(allowedMethodConfigs)-1 {
 					allowedMethods += method

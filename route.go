@@ -18,7 +18,7 @@ import (
 )
 
 // Route fiber route
-// Route 光纤路由
+// Route fiber 路由
 type Route struct {
 	route.Route
 	config   config.Config
@@ -26,7 +26,7 @@ type Route struct {
 }
 
 // NewRoute create new fiber route instance
-// NewRoute 创建新的光纤路由实例
+// NewRoute 创建新的 fiber 路由实例
 func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
 		AppName:               config.GetString("app.name", "Goravel"),
@@ -70,11 +70,12 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
-	middlewares = append(middlewares, Tls())
-
-	if len(middlewares) > 0 {
-		r.instance.Use(middlewaresToFiberHandlers(middlewares, "")...)
+	var tempMiddlewares []any
+	for _, middleware := range middlewaresToFiberHandlers(middlewares, "") {
+		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
+
+	r.instance.Use(tempMiddlewares...)
 	r.Route = NewGroup(
 		r.config,
 		r.instance,
@@ -155,6 +156,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 // ServeHTTP serve http request (Not support)
 // ServeHTTP 服务 HTTP 请求 (不支持)
 func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	panic("not support")
 }
 
 // Test for unit test
