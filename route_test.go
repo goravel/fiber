@@ -26,62 +26,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestFallback(t *testing.T) {
-	var (
-		fiber      *Route
-		mockConfig *configmock.Config
-	)
-	beforeEach := func() {
-		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-		ConfigFacade = mockConfig
-
-		fiber = NewRoute(mockConfig)
-	}
-	tests := []struct {
-		name       string
-		setup      func(req *http.Request)
-		method     string
-		url        string
-		expectCode int
-		expectBody string
-	}{
-		{
-			name: "success",
-			setup: func(req *http.Request) {
-				fiber.Fallback(func(ctx httpcontract.Context) {
-					ctx.Response().String(404, "not found")
-				})
-			},
-			method:     "GET",
-			url:        "/fallback",
-			expectCode: http.StatusNotFound,
-			expectBody: "not found",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			beforeEach()
-			req, _ := http.NewRequest(test.method, test.url, nil)
-			if test.setup != nil {
-				test.setup(req)
-			}
-			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
-
-			if test.expectBody != "" {
-				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
-			}
-
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
-		})
-	}
-}
-
 func TestRun(t *testing.T) {
 	var mockConfig *configmock.Config
 	var route *Route

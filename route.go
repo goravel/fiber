@@ -64,7 +64,7 @@ func NewRoute(config config.Config) *Route {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
-	r.instance.Use(handlerToFiberHandler(handler))
+	panic("not support")
 }
 
 // GlobalMiddleware set global middleware
