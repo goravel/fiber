@@ -49,7 +49,7 @@ func (r *Response) Redirect(code int, location string) {
 
 func (r *Response) String(code int, format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(code).Type("text/html").SendString(format)
+		_ = r.instance.Status(code).SendString(format)
 		return
 	}
 
@@ -90,7 +90,7 @@ func (r *Success) Json(obj any) {
 
 func (r *Success) String(format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).Type("text/html").SendString(format)
+		_ = r.instance.Status(http.StatusOK).SendString(format)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (r *Status) Json(obj any) {
 
 func (r *Status) String(format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).Type("text/html").SendString(format)
+		_ = r.instance.Status(http.StatusOK).SendString(format)
 		return
 	}
 
