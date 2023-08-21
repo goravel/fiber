@@ -121,7 +121,6 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 	fullPath := pathToFiberPath(prefix + "/" + relativePath)
 
 	r.prefix = ""
-	fiberGroup := r.instance.Group(prefix)
 
 	var middlewares []fiber.Handler
 	fiberOriginMiddlewares := middlewaresToFiberHandlers(r.originMiddlewares, fullPath)
@@ -138,10 +137,10 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 	}
 
 	if len(tempMiddlewares) > 0 {
-		return fiberGroup.Use(tempMiddlewares...)
+		return r.instance.Use(tempMiddlewares...)
 	}
 
-	return fiberGroup
+	return r.instance
 }
 
 func (r *Group) clearMiddlewares() {
