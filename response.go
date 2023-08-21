@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	httpcontract "github.com/goravel/framework/contracts/http"
+	"github.com/valyala/fasthttp"
 )
 
 type Response struct {
@@ -66,6 +67,10 @@ func (r *Response) Status(code int) httpcontract.ResponseStatus {
 
 func (r *Response) Writer() http.ResponseWriter {
 	panic("not support")
+}
+
+func (r *Response) Response() *fasthttp.Response {
+	return r.instance.Response()
 }
 
 func (r *Response) Flush() {
