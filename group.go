@@ -137,7 +137,11 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
-	return fiberGroup.Use(tempMiddlewares...)
+	if len(tempMiddlewares) > 0 {
+		return fiberGroup.Use(tempMiddlewares...)
+	}
+
+	return fiberGroup
 }
 
 func (r *Group) clearMiddlewares() {

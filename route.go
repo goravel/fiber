@@ -75,7 +75,9 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
-	r.instance.Use(tempMiddlewares...)
+	if len(tempMiddlewares) > 0 {
+		r.instance.Use(tempMiddlewares...)
+	}
 	r.Route = NewGroup(
 		r.config,
 		r.instance,
