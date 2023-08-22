@@ -69,7 +69,7 @@ func (r *Response) Writer() http.ResponseWriter {
 	panic("not support")
 }
 
-func (r *Response) Response() *fasthttp.Response {
+func (r *Response) FastHTTPWriter() *fasthttp.Response {
 	return r.instance.Response()
 }
 

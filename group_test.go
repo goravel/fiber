@@ -383,7 +383,7 @@ func TestGroup(t *testing.T) {
 				fiber.StaticFS("static-fs", http.Dir("./"))
 			},
 			method:     "GET",
-			url:        "/static-fs",
+			url:        "/static-fs/README.md",
 			expectCode: http.StatusOK,
 		},
 		{
