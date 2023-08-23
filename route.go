@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/bytedance/sonic"
@@ -54,7 +56,7 @@ func NewRoute(config config.Config) *Route {
 			app,
 			"",
 			[]httpcontract.Middleware{},
-			[]httpcontract.Middleware{ResponseMiddleware()},
+			[]httpcontract.Middleware{},
 		),
 		config:   config,
 		instance: app,
@@ -75,9 +77,11 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
-	if len(tempMiddlewares) > 0 {
-		r.instance.Use(tempMiddlewares...)
+	if len(tempMiddlewares) == 0 {
+		return
 	}
+
+	r.instance.Use(tempMiddlewares...)
 	r.Route = NewGroup(
 		r.config,
 		r.instance,
@@ -176,6 +180,19 @@ func (r *Route) outputRoutes() {
 			if item.Method == "HEAD" || item.Method == "CONNECT" || item.Method == "TRACE" {
 				continue
 			}
+			if item.Path == "/" {
+				pass := false
+				for _, handler := range item.Handlers {
+					if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "recover") {
+						pass = true
+						break
+					}
+				}
+				if pass {
+					continue
+				}
+			}
+
 			fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
 		}
 	}

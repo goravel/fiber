@@ -20,11 +20,13 @@ func TestCors(t *testing.T) {
 
 	tests := []struct {
 		name   string
+		method string
 		setup  func()
 		assert func()
 	}{
 		{
-			name: "allow all paths",
+			name:   "allow all paths",
+			method: "OPTIONS",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -40,14 +42,16 @@ func TestCors(t *testing.T) {
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
-				assert.Equal(t, "*", resp.Header.Get("Access-Control-Expose-Headers"))
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 		{
-			name: "not allow path",
+			name:   "not allow path",
+			method: "OPTIONS",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -57,14 +61,16 @@ func TestCors(t *testing.T) {
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 		{
-			name: "allow path with *",
+			name:   "allow path with *",
+			method: "OPTIONS",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -80,14 +86,16 @@ func TestCors(t *testing.T) {
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
-				assert.Equal(t, "*", resp.Header.Get("Access-Control-Expose-Headers"))
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 		{
-			name: "allow POST",
+			name:   "not allow POST",
+			method: "OPTIONS",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -103,14 +111,16 @@ func TestCors(t *testing.T) {
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "GET", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
-				assert.Equal(t, "*", resp.Header.Get("Access-Control-Expose-Headers"))
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 		{
-			name: "allow origin",
+			name:   "not allow origin",
+			method: "OPTIONS",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -118,7 +128,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"goravel.dev"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"https://goravel.dev"}).Once()
 				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
 				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
@@ -126,14 +136,16 @@ func TestCors(t *testing.T) {
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
-				assert.Equal(t, "*", resp.Header.Get("Access-Control-Expose-Headers"))
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 		{
-			name: "not allow exposed headers",
+			name:   "not allow exposed headers",
+			method: "POST",
 			setup: func() {
 				mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
@@ -150,6 +162,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "Goravel", resp.Header.Get("Access-Control-Expose-Headers"))
@@ -163,13 +176,13 @@ func TestCors(t *testing.T) {
 			test.setup()
 
 			f := NewRoute(mockConfig)
-			f.Any("/any/{id}", func(ctx contractshttp.Context) {
+			f.Post("/any/{id}", func(ctx contractshttp.Context) {
 				ctx.Response().Success().Json(contractshttp.Json{
 					"id": ctx.Request().Input("id"),
 				})
 			})
 
-			req, err := http.NewRequest("POST", "/any/1", nil)
+			req, err := http.NewRequest(test.method, "/any/1", nil)
 			assert.Nil(t, err)
 			req.Header.Set("Origin", "http://127.0.0.1")
 

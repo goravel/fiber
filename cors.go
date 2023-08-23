@@ -1,8 +1,6 @@
 package fiber
 
 import (
-	nethttp "net/http"
-
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
@@ -43,7 +41,7 @@ func Cors() httpcontract.Middleware {
 			allowedHeaderConfigs := ConfigFacade.Get("cors.allowed_headers").([]string)
 			for i, header := range allowedHeaderConfigs {
 				if header == "*" {
-					allowedHeaders = "*"
+					allowedHeaders = ""
 					break
 				}
 				if i == len(allowedHeaderConfigs)-1 {
@@ -57,7 +55,7 @@ func Cors() httpcontract.Middleware {
 			exposedHeaderConfigs := ConfigFacade.Get("cors.exposed_headers").([]string)
 			for i, header := range exposedHeaderConfigs {
 				if header == "*" {
-					exposedHeaders = "*"
+					exposedHeaders = ""
 					break
 				}
 				if i == len(exposedHeaderConfigs)-1 {
@@ -77,10 +75,7 @@ func Cors() httpcontract.Middleware {
 				AllowCredentials: ConfigFacade.GetBool("cors.supports_credentials"),
 			})(ctx.Instance())
 
-			if ctx.Request().Origin().Method == nethttp.MethodOptions &&
-				ctx.Request().Header("Access-Control-Request-Method") != "" {
-				ctx.Request().AbortWithStatus(nethttp.StatusNoContent)
-			}
+			return
 		}
 
 		ctx.Request().Next()
