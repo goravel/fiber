@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/bytedance/sonic"
 	configmock "github.com/goravel/framework/contracts/config/mocks"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -61,21 +62,19 @@ func TestGroup(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
 		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
-		name       string
-		setup      func(req *http.Request)
-		method     string
-		url        string
-		expectCode int
-		expectBody string
+		name           string
+		setup          func(req *http.Request)
+		method         string
+		url            string
+		expectCode     int
+		expectBodyJson string
 	}{
 		{
 			name: "Get",
@@ -86,10 +85,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "GET",
+			url:            "/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Post",
@@ -100,10 +99,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "POST",
-			url:        "/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "POST",
+			url:            "/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Put",
@@ -114,10 +113,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "PUT",
-			url:        "/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "PUT",
+			url:            "/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Delete",
@@ -128,10 +127,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "DELETE",
-			url:        "/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "DELETE",
+			url:            "/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Options",
@@ -155,10 +154,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "PATCH",
-			url:        "/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "PATCH",
+			url:            "/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Any Get",
@@ -169,10 +168,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/any/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "GET",
+			url:            "/any/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Any Post",
@@ -183,10 +182,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "POST",
-			url:        "/any/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "POST",
+			url:            "/any/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Any Put",
@@ -197,10 +196,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "PUT",
-			url:        "/any/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "PUT",
+			url:            "/any/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Any Delete",
@@ -211,10 +210,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "DELETE",
-			url:        "/any/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "DELETE",
+			url:            "/any/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Any Patch",
@@ -225,14 +224,24 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "PATCH",
-			url:        "/any/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "PATCH",
+			url:            "/any/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Index",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "index")
@@ -240,14 +249,24 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "GET",
-			url:        "/resource",
-			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"index\"}",
+			method:         "GET",
+			url:            "/resource",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"index\"}",
 		},
 		{
 			name: "Resource Show",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "show")
@@ -255,13 +274,24 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "GET",
-			url:        "/resource/1",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/resource/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"show\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Store",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "store")
@@ -269,14 +299,24 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "POST",
-			url:        "/resource",
-			expectCode: http.StatusOK,
-			expectBody: "{\"action\":\"store\"}",
+			method:         "POST",
+			url:            "/resource",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"store\"}",
 		},
 		{
 			name: "Resource Update (PUT)",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "update")
@@ -284,13 +324,24 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "PUT",
-			url:        "/resource/1",
-			expectCode: http.StatusOK,
+			method:         "PUT",
+			url:            "/resource/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"update\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Update (PATCH)",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "update")
@@ -298,13 +349,24 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "PATCH",
-			url:        "/resource/1",
-			expectCode: http.StatusOK,
+			method:         "PATCH",
+			url:            "/resource/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"update\",\"id\":\"1\"}",
 		},
 		{
 			name: "Resource Destroy",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("action", "destroy")
@@ -312,9 +374,10 @@ func TestGroup(t *testing.T) {
 				})
 				fiber.Resource("/resource", resource)
 			},
-			method:     "DELETE",
-			url:        "/resource/1",
-			expectCode: http.StatusOK,
+			method:         "DELETE",
+			url:            "/resource/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"action\":\"destroy\",\"id\":\"1\"}",
 		},
 		{
 			name: "Static",
@@ -340,7 +403,7 @@ func TestGroup(t *testing.T) {
 				fiber.StaticFS("static-fs", http.Dir("./"))
 			},
 			method:     "GET",
-			url:        "/static-fs",
+			url:        "/static-fs/README.md",
 			expectCode: http.StatusOK,
 		},
 		{
@@ -367,9 +430,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/middlewares/1",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/middlewares/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"ctx\":\"Goravel\",\"ctx1\":\"Hello\",\"id\":\"1\"}",
 		},
 		{
 			name: "Multiple Prefix",
@@ -380,10 +444,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/prefix1/prefix2/input/1",
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			method:         "GET",
+			url:            "/prefix1/prefix2/input/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name: "Multiple Prefix Group Middleware",
@@ -407,9 +471,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/group1/group2/middleware/1",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/group1/group2/middleware/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"ctx\":\"Goravel\",\"ctx1\":\"Hello\",\"id\":\"1\"}",
 		},
 		{
 			name: "Multiple Group Middleware",
@@ -433,13 +498,24 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/group1/middleware/1",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/group1/middleware/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"ctx\":\"Goravel\",\"ctx2\":\"World\",\"id\":\"1\"}",
 		},
 		{
 			name: "Global Middleware",
 			setup: func(req *http.Request) {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.WithValue("global", "goravel")
 					ctx.Request().Next()
@@ -450,10 +526,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "GET",
-			url:        "/global-middleware",
-			expectCode: http.StatusOK,
-			expectBody: "{\"global\":\"goravel\"}",
+			method:         "GET",
+			url:            "/global-middleware",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"global\":\"goravel\"}",
 		},
 		{
 			name: "Middleware Conflict",
@@ -475,9 +551,10 @@ func TestGroup(t *testing.T) {
 					})
 				})
 			},
-			method:     "POST",
-			url:        "/conflict/middleware2/1",
-			expectCode: http.StatusOK,
+			method:         "POST",
+			url:            "/conflict/middleware2/1",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"ctx\":null,\"ctx2\":\"World\",\"id\":\"1\"}",
 		},
 	}
 	for _, test := range tests {
@@ -490,12 +567,22 @@ func TestGroup(t *testing.T) {
 			resp, err := fiber.Test(req)
 			assert.NoError(t, err, test.name)
 
-			if test.expectBody != "" {
+			if test.expectBodyJson != "" {
 				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
+				bodyMap := make(map[string]any)
+				exceptBodyMap := make(map[string]any)
+
+				err = sonic.Unmarshal(body, &bodyMap)
+				assert.NoError(t, err, test.name)
+				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				assert.NoError(t, err, test.name)
+
+				assert.Equal(t, exceptBodyMap, bodyMap, test.name)
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
+
+			mockConfig.AssertExpectations(t)
 		})
 	}
 }

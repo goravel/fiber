@@ -24,15 +24,15 @@ Fiber http driver for Goravel.
 go get -u github.com/goravel/fiber
 ```
 
-2. Register service provider, make sure it is registered first.
+2. Register service provider
 
 ```
 // config/app.go
 import "github.com/goravel/fiber"
 
 "providers": []foundation.ServiceProvider{
-    &fiber.ServiceProvider{},
     ...
+    &fiber.ServiceProvider{},
 }
 ```
 
@@ -47,7 +47,6 @@ import (
 "default": "fiber",
 
 "drivers": map[string]any{
-    ...
     "fiber": map[string]any{
         // prefork mode, see https://docs.gofiber.io/api/fiber/#config
         "prefork": false,
@@ -55,7 +54,7 @@ import (
             return fiberfacades.Route(), nil
         },
     },
-}
+},
 ```
 
 ## Testing

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
@@ -13,8 +12,8 @@ func pathToFiberPath(relativePath string) string {
 	return bracketToColon(mergeSlashForPath(relativePath))
 }
 
-func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []any {
-	var fiberHandlers []any
+func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.Handler {
+	var fiberHandlers []fiber.Handler
 	for _, item := range middlewares {
 		fiberHandlers = append(fiberHandlers, middlewareToFiberHandler(item))
 	}
@@ -23,8 +22,8 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []any {
 }
 
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewContext(fiberCtx))
+	return func(ctx *fiber.Ctx) error {
+		handler(NewContext(ctx))
 		return nil
 	}
 }

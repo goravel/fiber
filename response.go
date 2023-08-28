@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
-
 	httpcontract "github.com/goravel/framework/contracts/http"
+	"github.com/valyala/fasthttp"
 )
 
 type Response struct {
@@ -50,7 +50,7 @@ func (r *Response) Redirect(code int, location string) {
 
 func (r *Response) String(code int, format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(code).Type(format).SendString(format)
+		_ = r.instance.Status(code).SendString(format)
 		return
 	}
 
@@ -66,8 +66,11 @@ func (r *Response) Status(code int) httpcontract.ResponseStatus {
 }
 
 func (r *Response) Writer() http.ResponseWriter {
-	// Fiber doesn't support this
-	return nil
+	panic("not support")
+}
+
+func (r *Response) FastHTTPWriter() *fasthttp.Response {
+	return r.instance.Response()
 }
 
 func (r *Response) Flush() {
@@ -92,7 +95,7 @@ func (r *Success) Json(obj any) {
 
 func (r *Success) String(format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
+		_ = r.instance.Status(http.StatusOK).SendString(format)
 		return
 	}
 
@@ -118,7 +121,7 @@ func (r *Status) Json(obj any) {
 
 func (r *Status) String(format string, values ...any) {
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).Type(format).SendString(format)
+		_ = r.instance.Status(http.StatusOK).SendString(format)
 		return
 	}
 

@@ -4,21 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gookit/validate"
-	"github.com/spf13/cast"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
-
 	filesystemcontract "github.com/goravel/framework/contracts/filesystem"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/log"
 	validatecontract "github.com/goravel/framework/contracts/validation"
 	"github.com/goravel/framework/filesystem"
 	"github.com/goravel/framework/validation"
+	"github.com/spf13/cast"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
 type Request struct {
@@ -126,13 +126,23 @@ func (r *Request) Host() string {
 
 func (r *Request) Json(key string, defaultValue ...string) string {
 	data := make(map[string]any)
-	err := sonic.Unmarshal(r.instance.Body(), &data)
+	if err := sonic.Unmarshal(r.instance.Body(), &data); err != nil {
+		if len(defaultValue) == 0 {
+			return ""
+		} else {
+			return defaultValue[0]
+		}
+	}
 
-	if err != nil {
+	if value, exist := data[key]; exist {
+		return cast.ToString(value)
+	}
+
+	if len(defaultValue) == 0 {
 		return ""
 	}
 
-	return cast.ToString(data[key])
+	return defaultValue[0]
 }
 
 func (r *Request) Method() string {
@@ -140,7 +150,9 @@ func (r *Request) Method() string {
 }
 
 func (r *Request) Next() {
-	_ = r.instance.Next()
+	if err := r.instance.Next(); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Request) Query(key string, defaultValue ...string) string {
@@ -188,12 +200,26 @@ func (r *Request) QueryBool(key string, defaultValue ...bool) bool {
 }
 
 func (r *Request) QueryArray(key string) []string {
-	queries := r.instance.Queries()
-	return []string{queries[key]}
+	var queries []string
+	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
+		if key == string(k) {
+			queries = append(queries, string(v))
+		}
+	})
+
+	return queries
 }
 
 func (r *Request) QueryMap(key string) map[string]string {
-	return r.instance.Queries()
+	queries := make(map[string]string)
+	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
+		matches := regexp.MustCompile(`^` + key + `\[(.+)\]$`).FindSubmatch(k)
+		if len(matches) > 0 {
+			queries[string(matches[1])] = string(v)
+		}
+	})
+
+	return queries
 }
 
 func (r *Request) Queries() map[string]string {

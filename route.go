@@ -4,13 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
+	"runtime"
+	"strings"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gookit/color"
-
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -18,7 +20,7 @@ import (
 )
 
 // Route fiber route
-// Route 光纤路由
+// Route fiber 路由
 type Route struct {
 	route.Route
 	config   config.Config
@@ -26,33 +28,22 @@ type Route struct {
 }
 
 // NewRoute create new fiber route instance
-// NewRoute 创建新的光纤路由实例
+// NewRoute 创建新的 fiber 路由实例
 func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
-		AppName:               config.GetString("app.name", "Goravel"),
-		ReadBufferSize:        16384,
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
-		EnableIPValidation:    true,
-		ServerHeader:          "Goravel",
 		DisableStartupMessage: !config.GetBool("app.debug", false),
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
 	})
-	app.Use(recover.New())
-
-	if config.GetBool("app.debug", false) {
-		app.Use(logger.New(logger.Config{
-			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
-			TimeZone:   config.GetString("app.timezone", "UTC"),
-			TimeFormat: "2006/01/02 - 15:04:05",
-		}))
-	}
 
 	return &Route{
-		Route: NewGroup(app,
+		Route: NewGroup(
+			config,
+			app,
 			"",
 			[]httpcontract.Middleware{},
-			[]httpcontract.Middleware{ResponseMiddleware()},
+			[]httpcontract.Middleware{},
 		),
 		config:   config,
 		instance: app,
@@ -62,16 +53,44 @@ func NewRoute(config config.Config) *Route {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
-	r.instance.Use(handlerToFiberHandler(handler))
+	r.instance.Use(func(ctx *fiber.Ctx) error {
+		exist := false
+		for _, item := range r.instance.GetRoutes() {
+			if item.Path == ctx.Path() && item.Method == ctx.Method() {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			handler(NewContext(ctx))
+			return nil
+		}
+
+		return ctx.Next()
+	})
 }
 
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
-	if len(middlewares) > 0 {
-		r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
+	middlewares = append(middlewares, Cors())
+	tempMiddlewares := []any{recover.New()}
+	if r.config.GetBool("app.debug", false) {
+		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
+			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
+			TimeZone:   r.config.GetString("app.timezone", "UTC"),
+			TimeFormat: "2006/01/02 - 15:04:05",
+		}))
 	}
+
+	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
+		tempMiddlewares = append(tempMiddlewares, middleware)
+	}
+
+	r.instance.Use(tempMiddlewares...)
 	r.Route = NewGroup(
+		r.config,
 		r.instance,
 		"",
 		[]httpcontract.Middleware{},
@@ -134,6 +153,12 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	if certFile == "" || keyFile == "" {
 		return errors.New("certificate can't be empty")
 	}
+	if strings.HasPrefix(certFile, "/") {
+		certFile = "." + certFile
+	}
+	if strings.HasPrefix(keyFile, "/") {
+		keyFile = "." + keyFile
+	}
 
 	r.outputRoutes()
 	color.Greenln("[HTTPS] Listening and serving HTTPS on " + host)
@@ -144,6 +169,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 // ServeHTTP serve http request (Not support)
 // ServeHTTP 服务 HTTP 请求 (不支持)
 func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	panic("not support")
 }
 
 // Test for unit test
@@ -157,11 +183,12 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.Env != support.EnvArtisan {
 		for _, item := range r.instance.GetRoutes() {
-			// filter some unnecessary methods
-			if item.Method == "HEAD" || item.Method == "CONNECT" || item.Method == "TRACE" {
-				continue
+			for _, handler := range item.Handlers {
+				if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
+					fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
+					break
+				}
 			}
-			fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
 		}
 	}
 }

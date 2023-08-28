@@ -15,9 +15,6 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	configmock "github.com/goravel/framework/contracts/config/mocks"
 	filesystemmock "github.com/goravel/framework/contracts/filesystem/mocks"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -25,67 +22,40 @@ import (
 	"github.com/goravel/framework/contracts/validation"
 	validationmock "github.com/goravel/framework/contracts/validation/mocks"
 	frameworkfilesystem "github.com/goravel/framework/filesystem"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestFallback(t *testing.T) {
-	var (
-		fiber      *Route
-		mockConfig *configmock.Config
-	)
-	beforeEach := func() {
-		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-		ConfigFacade = mockConfig
+	mockConfig := &configmock.Config{}
+	mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	ConfigFacade = mockConfig
 
-		fiber = NewRoute(mockConfig)
-	}
-	tests := []struct {
-		name       string
-		setup      func(req *http.Request)
-		method     string
-		url        string
-		expectCode int
-		expectBody string
-	}{
-		{
-			name: "success",
-			setup: func(req *http.Request) {
-				fiber.Fallback(func(ctx httpcontract.Context) {
-					ctx.Response().String(404, "not found")
-				})
-			},
-			method:     "GET",
-			url:        "/fallback",
-			expectCode: http.StatusNotFound,
-			expectBody: "not found",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			beforeEach()
-			req, _ := http.NewRequest(test.method, test.url, nil)
-			if test.setup != nil {
-				test.setup(req)
-			}
-			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
+	route := NewRoute(mockConfig)
+	route.Fallback(func(ctx httpcontract.Context) {
+		ctx.Response().String(404, "not found")
+	})
 
-			if test.expectBody != "" {
-				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
-			}
+	req, err := http.NewRequest("GET", "/test", nil)
+	assert.Nil(t, err)
 
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
-		})
-	}
+	resp, err := route.Test(req)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "not found", string(body))
+
+	mockConfig.AssertExpectations(t)
 }
 
 func TestRun(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -158,10 +128,8 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
@@ -184,14 +152,17 @@ func TestRun(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRunTLS(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -266,10 +237,8 @@ func TestRunTLS(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
@@ -296,14 +265,17 @@ func TestRunTLS(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRunTLSWithCert(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -353,10 +325,8 @@ func TestRunTLSWithCert(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
@@ -379,6 +349,7 @@ func TestRunTLSWithCert(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
@@ -392,21 +363,20 @@ func TestRequest(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
 		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
-		name       string
-		method     string
-		url        string
-		setup      func(method, url string) error
-		expectCode int
-		expectBody string
+		name           string
+		method         string
+		url            string
+		setup          func(method, url string) error
+		expectCode     int
+		expectBody     string
+		expectBodyJson string
 	}{
 		{
 			name:   "All when Get and query is empty",
@@ -423,8 +393,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"all\":{}}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{}}",
 		},
 		{
 			name:   "All when Get and query is not empty",
@@ -441,7 +411,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"a\":\"2\",\"b\":\"3\"}}",
 		},
 		{
 			name:   "All with form when Post",
@@ -469,6 +440,7 @@ func TestRequest(t *testing.T) {
 					return err
 				}
 				defer readme.Close()
+
 				part1, err := writer.CreateFormFile("file", filepath.Base("./README.md"))
 				if err != nil {
 					return err
@@ -505,7 +477,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"a\":\"2\",\"b\":\"3\"}}",
 		},
 		{
 			name:   "All with json when Post",
@@ -537,7 +510,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"2\",\"name\":\"3\"},\"name\":\"goravel\"}",
 		},
 		{
 			name:   "All with error json when Post",
@@ -573,7 +547,27 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"age\":1,\"all\":{\"a\":\"2\",\"name\":\"3\"},\"name\":\"goravel\"}",
+		},
+		{
+			name:   "All with empty json when Post",
+			method: "POST",
+			url:    "/all?a=1&a=2&name=3",
+			setup: func(method, url string) error {
+				fiber.Post("/all", func(ctx httpcontract.Context) {
+					ctx.Response().Success().Json(httpcontract.Json{
+						"all": ctx.Request().All(),
+					})
+				})
+
+				req, _ = http.NewRequest(method, url, nil)
+				req.Header.Set("Content-Type", "application/json")
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"a\":\"2\",\"name\":\"3\"}}",
 		},
 		{
 			name:   "All with json when Put",
@@ -595,7 +589,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}",
 		},
 		{
 			name:   "All with json when Delete",
@@ -617,7 +612,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}",
 		},
 		{
 			name:   "Methods",
@@ -646,7 +642,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"full_url\":\"\",\"header\":\"goravel\",\"id\":\"1\",\"ip\":\"0.0.0.0\",\"method\":\"GET\",\"name\":\"Goravel\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}",
 		},
 		{
 			name:   "Headers",
@@ -667,7 +664,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"Hello\":[\"Goravel\"],\"Content-Length\":[\"0\"]}",
 		},
 		{
 			name:   "Route",
@@ -691,7 +689,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"error\":0,\"int\":2,\"int64\":3,\"string\":\"1\"}",
 		},
 		{
 			name:   "Input - from json",
@@ -712,8 +711,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"3\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"3\"}",
 		},
 		{
 			name:   "Input - from form",
@@ -767,7 +766,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"2\",\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "Input - from form, then Bind",
@@ -800,7 +800,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"2\",\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "Input - from query",
@@ -818,7 +819,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"2\"}",
 		},
 		{
 			name:   "Input - from route",
@@ -836,7 +838,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name:   "Input - empty",
@@ -854,7 +857,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id1\":\"\"}",
 		},
 		{
 			name:   "Input - default",
@@ -872,7 +876,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id1\":\"2\"}",
 		},
 		{
 			name:   "Input - with point",
@@ -893,8 +898,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"3\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"3\"}",
 		},
 		{
 			name:   "InputArray",
@@ -915,8 +920,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":[\"3\",\"4\"]}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":[\"3\",\"4\"]}",
 		},
 		{
 			name:   "InputMap",
@@ -937,8 +942,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":{\"a\":\"3\"}}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":{\"a\":\"3\"}}",
 		},
 		{
 			name:   "InputInt",
@@ -956,7 +961,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name:   "InputInt64",
@@ -974,7 +980,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name:   "InputBool",
@@ -996,7 +1003,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id1\":true,\"id2\":true,\"id3\":true,\"id4\":true,\"id5\":false}",
 		},
 		{
 			name:   "Form",
@@ -1024,7 +1032,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\",\"name1\":\"Hello\"}",
 		},
 		{
 			name:   "Json",
@@ -1048,7 +1057,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"avatar\":\"logo\",\"info\":\"\",\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "Bind",
@@ -1074,7 +1084,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "Bind, then Input",
@@ -1101,7 +1112,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\",\"name1\":\"Goravel\"}",
 		},
 		{
 			name:   "Query",
@@ -1129,7 +1141,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"bool1\":true,\"bool2\":true,\"bool3\":true,\"bool4\":true,\"bool5\":false,\"error\":0,\"int\":1,\"int64\":2,\"int64_default\":22,\"int_default\":11,\"string\":\"Goravel\"}",
 		},
 		{
 			name:   "QueryArray",
@@ -1147,7 +1160,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":[\"Goravel\",\"Goravel1\"]}",
 		},
 		{
 			name:   "QueryMap",
@@ -1165,7 +1179,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":{\"a\":\"Goravel\",\"b\":\"Goravel1\"}}",
 		},
 		{
 			name:   "Queries",
@@ -1182,7 +1197,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"all\":{\"bool1\":\"1\",\"bool2\":\"true\",\"bool3\":\"on\",\"bool4\":\"yes\",\"bool5\":\"0\",\"error\":\"a\",\"int\":\"1\",\"int64\":\"2\",\"string\":\"Goravel\"}}",
 		},
 		{
 			name:   "File",
@@ -1256,7 +1272,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"exist\":true,\"extension\":\"txt\",\"file_path_length\":14,\"hash_name_length\":44,\"hash_name_length1\":49,\"original_extension\":\"md\",\"original_name\":\"README.md\"}",
 		},
 		{
 			name:   "GET with validator and validate pass",
@@ -1301,7 +1318,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "GET with validator but validate fail",
@@ -1375,7 +1393,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel1\"}",
 		},
 		{
 			name:   "GET with validator but validate request fail",
@@ -1458,7 +1477,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\"}",
 		},
 		{
 			name:   "POST with validator and validate fail",
@@ -1531,7 +1551,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel1\"}",
 		},
 		{
 			name:   "POST with validator and validate request fail",
@@ -1611,14 +1632,32 @@ func TestRequest(t *testing.T) {
 			assert.Nil(t, err)
 
 			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
+			assert.NoError(t, err)
 
 			if test.expectBody != "" {
-				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+				assert.Equal(t, test.expectBody, string(body))
+			}
+			if test.expectBodyJson != "" {
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+
+				bodyMap := make(map[string]any)
+				exceptBodyMap := make(map[string]any)
+
+				err = sonic.Unmarshal(body, &bodyMap)
+				assert.Nil(t, err)
+
+				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				assert.Nil(t, err)
+
+				assert.Equal(t, exceptBodyMap, bodyMap)
 			}
 
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
+			assert.Equal(t, test.expectCode, resp.StatusCode)
+
+			mockConfig.AssertExpectations(t)
 		})
 	}
 }
@@ -1631,22 +1670,21 @@ func TestResponse(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
 		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
-		name         string
-		method       string
-		url          string
-		setup        func(method, url string) error
-		expectCode   int
-		expectBody   string
-		expectHeader string
+		name           string
+		method         string
+		url            string
+		setup          func(method, url string) error
+		expectCode     int
+		expectBody     string
+		expectBodyJson string
+		expectHeader   string
 	}{
 		{
 			name:   "Data",
@@ -1707,8 +1745,8 @@ func TestResponse(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name:   "String",
@@ -1749,8 +1787,8 @@ func TestResponse(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"1\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"1\"}",
 		},
 		{
 			name:   "Success String",
@@ -1836,6 +1874,17 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/origin",
 			setup: func(method, url string) error {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				ConfigFacade = mockConfig
+
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
 					ctx.Response().Header("global", "goravel")
 					ctx.Request().Next()
@@ -1888,17 +1937,31 @@ func TestResponse(t *testing.T) {
 			assert.Nil(t, err)
 
 			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
+			assert.NoError(t, err)
 
 			if test.expectBody != "" {
 				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
+				assert.Equal(t, test.expectBody, string(body))
+			}
+			if test.expectBodyJson != "" {
+				body, _ := io.ReadAll(resp.Body)
+				bodyMap := make(map[string]any)
+				exceptBodyMap := make(map[string]any)
+
+				err = sonic.Unmarshal(body, &bodyMap)
+				assert.NoError(t, err)
+				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				assert.NoError(t, err)
+
+				assert.Equal(t, exceptBodyMap, bodyMap)
 			}
 			if test.expectHeader != "" {
-				assert.Equal(t, test.expectHeader, strings.Join(resp.Header.Values("Hello"), ""), test.name)
+				assert.Equal(t, test.expectHeader, strings.Join(resp.Header.Values("Hello"), ""))
 			}
 
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
+			assert.Equal(t, test.expectCode, resp.StatusCode)
+
+			mockConfig.AssertExpectations(t)
 		})
 	}
 }
