@@ -2,7 +2,6 @@ package fiber
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -129,7 +128,6 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 	middlewares = append(middlewares, fiberOriginMiddlewares...)
 	middlewares = append(middlewares, fiberMiddlewares...)
 	middlewares = append(middlewares, fiberLastMiddlewares...)
-	middlewares = r.addCorsMiddleware(middlewares, fullPath)
 
 	if len(middlewares) > 0 {
 		return r.instance.Group(prefix, middlewares...)
@@ -140,25 +138,4 @@ func (r *Group) getRoutesWithMiddlewares(relativePath string) fiber.Router {
 
 func (r *Group) clearMiddlewares() {
 	r.middlewares = []httpcontract.Middleware{}
-}
-
-func (r *Group) addCorsMiddleware(middlewares []fiber.Handler, fullPath string) []fiber.Handler {
-	corsPaths := r.config.Get("cors.paths").([]string)
-	for _, path := range corsPaths {
-		path = pathToFiberPath(path)
-		if strings.HasSuffix(path, "*") {
-			path = strings.ReplaceAll(path, "*", "")
-			if path == "" || strings.HasPrefix(strings.TrimPrefix(fullPath, "/"), strings.TrimPrefix(path, "/")) {
-				middlewares = append(middlewares, middlewareToFiberHandler(Cors(), fullPath))
-				break
-			}
-		} else {
-			if strings.TrimPrefix(fullPath, "/") == strings.TrimPrefix(path, "/") {
-				middlewares = append(middlewares, middlewareToFiberHandler(Cors(), fullPath))
-				break
-			}
-		}
-	}
-
-	return middlewares
 }

@@ -31,24 +31,11 @@ type Route struct {
 // NewRoute 创建新的 fiber 路由实例
 func NewRoute(config config.Config) *Route {
 	app := fiber.New(fiber.Config{
-		AppName:               config.GetString("app.name", "Goravel"),
-		ReadBufferSize:        16384,
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
-		EnableIPValidation:    true,
-		ServerHeader:          "Goravel",
 		DisableStartupMessage: !config.GetBool("app.debug", false),
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
 	})
-	app.Use(recover.New())
-
-	if config.GetBool("app.debug", false) {
-		app.Use(logger.New(logger.Config{
-			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
-			TimeZone:   config.GetString("app.timezone", "UTC"),
-			TimeFormat: "2006/01/02 - 15:04:05",
-		}))
-	}
 
 	return &Route{
 		Route: NewGroup(
@@ -72,13 +59,18 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
-	var tempMiddlewares []any
-	for _, middleware := range middlewaresToFiberHandlers(middlewares, "") {
-		tempMiddlewares = append(tempMiddlewares, middleware)
+	middlewares = append(middlewares, Cors())
+	tempMiddlewares := []any{recover.New()}
+	if r.config.GetBool("app.debug", false) {
+		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
+			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
+			TimeZone:   r.config.GetString("app.timezone", "UTC"),
+			TimeFormat: "2006/01/02 - 15:04:05",
+		}))
 	}
 
-	if len(tempMiddlewares) == 0 {
-		return
+	for _, middleware := range middlewaresToFiberHandlers(middlewares, "") {
+		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
 	r.instance.Use(tempMiddlewares...)
@@ -176,24 +168,12 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.Env != support.EnvArtisan {
 		for _, item := range r.instance.GetRoutes() {
-			// filter some unnecessary methods
-			if item.Method == "HEAD" || item.Method == "CONNECT" || item.Method == "TRACE" {
-				continue
-			}
-			if item.Path == "/" {
-				pass := false
-				for _, handler := range item.Handlers {
-					if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "recover") {
-						pass = true
-						break
-					}
-				}
-				if pass {
-					continue
+			for _, handler := range item.Handlers {
+				if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
+					fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
+					break
 				}
 			}
-
-			fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
 		}
 	}
 }

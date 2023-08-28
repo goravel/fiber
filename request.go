@@ -150,7 +150,9 @@ func (r *Request) Method() string {
 }
 
 func (r *Request) Next() {
-	_ = r.instance.Next()
+	if err := r.instance.Next(); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Request) Query(key string, defaultValue ...string) string {

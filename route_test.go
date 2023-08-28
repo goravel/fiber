@@ -101,11 +101,8 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-			mockConfig.On("Get", "cors.paths").Return([]string{}).Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
@@ -210,11 +207,8 @@ func TestRunTLS(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-			mockConfig.On("Get", "cors.paths").Return([]string{}).Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
@@ -298,11 +292,8 @@ func TestRunTLSWithCert(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmock.Config{}
-			mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+			mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-			mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-			mockConfig.On("Get", "cors.paths").Return([]string{}).Once()
 			ConfigFacade = mockConfig
 
 			route = NewRoute(mockConfig)
