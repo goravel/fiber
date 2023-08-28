@@ -50,8 +50,6 @@ func Cors() http.Middleware {
 		})(fiberCtx.Instance()); err != nil {
 			panic(err)
 		}
-
-		//ctx.Request().Next()
 	}
 }
 

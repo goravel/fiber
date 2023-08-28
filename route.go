@@ -53,7 +53,22 @@ func NewRoute(config config.Config) *Route {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
-	panic("not support")
+	r.instance.Use(func(ctx *fiber.Ctx) error {
+		exist := false
+		for _, item := range r.instance.GetRoutes() {
+			if item.Path == ctx.Path() && item.Method == ctx.Method() {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			handler(NewContext(ctx))
+			return nil
+		}
+
+		return ctx.Next()
+	})
 }
 
 // GlobalMiddleware set global middleware
@@ -69,7 +84,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		}))
 	}
 
-	for _, middleware := range middlewaresToFiberHandlers(middlewares, "") {
+	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 

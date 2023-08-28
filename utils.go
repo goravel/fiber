@@ -12,29 +12,24 @@ func pathToFiberPath(relativePath string) string {
 	return bracketToColon(mergeSlashForPath(relativePath))
 }
 
-func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware, prefix string) []fiber.Handler {
+func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.Handler {
 	var fiberHandlers []fiber.Handler
 	for _, item := range middlewares {
-		fiberHandlers = append(fiberHandlers, middlewareToFiberHandler(item, prefix))
+		fiberHandlers = append(fiberHandlers, middlewareToFiberHandler(item))
 	}
 
 	return fiberHandlers
 }
 
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewContext(fiberCtx))
+	return func(ctx *fiber.Ctx) error {
+		handler(NewContext(ctx))
 		return nil
 	}
 }
 
-func middlewareToFiberHandler(handler httpcontract.Middleware, prefix string) fiber.Handler {
+func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
 	return func(fiberCtx *fiber.Ctx) error {
-		prefix = strings.Split(prefix, ":")[0]
-		if !strings.Contains(fiberCtx.Path(), prefix) {
-			return fiberCtx.Next()
-		}
-
 		handler(NewContext(fiberCtx))
 		return nil
 	}

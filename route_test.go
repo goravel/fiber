@@ -26,9 +26,36 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestFallback(t *testing.T) {
+	mockConfig := &configmock.Config{}
+	mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	ConfigFacade = mockConfig
+
+	route := NewRoute(mockConfig)
+	route.Fallback(func(ctx httpcontract.Context) {
+		ctx.Response().String(404, "not found")
+	})
+
+	req, err := http.NewRequest("GET", "/test", nil)
+	assert.Nil(t, err)
+
+	resp, err := route.Test(req)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "not found", string(body))
+
+	mockConfig.AssertExpectations(t)
+}
+
 func TestRun(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -125,14 +152,17 @@ func TestRun(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRunTLS(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -235,14 +265,17 @@ func TestRunTLS(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
 }
 
 func TestRunTLSWithCert(t *testing.T) {
-	var mockConfig *configmock.Config
-	var route *Route
+	var (
+		mockConfig *configmock.Config
+		route      *Route
+	)
 
 	tests := []struct {
 		name        string
@@ -316,6 +349,7 @@ func TestRunTLSWithCert(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
+
 			mockConfig.AssertExpectations(t)
 		})
 	}
@@ -329,11 +363,8 @@ func TestRequest(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-		mockConfig.On("Get", "cors.paths").Return([]string{}).Once()
 		ConfigFacade = mockConfig
 
 		fiber = NewRoute(mockConfig)
@@ -409,6 +440,7 @@ func TestRequest(t *testing.T) {
 					return err
 				}
 				defer readme.Close()
+
 				part1, err := writer.CreateFormFile("file", filepath.Base("./README.md"))
 				if err != nil {
 					return err
@@ -1600,26 +1632,32 @@ func TestRequest(t *testing.T) {
 			assert.Nil(t, err)
 
 			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
+			assert.NoError(t, err)
 
 			if test.expectBody != "" {
-				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+				assert.Equal(t, test.expectBody, string(body))
 			}
 			if test.expectBodyJson != "" {
-				body, _ := io.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
 				err = sonic.Unmarshal(body, &bodyMap)
-				assert.NoError(t, err, test.name)
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
-				assert.NoError(t, err, test.name)
+				assert.Nil(t, err)
 
-				assert.Equal(t, exceptBodyMap, bodyMap, test.name)
+				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				assert.Nil(t, err)
+
+				assert.Equal(t, exceptBodyMap, bodyMap)
 			}
 
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
+			assert.Equal(t, test.expectCode, resp.StatusCode)
+
+			mockConfig.AssertExpectations(t)
 		})
 	}
 }
@@ -1632,11 +1670,8 @@ func TestResponse(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetString", "app.name", "Goravel").Return("Goravel").Once()
-		mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-		mockConfig.On("Get", "cors.paths").Return([]string{}).Once()
 		ConfigFacade = mockConfig
 
 		fiber = NewRoute(mockConfig)
@@ -1839,10 +1874,15 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/origin",
 			setup: func(method, url string) error {
-				mockConfig.On("GetString", "http.tls.host").Return("").Once()
-				mockConfig.On("GetString", "http.tls.port").Return("").Once()
-				mockConfig.On("GetString", "http.tls.ssl.cert").Return("").Once()
-				mockConfig.On("GetString", "http.tls.ssl.key").Return("").Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 
 				fiber.GlobalMiddleware(func(ctx httpcontract.Context) {
@@ -1897,11 +1937,11 @@ func TestResponse(t *testing.T) {
 			assert.Nil(t, err)
 
 			resp, err := fiber.Test(req)
-			assert.NoError(t, err, test.name)
+			assert.NoError(t, err)
 
 			if test.expectBody != "" {
 				body, _ := io.ReadAll(resp.Body)
-				assert.Equal(t, test.expectBody, string(body), test.name)
+				assert.Equal(t, test.expectBody, string(body))
 			}
 			if test.expectBodyJson != "" {
 				body, _ := io.ReadAll(resp.Body)
@@ -1909,17 +1949,19 @@ func TestResponse(t *testing.T) {
 				exceptBodyMap := make(map[string]any)
 
 				err = sonic.Unmarshal(body, &bodyMap)
-				assert.NoError(t, err, test.name)
+				assert.NoError(t, err)
 				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
-				assert.NoError(t, err, test.name)
+				assert.NoError(t, err)
 
-				assert.Equal(t, exceptBodyMap, bodyMap, test.name)
+				assert.Equal(t, exceptBodyMap, bodyMap)
 			}
 			if test.expectHeader != "" {
-				assert.Equal(t, test.expectHeader, strings.Join(resp.Header.Values("Hello"), ""), test.name)
+				assert.Equal(t, test.expectHeader, strings.Join(resp.Header.Values("Hello"), ""))
 			}
 
-			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
+			assert.Equal(t, test.expectCode, resp.StatusCode)
+
+			mockConfig.AssertExpectations(t)
 		})
 	}
 }
