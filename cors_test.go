@@ -208,7 +208,8 @@ func TestCors(t *testing.T) {
 			beforeEach()
 			test.setup()
 
-			f := NewRoute(mockConfig)
+			f, err := NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
 			f.GlobalMiddleware()
 			f.Post("/any/{id}", func(ctx contractshttp.Context) {
 				ctx.Response().Success().Json(contractshttp.Json{

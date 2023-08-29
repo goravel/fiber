@@ -65,8 +65,6 @@ func TestGroup(t *testing.T) {
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		ConfigFacade = mockConfig
-
-		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name           string
@@ -560,10 +558,16 @@ func TestGroup(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			req, _ := http.NewRequest(test.method, test.url, nil)
+			req, err := http.NewRequest(test.method, test.url, nil)
+			assert.Nil(t, err)
+
+			fiber, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			if test.setup != nil {
 				test.setup(req)
 			}
+
 			resp, err := fiber.Test(req)
 			assert.NoError(t, err, test.name)
 

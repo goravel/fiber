@@ -85,7 +85,7 @@ github.com/aws/aws-sdk-go v1.37.16 h1:Q4YOP2s00NpB9wfmTDZArdcLRuG9ijbnoAwTW3ivle
 github.com/aws/aws-sdk-go v1.37.16/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
-github.com/brianvoe/gofakeit/v6 v6.23.1 h1:k2gX0hQpJStvixDbbw8oJOvPBg0XmHJWbSOF5JkiUHw=
+github.com/brianvoe/gofakeit/v6 v6.23.2 h1:lVde18uhad5wII/f5RMVFLtdQNE0HaGFuBUXmYKk8i8=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.10.0-rc/go.mod h1:ElCzW+ufi8qKqNW0FY314xriJhyJhuoJ3gFZdAHF7NM=
 github.com/bytedance/sonic v1.10.0 h1:qtNZduETEIWJVIyDl01BeNxur2rW9OwTQ/yBqFRkKEk=
@@ -215,6 +215,12 @@ github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5x
 github.com/godbus/dbus/v5 v5.0.6/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/gofiber/fiber/v2 v2.48.0 h1:cRVMCb9aUJDsyHxGFLwz/sGzDggdailZZyptU9F9cU0=
 github.com/gofiber/fiber/v2 v2.48.0/go.mod h1:xqJgfqrc23FJuqGOW6DVgi3HyZEm2Mn9pRqUb2kHSX8=
+github.com/gofiber/template v1.8.2 h1:PIv9s/7Uq6m+Fm2MDNd20pAFFKt5wWs7ZBd8iV9pWwk=
+github.com/gofiber/template v1.8.2/go.mod h1:bs/2n0pSNPOkRa5VJ8zTIvedcI/lEYxzV3+YPXdBvq8=
+github.com/gofiber/template/html/v2 v2.0.5 h1:BKLJ6Qr940NjntbGmpO3zVa4nFNGDCi/IfUiDB9OC20=
+github.com/gofiber/template/html/v2 v2.0.5/go.mod h1:RCF14eLeQDCSUPp0IGc2wbSSDv6yt+V54XB/+Unz+LM=
+github.com/gofiber/utils v1.1.0 h1:vdEBpn7AzIUJRhe+CiTOJdUcTg4Q9RK+pEa0KPbLdrM=
+github.com/gofiber/utils v1.1.0/go.mod h1:poZpsnhBykfnY1Mc0KeEa6mSHrS3dV0+oBWyeQmb2e0=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
 github.com/golang-jwt/jwt/v4 v4.0.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
@@ -329,8 +335,8 @@ github.com/goravel/file-rotatelogs v0.0.0-20211215053220-2ab31dd9575c h1:obhFK91
 github.com/goravel/file-rotatelogs v0.0.0-20211215053220-2ab31dd9575c/go.mod h1:YSWsLXlG16u5CWFaXNZHhEQD10+NwF3xfgDV816OwLE=
 github.com/goravel/file-rotatelogs/v2 v2.4.1 h1:ogkeIFcTHSBRUBpZYiyJbpul8hkVXxHPuDbOaP78O1M=
 github.com/goravel/file-rotatelogs/v2 v2.4.1/go.mod h1:euk9qr52WrzM8ICs1hecFcR4CZ/ZZOPdacHfvHgbOf0=
-github.com/goravel/framework v1.12.1-0.20230818042920-477a94b11cae h1:KX8YUd25dygY/4Bh/wmHiCNaUU5RFN4gwhbP16EKc9Q=
-github.com/goravel/framework v1.12.1-0.20230818042920-477a94b11cae/go.mod h1:gfOlLyy4FQO1m+rYZRrmsxrEp0+OBYniQS841Kc/VU4=
+github.com/goravel/framework v1.12.1-0.20230827032002-2b3396680457 h1:lXb4j3RoaJW/673QWeWu/04HGW99jTaXtmt05gJhs3M=
+github.com/goravel/framework v1.12.1-0.20230827032002-2b3396680457/go.mod h1:mG4qbuzEjxM/zT6yT6Eu3bIwGR9mYiQ6peFkiHaLxY0=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=

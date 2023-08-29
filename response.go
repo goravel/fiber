@@ -65,6 +65,10 @@ func (r *Response) Status(code int) httpcontract.ResponseStatus {
 	return NewStatus(r.instance, code)
 }
 
+func (r *Response) View() httpcontract.ResponseView {
+	return NewView(r.instance)
+}
+
 func (r *Response) Writer() http.ResponseWriter {
 	panic("not support")
 }
