@@ -42,6 +42,8 @@ import "github.com/goravel/fiber"
 // config/http.go
 import (
     fiberfacades "github.com/goravel/fiber/facades"
+    "github.com/gofiber/template/html/v2"
+    "github.com/gofiber/fiber/v2"
 )
 
 "default": "fiber",
@@ -52,6 +54,10 @@ import (
         "prefork": false,
         "route": func() (route.Engine, error) {
             return fiberfacades.Route(), nil
+        },
+        //Optional, default is "html/template"
+        "template": func() (fiber.Views, error) {
+            return html.New("./resources/views", ".tmpl"), nil
         },
     },
 },

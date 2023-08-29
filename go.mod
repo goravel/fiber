@@ -5,9 +5,10 @@ go 1.20
 require (
 	github.com/bytedance/sonic v1.10.0
 	github.com/gofiber/fiber/v2 v2.48.0
+	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.5.1
-	github.com/goravel/framework v1.12.1-0.20230818042920-477a94b11cae
+	github.com/goravel/framework v1.12.1-0.20230827032002-2b3396680457
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.48.0
@@ -52,6 +53,8 @@ require (
 	github.com/go-redsync/redsync/v4 v4.0.4 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/gofiber/template v1.8.2 // indirect
+	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect

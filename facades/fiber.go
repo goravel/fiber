@@ -3,12 +3,15 @@ package facades
 import (
 	"log"
 
-	"github.com/goravel/fiber"
 	"github.com/goravel/framework/contracts/route"
+
+	"github.com/goravel/fiber"
 )
 
-func Route() route.Engine {
-	instance, err := fiber.App.Make(fiber.RouteBinding)
+func Route(driver string) route.Engine {
+	instance, err := fiber.App.MakeWith(fiber.RouteBinding, map[string]any{
+		"driver": driver,
+	})
 	if err != nil {
 		log.Fatalln(err)
 		return nil

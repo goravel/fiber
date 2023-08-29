@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html/v2"
 	configmock "github.com/goravel/framework/contracts/config/mocks"
 	filesystemmock "github.com/goravel/framework/contracts/filesystem/mocks"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -32,7 +34,9 @@ func TestFallback(t *testing.T) {
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	ConfigFacade = mockConfig
 
-	route := NewRoute(mockConfig)
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
 	route.Fallback(func(ctx httpcontract.Context) {
 		ctx.Response().String(404, "not found")
 	})
@@ -53,6 +57,7 @@ func TestFallback(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	var (
+		err        error
 		mockConfig *configmock.Config
 		route      *Route
 	)
@@ -132,7 +137,9 @@ func TestRun(t *testing.T) {
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
-			route = NewRoute(mockConfig)
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -160,6 +167,7 @@ func TestRun(t *testing.T) {
 
 func TestRunTLS(t *testing.T) {
 	var (
+		err        error
 		mockConfig *configmock.Config
 		route      *Route
 	)
@@ -241,7 +249,9 @@ func TestRunTLS(t *testing.T) {
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
-			route = NewRoute(mockConfig)
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -273,6 +283,7 @@ func TestRunTLS(t *testing.T) {
 
 func TestRunTLSWithCert(t *testing.T) {
 	var (
+		err        error
 		mockConfig *configmock.Config
 		route      *Route
 	)
@@ -329,7 +340,9 @@ func TestRunTLSWithCert(t *testing.T) {
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
-			route = NewRoute(mockConfig)
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			route.Get("/", func(ctx httpcontract.Context) {
 				ctx.Response().Json(200, httpcontract.Json{
 					"Hello": "Goravel",
@@ -357,6 +370,7 @@ func TestRunTLSWithCert(t *testing.T) {
 
 func TestRequest(t *testing.T) {
 	var (
+		err        error
 		fiber      *Route
 		req        *http.Request
 		mockConfig *configmock.Config
@@ -366,8 +380,6 @@ func TestRequest(t *testing.T) {
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		ConfigFacade = mockConfig
-
-		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name           string
@@ -1628,6 +1640,9 @@ func TestRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
+			fiber, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
@@ -1664,6 +1679,7 @@ func TestRequest(t *testing.T) {
 
 func TestResponse(t *testing.T) {
 	var (
+		err        error
 		fiber      *Route
 		req        *http.Request
 		mockConfig *configmock.Config
@@ -1673,8 +1689,6 @@ func TestResponse(t *testing.T) {
 		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		ConfigFacade = mockConfig
-
-		fiber = NewRoute(mockConfig)
 	}
 	tests := []struct {
 		name           string
@@ -1933,6 +1947,9 @@ func TestResponse(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
+			fiber, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
@@ -1960,6 +1977,74 @@ func TestResponse(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
+
+			mockConfig.AssertExpectations(t)
+		})
+	}
+}
+
+func TestNewRoute(t *testing.T) {
+	var mockConfig *configmock.Config
+	template := html.New("./resources/views", ".tmpl")
+
+	tests := []struct {
+		name           string
+		parameters     map[string]any
+		setup          func()
+		expectTemplate fiber.Views
+		expectError    error
+	}{
+		{
+			name: "parameters is nil",
+			setup: func() {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+			},
+			expectTemplate: template,
+		},
+		{
+			name:       "template is instance",
+			parameters: map[string]any{"driver": "fiber"},
+			setup: func() {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("Get", "http.drivers.fiber.template").Return(template).Once()
+			},
+			expectTemplate: template,
+		},
+		{
+			name:       "template is callback and returns success",
+			parameters: map[string]any{"driver": "fiber"},
+			setup: func() {
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("Get", "http.drivers.fiber.template").Return(func() (fiber.Views, error) {
+					return template, nil
+				}).Twice()
+			},
+			expectTemplate: template,
+		},
+		{
+			name:       "template is callback and returns error",
+			parameters: map[string]any{"driver": "fiber"},
+			setup: func() {
+				mockConfig.On("Get", "http.drivers.fiber.template").Return(func() (fiber.Views, error) {
+					return nil, errors.New("error")
+				}).Twice()
+			},
+			expectError: errors.New("error"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockConfig = &configmock.Config{}
+			test.setup()
+			route, err := NewRoute(mockConfig, test.parameters)
+			assert.Equal(t, test.expectError, err)
+			if route != nil {
+				assert.NotNil(t, route.instance.Config().Views)
+			}
 
 			mockConfig.AssertExpectations(t)
 		})

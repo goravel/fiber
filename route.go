@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/template/html/v2"
 	"github.com/gookit/color"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -29,12 +30,35 @@ type Route struct {
 
 // NewRoute create new fiber route instance
 // NewRoute 创建新的 fiber 路由实例
-func NewRoute(config config.Config) *Route {
+func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
+	var views fiber.Views
+	if driver, exist := parameters["driver"]; exist {
+		template, ok := config.Get("http.drivers." + driver.(string) + ".template").(fiber.Views)
+		if ok {
+			views = template
+		} else {
+			templateCallback, ok := config.Get("http.drivers." + driver.(string) + ".template").(func() (fiber.Views, error))
+			if ok {
+				template, err := templateCallback()
+				if err != nil {
+					return nil, err
+				}
+
+				views = template
+			}
+		}
+	}
+
+	if views == nil {
+		views = html.New("./resources/views", ".tmpl")
+	}
+
 	app := fiber.New(fiber.Config{
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
 		DisableStartupMessage: !config.GetBool("app.debug", false),
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
+		Views:                 views,
 	})
 
 	return &Route{
@@ -47,7 +71,7 @@ func NewRoute(config config.Config) *Route {
 		),
 		config:   config,
 		instance: app,
-	}
+	}, nil
 }
 
 // Fallback set fallback handler
