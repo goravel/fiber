@@ -8,7 +8,7 @@ import (
 	"github.com/goravel/fiber"
 )
 
-func Route(driver string) route.Engine {
+func Route(driver string) route.Route {
 	instance, err := fiber.App.MakeWith(fiber.RouteBinding, map[string]any{
 		"driver": driver,
 	})
