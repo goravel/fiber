@@ -62,7 +62,6 @@ func TestGroup(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmock.Config{}
-		mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		ConfigFacade = mockConfig
 	}

@@ -26,7 +26,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow all paths",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
@@ -49,7 +49,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow path",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"api"}).Once()
@@ -66,7 +66,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow path with *",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"any/*"}).Once()
@@ -89,7 +89,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "only allow POST",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
@@ -112,7 +112,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow POST",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
@@ -135,7 +135,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow origin",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
@@ -158,7 +158,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow specific origin",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
@@ -181,7 +181,7 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow exposed headers",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()

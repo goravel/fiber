@@ -39,11 +39,15 @@ func NewRequest(ctx *Context, log log.Log, validation validatecontract.Validatio
 }
 
 func (r *Request) AbortWithStatus(code int) {
-	_ = r.instance.SendStatus(code)
+	if err := r.instance.SendStatus(code); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Request) AbortWithStatusJson(code int, jsonObj any) {
-	_ = r.instance.Status(code).JSON(jsonObj)
+	if err := r.instance.Status(code).JSON(jsonObj); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Request) All() map[string]any {
@@ -228,7 +232,9 @@ func (r *Request) Queries() map[string]string {
 
 func (r *Request) Origin() *http.Request {
 	var req http.Request
-	_ = fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true)
+	if err := fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true); err != nil {
+		panic(err)
+	}
 
 	return &req
 }

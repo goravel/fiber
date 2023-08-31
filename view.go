@@ -18,7 +18,7 @@ func NewView(instance *fiber.Ctx) *View {
 func (receive *View) Make(view string, data ...any) {
 	shared := ViewFacade.GetShared()
 	if len(data) == 0 {
-		err := receive.instance.Render("index", shared)
+		err := receive.instance.Render(view, shared)
 		if err != nil {
 			panic(err)
 		}
@@ -53,6 +53,8 @@ func (receive *View) First(views []string, data ...any) {
 			return
 		}
 	}
+
+	panic("no view exists")
 }
 
 func structToMap(data any) map[string]any {
@@ -66,6 +68,9 @@ func structToMap(data any) map[string]any {
 	}
 
 	for i := 0; i < modelType.NumField(); i++ {
+		if !modelType.Field(i).IsExported() {
+			continue
+		}
 		dbColumn := modelType.Field(i).Name
 		if modelValue.Field(i).Kind() == reflect.Pointer {
 			if modelValue.Field(i).IsNil() {
