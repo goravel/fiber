@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.5.1
-	github.com/goravel/framework v1.12.1-0.20230830133129-7af35a611903
+	github.com/goravel/framework v1.12.1-0.20230831094846-59284966f954
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.48.0
@@ -168,5 +168,3 @@ require (
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
 )
-
-replace github.com/goravel/framework => ../goravel/framework
