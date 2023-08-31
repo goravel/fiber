@@ -52,8 +52,8 @@ import (
     "fiber": map[string]any{
         // prefork mode, see https://docs.gofiber.io/api/fiber/#config
         "prefork": false,
-        "route": func() (route.Engine, error) {
-            return fiberfacades.Route(), nil
+        "route": func() (route.Route, error) {
+            return fiberfacades.Route("fiber"), nil
         },
         //Optional, default is "html/template"
         "template": func() (fiber.Views, error) {

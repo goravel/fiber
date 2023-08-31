@@ -20,7 +20,7 @@ type Group struct {
 	lastMiddlewares   []httpcontract.Middleware
 }
 
-func NewGroup(config config.Config, instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Route {
+func NewGroup(config config.Config, instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Router {
 	return &Group{
 		config:            config,
 		instance:          instance,
@@ -41,13 +41,13 @@ func (r *Group) Group(handler route.GroupFunc) {
 	handler(NewGroup(r.config, r.instance, prefix, middlewares, r.lastMiddlewares))
 }
 
-func (r *Group) Prefix(addr string) route.Route {
+func (r *Group) Prefix(addr string) route.Router {
 	r.prefix += "/" + addr
 
 	return r
 }
 
-func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Route {
+func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Router {
 	r.middlewares = append(r.middlewares, middlewares...)
 
 	return r

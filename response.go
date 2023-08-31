@@ -19,15 +19,21 @@ func NewResponse(instance *fiber.Ctx, origin httpcontract.ResponseOrigin) *Respo
 }
 
 func (r *Response) Data(code int, contentType string, data []byte) {
-	_ = r.instance.Status(code).Type(contentType).Send(data)
+	if err := r.instance.Status(code).Type(contentType).Send(data); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) Download(filepath, filename string) {
-	_ = r.instance.Download(filepath, filename)
+	if err := r.instance.Download(filepath, filename); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) File(filepath string) {
-	_ = r.instance.SendFile(filepath)
+	if err := r.instance.SendFile(filepath); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) Header(key, value string) httpcontract.Response {
@@ -37,7 +43,9 @@ func (r *Response) Header(key, value string) httpcontract.Response {
 }
 
 func (r *Response) Json(code int, obj any) {
-	_ = r.instance.Status(code).JSON(obj)
+	if err := r.instance.Status(code).JSON(obj); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) Origin() httpcontract.ResponseOrigin {
@@ -45,16 +53,22 @@ func (r *Response) Origin() httpcontract.ResponseOrigin {
 }
 
 func (r *Response) Redirect(code int, location string) {
-	_ = r.instance.Redirect(location, code)
+	if err := r.instance.Redirect(location, code); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) String(code int, format string, values ...any) {
+	var err error
 	if len(values) == 0 {
-		_ = r.instance.Status(code).SendString(format)
-		return
+		err = r.instance.Status(code).SendString(format)
+	} else {
+		err = r.instance.Status(code).Type(format).SendString(values[0].(string))
 	}
 
-	_ = r.instance.Status(code).Type(format).SendString(values[0].(string))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (r *Response) Success() httpcontract.ResponseSuccess {
@@ -90,20 +104,28 @@ func NewSuccess(instance *fiber.Ctx) httpcontract.ResponseSuccess {
 }
 
 func (r *Success) Data(contentType string, data []byte) {
-	_ = r.instance.Type(contentType).Send(data)
+	if err := r.instance.Status(http.StatusOK).Type(contentType).Send(data); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Success) Json(obj any) {
-	_ = r.instance.Status(http.StatusOK).JSON(obj)
+	if err := r.instance.Status(http.StatusOK).JSON(obj); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Success) String(format string, values ...any) {
+	var err error
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).SendString(format)
-		return
+		err = r.instance.Status(http.StatusOK).SendString(format)
+	} else {
+		err = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
 	}
 
-	_ = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
+	if err != nil {
+		panic(err)
+	}
 }
 
 type Status struct {
@@ -116,20 +138,28 @@ func NewStatus(instance *fiber.Ctx, code int) httpcontract.ResponseSuccess {
 }
 
 func (r *Status) Data(contentType string, data []byte) {
-	_ = r.instance.Status(r.status).Type(contentType).Send(data)
+	if err := r.instance.Status(r.status).Type(contentType).Send(data); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Status) Json(obj any) {
-	_ = r.instance.Status(r.status).JSON(obj)
+	if err := r.instance.Status(r.status).JSON(obj); err != nil {
+		panic(err)
+	}
 }
 
 func (r *Status) String(format string, values ...any) {
+	var err error
 	if len(values) == 0 {
-		_ = r.instance.Status(http.StatusOK).SendString(format)
-		return
+		err = r.instance.Status(r.status).SendString(format)
+	} else {
+		err = r.instance.Status(r.status).Type(format).SendString(values[0].(string))
 	}
 
-	_ = r.instance.Status(http.StatusOK).Type(format).SendString(values[0].(string))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func ResponseMiddleware() httpcontract.Middleware {

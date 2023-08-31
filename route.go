@@ -23,7 +23,7 @@ import (
 // Route fiber route
 // Route fiber 路由
 type Route struct {
-	route.Route
+	route.Router
 	config   config.Config
 	instance *fiber.App
 }
@@ -55,14 +55,14 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 
 	app := fiber.New(fiber.Config{
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
-		DisableStartupMessage: !config.GetBool("app.debug", false),
+		DisableStartupMessage: true,
 		JSONEncoder:           sonic.Marshal,
 		JSONDecoder:           sonic.Unmarshal,
 		Views:                 views,
 	})
 
 	return &Route{
-		Route: NewGroup(
+		Router: NewGroup(
 			config,
 			app,
 			"",
@@ -113,7 +113,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	}
 
 	r.instance.Use(tempMiddlewares...)
-	r.Route = NewGroup(
+	r.Router = NewGroup(
 		r.config,
 		r.instance,
 		"",
