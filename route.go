@@ -87,8 +87,7 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 		}
 
 		if !exist {
-			handler(NewContext(ctx))
-			return nil
+			return handler(NewContext(ctx)).Render()
 		}
 
 		return ctx.Next()

@@ -18,7 +18,7 @@ func Background() http.Context {
 
 type Context struct {
 	instance *fiber.Ctx
-	request  http.Request
+	request  http.ContextRequest
 }
 
 type ctxKey string
@@ -27,16 +27,16 @@ func NewContext(ctx *fiber.Ctx) http.Context {
 	return &Context{instance: ctx}
 }
 
-func (c *Context) Request() http.Request {
+func (c *Context) Request() http.ContextRequest {
 	if c.request == nil {
-		c.request = NewRequest(c, LogFacade, ValidationFacade)
+		c.request = NewContextRequest(c, LogFacade, ValidationFacade)
 	}
 
 	return c.request
 }
 
-func (c *Context) Response() http.Response {
-	return NewResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
+func (c *Context) Response() http.ContextResponse {
+	return NewContextResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
 }
 
 func (c *Context) WithValue(key string, value any) {

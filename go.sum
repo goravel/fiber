@@ -335,10 +335,10 @@ github.com/goravel/file-rotatelogs v0.0.0-20211215053220-2ab31dd9575c h1:obhFK91
 github.com/goravel/file-rotatelogs v0.0.0-20211215053220-2ab31dd9575c/go.mod h1:YSWsLXlG16u5CWFaXNZHhEQD10+NwF3xfgDV816OwLE=
 github.com/goravel/file-rotatelogs/v2 v2.4.1 h1:ogkeIFcTHSBRUBpZYiyJbpul8hkVXxHPuDbOaP78O1M=
 github.com/goravel/file-rotatelogs/v2 v2.4.1/go.mod h1:euk9qr52WrzM8ICs1hecFcR4CZ/ZZOPdacHfvHgbOf0=
-github.com/goravel/framework v1.12.1-0.20230830133129-7af35a611903 h1:HZ80Z5hZTd04QAxft38bhYxqt+rAaABfWvmxOFgtW64=
-github.com/goravel/framework v1.12.1-0.20230830133129-7af35a611903/go.mod h1:mG4qbuzEjxM/zT6yT6Eu3bIwGR9mYiQ6peFkiHaLxY0=
-github.com/goravel/framework v1.12.1-0.20230831094846-59284966f954 h1:TreZZPC54Qng+qRQn+ufL0CbpMH6dtQ6JN3xZsjggAo=
-github.com/goravel/framework v1.12.1-0.20230831094846-59284966f954/go.mod h1:mG4qbuzEjxM/zT6yT6Eu3bIwGR9mYiQ6peFkiHaLxY0=
+github.com/goravel/framework v1.12.1-0.20230905065728-65483789a8c2 h1:CxoN/uxpOTK1+B0ZzEESrEWHo/pIoYl5AJWHxb8cxUQ=
+github.com/goravel/framework v1.12.1-0.20230905065728-65483789a8c2/go.mod h1:j3+Z9wsydallE9AJTeVNIRj/gGJRlcRw8K9y+bUzw4M=
+github.com/goravel/framework v1.12.1-0.20230906134652-41bdad44aa23 h1:oIdkK65wq2EuUnUhNmeaxSSFZUQuZdI1X3WuHyr7i/M=
+github.com/goravel/framework v1.12.1-0.20230906134652-41bdad44aa23/go.mod h1:j3+Z9wsydallE9AJTeVNIRj/gGJRlcRw8K9y+bUzw4M=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=
@@ -501,6 +501,8 @@ github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFR
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
+github.com/rotisserie/eris v0.5.4 h1:Il6IvLdAapsMhvuOahHWiBnl1G++Q0/L5UIkI5mARSk=
+github.com/rotisserie/eris v0.5.4/go.mod h1:Z/kgYTJiJtocxCbFfvRmO+QejApzG6zpyky9G1A4g9s=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
