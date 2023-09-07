@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/gofiber/fiber/v2"
+	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 type View struct {
@@ -15,13 +16,10 @@ func NewView(instance *fiber.Ctx) *View {
 	return &View{instance: instance}
 }
 
-func (receive *View) Make(view string, data ...any) {
+func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
 	if len(data) == 0 {
-		err := receive.instance.Render(view, shared)
-		if err != nil {
-			panic(err)
-		}
+		return &HtmlResponse{shared, receive.instance, view}
 	} else {
 		dataType := reflect.TypeOf(data[0])
 		switch dataType.Kind() {
@@ -30,27 +28,22 @@ func (receive *View) Make(view string, data ...any) {
 			for key, value := range dataMap {
 				shared[key] = value
 			}
-			err := receive.instance.Render(view, shared)
-			if err != nil {
-				panic(err)
-			}
+
+			return &HtmlResponse{shared, receive.instance, view}
 		case reflect.Map:
 			fillShared(data[0], shared)
-			err := receive.instance.Render(view, data[0])
-			if err != nil {
-				panic(err)
-			}
+
+			return &HtmlResponse{data[0], receive.instance, view}
 		default:
 			panic(fmt.Sprintf("make %s view failed, data must be map or struct", view))
 		}
 	}
 }
 
-func (receive *View) First(views []string, data ...any) {
+func (receive *View) First(views []string, data ...any) contractshttp.Response {
 	for _, view := range views {
 		if ViewFacade.Exists(view) {
-			receive.Make(view, data...)
-			return
+			return receive.Make(view, data...)
 		}
 	}
 

@@ -10,22 +10,22 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
-	configmock "github.com/goravel/framework/contracts/config/mocks"
-	httpcontract "github.com/goravel/framework/contracts/http"
+	configmocks "github.com/goravel/framework/contracts/config/mocks"
+	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/validation"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFallback(t *testing.T) {
-	mockConfig := &configmock.Config{}
+	mockConfig := &configmocks.Config{}
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	ConfigFacade = mockConfig
 
 	route, err := NewRoute(mockConfig, nil)
 	assert.Nil(t, err)
 
-	route.Fallback(func(ctx httpcontract.Context) {
-		ctx.Response().String(404, "not found")
+	route.Fallback(func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(404, "not found")
 	})
 
 	req, err := http.NewRequest("GET", "/test", nil)
@@ -45,7 +45,7 @@ func TestFallback(t *testing.T) {
 func TestRun(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmock.Config
+		mockConfig *configmocks.Config
 		route      *Route
 	)
 
@@ -119,15 +119,15 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = &configmock.Config{}
+			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx httpcontract.Context) {
-				ctx.Response().Json(200, httpcontract.Json{
+			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
 			})
@@ -154,7 +154,7 @@ func TestRun(t *testing.T) {
 func TestRunTLS(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmock.Config
+		mockConfig *configmocks.Config
 		route      *Route
 	)
 
@@ -230,15 +230,15 @@ func TestRunTLS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = &configmock.Config{}
+			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx httpcontract.Context) {
-				ctx.Response().Json(200, httpcontract.Json{
+			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
 			})
@@ -269,7 +269,7 @@ func TestRunTLS(t *testing.T) {
 func TestRunTLSWithCert(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmock.Config
+		mockConfig *configmocks.Config
 		route      *Route
 	)
 
@@ -320,15 +320,15 @@ func TestRunTLSWithCert(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = &configmock.Config{}
+			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx httpcontract.Context) {
-				ctx.Response().Json(200, httpcontract.Json{
+			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
 			})
@@ -353,7 +353,7 @@ func TestRunTLSWithCert(t *testing.T) {
 }
 
 func TestNewRoute(t *testing.T) {
-	var mockConfig *configmock.Config
+	var mockConfig *configmocks.Config
 	template := html.New("./resources/views", ".tmpl")
 
 	tests := []struct {
@@ -404,7 +404,7 @@ func TestNewRoute(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = &configmock.Config{}
+			mockConfig = &configmocks.Config{}
 			test.setup()
 			route, err := NewRoute(mockConfig, test.parameters)
 			assert.Equal(t, test.expectError, err)
@@ -421,25 +421,25 @@ type CreateUser struct {
 	Name string `form:"name" json:"name"`
 }
 
-func (r *CreateUser) Authorize(ctx httpcontract.Context) error {
+func (r *CreateUser) Authorize(ctx contractshttp.Context) error {
 	return nil
 }
 
-func (r *CreateUser) Rules(ctx httpcontract.Context) map[string]string {
+func (r *CreateUser) Rules(ctx contractshttp.Context) map[string]string {
 	return map[string]string{
 		"name": "required",
 	}
 }
 
-func (r *CreateUser) Messages(ctx httpcontract.Context) map[string]string {
+func (r *CreateUser) Messages(ctx contractshttp.Context) map[string]string {
 	return map[string]string{}
 }
 
-func (r *CreateUser) Attributes(ctx httpcontract.Context) map[string]string {
+func (r *CreateUser) Attributes(ctx contractshttp.Context) map[string]string {
 	return map[string]string{}
 }
 
-func (r *CreateUser) PrepareForValidation(ctx httpcontract.Context, data validation.Data) error {
+func (r *CreateUser) PrepareForValidation(ctx contractshttp.Context, data validation.Data) error {
 	if name, exist := data.Get("name"); exist {
 		return data.Set("name", name.(string)+"1")
 	}
@@ -451,24 +451,24 @@ type Unauthorize struct {
 	Name string `form:"name" json:"name"`
 }
 
-func (r *Unauthorize) Authorize(ctx httpcontract.Context) error {
+func (r *Unauthorize) Authorize(ctx contractshttp.Context) error {
 	return errors.New("error")
 }
 
-func (r *Unauthorize) Rules(ctx httpcontract.Context) map[string]string {
+func (r *Unauthorize) Rules(ctx contractshttp.Context) map[string]string {
 	return map[string]string{
 		"name": "required",
 	}
 }
 
-func (r *Unauthorize) Messages(ctx httpcontract.Context) map[string]string {
+func (r *Unauthorize) Messages(ctx contractshttp.Context) map[string]string {
 	return map[string]string{}
 }
 
-func (r *Unauthorize) Attributes(ctx httpcontract.Context) map[string]string {
+func (r *Unauthorize) Attributes(ctx contractshttp.Context) map[string]string {
 	return map[string]string{}
 }
 
-func (r *Unauthorize) PrepareForValidation(ctx httpcontract.Context, data validation.Data) error {
+func (r *Unauthorize) PrepareForValidation(ctx contractshttp.Context, data validation.Data) error {
 	return nil
 }
