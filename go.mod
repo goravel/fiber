@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	github.com/bytedance/sonic v1.10.0
-	github.com/gofiber/fiber/v2 v2.48.0
+	github.com/gofiber/fiber/v2 v2.49.1
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.5.1
 	github.com/goravel/framework v1.13.1
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
-	github.com/valyala/fasthttp v1.48.0
+	github.com/valyala/fasthttp v1.49.0
 )
 
 require (
@@ -90,14 +90,14 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/klauspost/compress v1.16.6 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/microsoft/go-mssqldb v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
