@@ -102,7 +102,9 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	middlewares = append(middlewares, Cors())
-	tempMiddlewares := []any{recover.New()}
+	tempMiddlewares := []any{recover.New(recover.Config{
+		EnableStackTrace: r.config.GetBool("app.debug", false),
+	})}
 	if r.config.GetBool("app.debug", false) {
 		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",

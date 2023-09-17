@@ -234,7 +234,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Index",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -259,7 +259,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Show",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -284,7 +284,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Store",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -309,7 +309,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Update (PUT)",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -334,7 +334,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Update (PATCH)",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -359,7 +359,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Destroy",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -508,7 +508,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Global Middleware",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()

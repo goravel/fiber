@@ -222,7 +222,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/origin",
 			setup: func(method, url string) error {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
