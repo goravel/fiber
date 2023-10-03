@@ -3,7 +3,6 @@ module github.com/goravel/fiber
 go 1.20
 
 require (
-	github.com/bytedance/sonic v1.10.1
 	github.com/gofiber/fiber/v2 v2.49.2
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
@@ -32,6 +31,7 @@ require (
 	github.com/RichardKnop/machinery/v2 v2.0.11 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aws/aws-sdk-go v1.37.16 // indirect
+	github.com/bytedance/sonic v1.10.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
