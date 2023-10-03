@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -18,6 +17,7 @@ import (
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
+	"github.com/goravel/framework/support/json"
 )
 
 // Route fiber route
@@ -56,8 +56,8 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 	app := fiber.New(fiber.Config{
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
 		DisableStartupMessage: true,
-		JSONEncoder:           sonic.Marshal,
-		JSONDecoder:           sonic.Unmarshal,
+		JSONEncoder:           json.Marshal,
+		JSONDecoder:           json.Unmarshal,
 		Views:                 views,
 	})
 
