@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytedance/sonic"
 	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	filesystemmocks "github.com/goravel/framework/contracts/filesystem/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -19,6 +18,7 @@ import (
 	"github.com/goravel/framework/contracts/validation"
 	validationmocks "github.com/goravel/framework/contracts/validation/mocks"
 	frameworkfilesystem "github.com/goravel/framework/filesystem"
+	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -355,7 +355,7 @@ func TestRequest(t *testing.T) {
 			url:    "/headers",
 			setup: func(method, url string) error {
 				fiber.Get("/headers", func(ctx contractshttp.Context) contractshttp.Response {
-					str, err := sonic.Marshal(ctx.Request().Headers())
+					str, err := json.Marshal(ctx.Request().Headers())
 					if err != nil {
 						return ctx.Response().Status(http.StatusBadRequest).String(err.Error())
 					}
@@ -1338,10 +1338,10 @@ func TestRequest(t *testing.T) {
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
-				err = sonic.Unmarshal(body, &bodyMap)
+				err = json.Unmarshal(body, &bodyMap)
 				assert.Nil(t, err)
 
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				err = json.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)

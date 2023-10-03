@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gookit/validate"
 	filesystemcontract "github.com/goravel/framework/contracts/filesystem"
@@ -16,6 +15,7 @@ import (
 	"github.com/goravel/framework/contracts/log"
 	validatecontract "github.com/goravel/framework/contracts/validation"
 	"github.com/goravel/framework/filesystem"
+	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/validation"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
@@ -130,7 +130,7 @@ func (r *ContextRequest) Host() string {
 
 func (r *ContextRequest) Json(key string, defaultValue ...string) string {
 	data := make(map[string]any)
-	if err := sonic.Unmarshal(r.instance.Body(), &data); err != nil {
+	if err := json.Unmarshal(r.instance.Body(), &data); err != nil {
 		if len(defaultValue) == 0 {
 			return ""
 		} else {
@@ -424,7 +424,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 	if contentType == "application/json" {
 		bodyBytes := ctx.instance.Body()
 
-		if err := sonic.Unmarshal(bodyBytes, &data); err != nil {
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
 			return nil, fmt.Errorf("decode json [%v] error: %v", string(bodyBytes), err)
 		}
 	}
