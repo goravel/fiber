@@ -17,6 +17,7 @@ import (
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
+	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 )
 
@@ -49,7 +50,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		}
 	}
 
-	if views == nil {
+	if views == nil && file.Exists("./resources/views") {
 		views = html.New("./resources/views", ".tmpl")
 	}
 

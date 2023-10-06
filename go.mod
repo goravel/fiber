@@ -7,7 +7,7 @@ require (
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.5.1
-	github.com/goravel/framework v1.13.1-0.20231003133229-f9d300ecc08b
+	github.com/goravel/framework v1.13.1-0.20231006012150-4a6e705dbd56
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.50.0
@@ -141,13 +141,13 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/api v0.126.0 // indirect
