@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytedance/sonic"
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	configmocks "github.com/goravel/framework/mocks/config"
+	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -301,9 +301,9 @@ func TestResponse(t *testing.T) {
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
-				err = sonic.Unmarshal(body, &bodyMap)
+				err = json.Unmarshal(body, &bodyMap)
 				assert.Nil(t, err)
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				err = json.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)
@@ -428,9 +428,9 @@ func TestResponse_Success(t *testing.T) {
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
-				err = sonic.Unmarshal(body, &bodyMap)
+				err = json.Unmarshal(body, &bodyMap)
 				assert.Nil(t, err)
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				err = json.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)
@@ -555,9 +555,9 @@ func TestResponse_Status(t *testing.T) {
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
-				err = sonic.Unmarshal(body, &bodyMap)
+				err = json.Unmarshal(body, &bodyMap)
 				assert.Nil(t, err)
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				err = json.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)

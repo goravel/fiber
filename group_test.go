@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/bytedance/sonic"
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
+	configmocks "github.com/goravel/framework/mocks/config"
+	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -580,9 +580,9 @@ func TestGroup(t *testing.T) {
 				bodyMap := make(map[string]any)
 				exceptBodyMap := make(map[string]any)
 
-				err = sonic.Unmarshal(body, &bodyMap)
+				err = json.Unmarshal(body, &bodyMap)
 				assert.NoError(t, err, test.name)
-				err = sonic.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
+				err = json.UnmarshalString(test.expectBodyJson, &exceptBodyMap)
 				assert.NoError(t, err, test.name)
 
 				assert.Equal(t, exceptBodyMap, bodyMap, test.name)
