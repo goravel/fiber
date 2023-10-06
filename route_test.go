@@ -368,7 +368,7 @@ func TestNewRoute(t *testing.T) {
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			},
-			expectTemplate: template,
+			expectTemplate: nil,
 		},
 		{
 			name:       "template is instance",
@@ -409,7 +409,7 @@ func TestNewRoute(t *testing.T) {
 			route, err := NewRoute(mockConfig, test.parameters)
 			assert.Equal(t, test.expectError, err)
 			if route != nil {
-				assert.NotNil(t, route.instance.Config().Views)
+				assert.IsType(t, test.expectTemplate, route.instance.Config().Views)
 			}
 
 			mockConfig.AssertExpectations(t)
