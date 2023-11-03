@@ -1,12 +1,13 @@
 package fiber
 
 import (
+	"bufio"
 	"bytes"
+	"net"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
-	"github.com/valyala/fasthttp"
 )
 
 type ContextResponse struct {
@@ -64,12 +65,52 @@ func (r *ContextResponse) View() contractshttp.ResponseView {
 	return NewView(r.instance)
 }
 
-func (r *ContextResponse) Writer() http.ResponseWriter {
-	panic("not support")
+type WriterAdapter struct {
+	instance *fiber.Ctx
 }
 
-func (r *ContextResponse) FastHTTPWriter() *fasthttp.Response {
-	return r.instance.Response()
+func (w *WriterAdapter) Header() http.Header {
+	result := http.Header{}
+	w.instance.Request().Header.VisitAll(func(key, value []byte) {
+		result.Add(string(key), string(value))
+	})
+
+	return result
+}
+
+func (w *WriterAdapter) Write(data []byte) (int, error) {
+	return w.instance.Context().Write(data)
+}
+
+func (w *WriterAdapter) WriteHeader(code int) {
+	w.instance.Context().SetStatusCode(code)
+}
+
+func (w *WriterAdapter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	ch := make(chan struct {
+		conn       net.Conn
+		readWriter *bufio.ReadWriter
+	})
+
+	var err error
+
+	w.instance.Context().Hijack(func(conn net.Conn) {
+		reader := bufio.NewReader(conn)
+		writer := bufio.NewWriter(conn)
+		readWriter := bufio.NewReadWriter(reader, writer)
+
+		ch <- struct {
+			conn       net.Conn
+			readWriter *bufio.ReadWriter
+		}{conn, readWriter}
+	})
+
+	result := <-ch
+	return result.conn, result.readWriter, err
+}
+
+func (r *ContextResponse) Writer() http.ResponseWriter {
+	return &WriterAdapter{r.instance}
 }
 
 func (r *ContextResponse) Flush() {
