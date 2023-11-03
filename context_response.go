@@ -1,9 +1,7 @@
 package fiber
 
 import (
-	"bufio"
 	"bytes"
-	"net"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -84,29 +82,6 @@ func (w *WriterAdapter) Write(data []byte) (int, error) {
 
 func (w *WriterAdapter) WriteHeader(code int) {
 	w.instance.Context().SetStatusCode(code)
-}
-
-func (w *WriterAdapter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	ch := make(chan struct {
-		conn       net.Conn
-		readWriter *bufio.ReadWriter
-	})
-
-	var err error
-
-	w.instance.Context().Hijack(func(conn net.Conn) {
-		reader := bufio.NewReader(conn)
-		writer := bufio.NewWriter(conn)
-		readWriter := bufio.NewReadWriter(reader, writer)
-
-		ch <- struct {
-			conn       net.Conn
-			readWriter *bufio.ReadWriter
-		}{conn, readWriter}
-	})
-
-	result := <-ch
-	return result.conn, result.readWriter, err
 }
 
 func (r *ContextResponse) Writer() http.ResponseWriter {
