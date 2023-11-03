@@ -10,10 +10,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gookit/validate"
-	filesystemcontract "github.com/goravel/framework/contracts/filesystem"
-	httpcontract "github.com/goravel/framework/contracts/http"
+	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
+	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/log"
-	validatecontract "github.com/goravel/framework/contracts/validation"
+	contractsvalidate "github.com/goravel/framework/contracts/validation"
 	"github.com/goravel/framework/filesystem"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/validation"
@@ -26,10 +26,10 @@ type ContextRequest struct {
 	instance   *fiber.Ctx
 	postData   map[string]any
 	log        log.Log
-	validation validatecontract.Validation
+	validation contractsvalidate.Validation
 }
 
-func NewContextRequest(ctx *Context, log log.Log, validation validatecontract.Validation) httpcontract.ContextRequest {
+func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.Validation) contractshttp.ContextRequest {
 	postData, err := getPostData(ctx)
 	if err != nil {
 		LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
@@ -80,7 +80,7 @@ func (r *ContextRequest) Form(key string, defaultValue ...string) string {
 	return r.instance.FormValue(key, defaultValue[0])
 }
 
-func (r *ContextRequest) File(name string) (filesystemcontract.File, error) {
+func (r *ContextRequest) File(name string) (contractsfilesystem.File, error) {
 	file, err := r.instance.FormFile(name)
 	if err != nil {
 		return nil, err
@@ -364,7 +364,7 @@ func (r *ContextRequest) Url() string {
 	return r.instance.OriginalURL()
 }
 
-func (r *ContextRequest) Validate(rules map[string]string, options ...validatecontract.Option) (validatecontract.Validator, error) {
+func (r *ContextRequest) Validate(rules map[string]string, options ...contractsvalidate.Option) (contractsvalidate.Validator, error) {
 	if len(rules) == 0 {
 		return nil, errors.New("rules can't be empty")
 	}
@@ -377,24 +377,29 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...validateco
 	if err != nil {
 		return nil, err
 	}
-	if dataFace == nil {
-		v = validate.NewValidation(dataFace)
-	} else {
-		if generateOptions["prepareForValidation"] != nil {
-			if err := generateOptions["prepareForValidation"].(func(ctx httpcontract.Context, data validatecontract.Data) error)(r.ctx, validation.NewData(dataFace)); err != nil {
+
+	for key, value := range r.instance.AllParams() {
+		if _, exist := dataFace.Get(key); !exist {
+			if _, err := dataFace.Set(key, value); err != nil {
 				return nil, err
 			}
 		}
-
-		v = dataFace.Create()
 	}
+
+	if generateOptions["prepareForValidation"] != nil {
+		if err := generateOptions["prepareForValidation"].(func(ctx contractshttp.Context, data contractsvalidate.Data) error)(r.ctx, validation.NewData(dataFace)); err != nil {
+			return nil, err
+		}
+	}
+
+	v = dataFace.Create()
 
 	validation.AppendOptions(v, generateOptions)
 
 	return validation.NewValidator(v, dataFace), nil
 }
 
-func (r *ContextRequest) ValidateRequest(request httpcontract.FormRequest) (validatecontract.Errors, error) {
+func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (contractsvalidate.Errors, error) {
 	if err := request.Authorize(r.ctx); err != nil {
 		return nil, err
 	}
