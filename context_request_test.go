@@ -985,6 +985,86 @@ func TestRequest(t *testing.T) {
 			expectBodyJson: "{\"exist\":true,\"extension\":\"txt\",\"file_path_length\":14,\"hash_name_length\":44,\"hash_name_length1\":49,\"original_extension\":\"md\",\"original_name\":\"README.md\"}",
 		},
 		{
+			name:   "GET with params and validator, validate pass",
+			method: "GET",
+			url:    "/validator/validate/success/abc?name=Goravel",
+			setup: func(method, url string) error {
+				fiber.Get("/validator/validate/success/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
+					mockValication := &validationmocks.Validation{}
+					mockValication.On("Rules").Return([]validation.Rule{}).Once()
+					ValidationFacade = mockValication
+
+					validator, err := ctx.Request().Validate(map[string]string{
+						"uuid": "min_len:2",
+						"name": "required",
+					})
+					if err != nil {
+						return ctx.Response().String(400, "Validate error: "+err.Error())
+					}
+					if validator.Fails() {
+						return ctx.Response().String(400, fmt.Sprintf("Validate fail: %+v", validator.Errors().All()))
+					}
+
+					type Test struct {
+						Uuid string `form:"uuid" json:"uuid"`
+						Name string `form:"name" json:"name"`
+					}
+					var test Test
+					if err := validator.Bind(&test); err != nil {
+						return ctx.Response().String(400, "Validate bind error: "+err.Error())
+					}
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"uuid": test.Uuid,
+						"name": test.Name,
+					})
+				})
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel\",\"uuid\":\"abc\"}",
+		},
+		{
+			name:   "GET with params and validator, validate fail",
+			method: "GET",
+			url:    "/validator/validate/fail/abc?name=Goravel",
+			setup: func(method, url string) error {
+				fiber.Get("/validator/validate/fail/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
+					mockValication := &validationmocks.Validation{}
+					mockValication.On("Rules").Return([]validation.Rule{}).Once()
+					ValidationFacade = mockValication
+
+					validator, err := ctx.Request().Validate(map[string]string{
+						"uuid": "min_len:4",
+						"name": "required",
+					})
+					if err != nil {
+						return ctx.Response().String(400, "Validate error: "+err.Error())
+					}
+					if validator.Fails() {
+						return ctx.Response().String(400, fmt.Sprintf("Validate fail: %+v", validator.Errors().All()))
+					}
+
+					return nil
+				})
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode: http.StatusBadRequest,
+			expectBody: "Validate fail: map[uuid:map[min_len:uuid min length is 4]]",
+		},
+		{
 			name:   "GET with validator and validate pass",
 			method: "GET",
 			url:    "/validator/validate/success?name=Goravel",
@@ -1047,9 +1127,7 @@ func TestRequest(t *testing.T) {
 						return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validator.Errors().All()))
 					}
 
-					return ctx.Response().Success().Json(contractshttp.Json{
-						"name": "",
-					})
+					return nil
 				})
 
 				var err error
