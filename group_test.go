@@ -427,9 +427,10 @@ func TestGroup(t *testing.T) {
 
 				fiber.StaticFS("static-fs", http.Dir("./"))
 			},
-			method:     "GET",
-			url:        "/static-fs/README.md",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static-fs/test.json",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "Abort Middleware",
