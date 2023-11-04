@@ -3,6 +3,8 @@ package fiber
 import (
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -384,24 +386,55 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Static",
 			setup: func(req *http.Request) {
-				fiber.Static("static", "./")
+				tempDir, err := os.MkdirTemp("", "test")
+				assert.NoError(t, err)
+				defer os.RemoveAll(tempDir)
+
+				file, err := os.Create(filepath.Join(tempDir, "test.json"))
+				assert.NoError(t, err)
+				defer os.Remove(file.Name())
+
+				_, err = io.WriteString(file, "{\"id\":1}")
+				assert.NoError(t, err)
+
+				fiber.Static("static", tempDir)
 			},
-			method:     "GET",
-			url:        "/static/README.md",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static/test.json",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "StaticFile",
 			setup: func(req *http.Request) {
-				fiber.StaticFile("static-file", "./README.md")
+				file, err := os.CreateTemp("", "test")
+				assert.NoError(t, err)
+				defer os.Remove(file.Name())
+
+				_, err = io.WriteString(file, "{\"id\":1}")
+				assert.NoError(t, err)
+
+				fiber.StaticFile("static-file", file.Name())
 			},
-			method:     "GET",
-			url:        "/static-file",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static-file",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "StaticFS",
 			setup: func(req *http.Request) {
+				tempDir, err := os.MkdirTemp("", "test")
+				assert.NoError(t, err)
+				defer os.RemoveAll(tempDir)
+
+				file, err := os.Create(tempDir + "/test.json")
+				assert.NoError(t, err)
+				defer os.Remove(file.Name())
+
+				_, err = io.WriteString(file, "{\"id\":1}")
+				assert.NoError(t, err)
+
 				fiber.StaticFS("static-fs", http.Dir("./"))
 			},
 			method:     "GET",
