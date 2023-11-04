@@ -392,7 +392,6 @@ func TestGroup(t *testing.T) {
 
 				file, err := os.Create(filepath.Join(tempDir, "test.json"))
 				assert.NoError(t, err)
-				defer os.Remove(file.Name())
 
 				_, err = io.WriteString(file, "{\"id\":1}")
 				assert.NoError(t, err)
