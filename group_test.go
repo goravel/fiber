@@ -390,10 +390,7 @@ func TestGroup(t *testing.T) {
 				assert.NoError(t, err)
 				defer os.RemoveAll(tempDir)
 
-				file, err := os.Create(filepath.Join(tempDir, "test.json"))
-				assert.NoError(t, err)
-
-				_, err = io.WriteString(file, "{\"id\":1}")
+				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
 				fiber.Static("static", tempDir)
@@ -410,7 +407,7 @@ func TestGroup(t *testing.T) {
 				assert.NoError(t, err)
 				defer os.Remove(file.Name())
 
-				_, err = io.WriteString(file, "{\"id\":1}")
+				err = os.WriteFile(file.Name(), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
 				fiber.StaticFile("static-file", file.Name())
@@ -427,11 +424,7 @@ func TestGroup(t *testing.T) {
 				assert.NoError(t, err)
 				defer os.RemoveAll(tempDir)
 
-				file, err := os.Create(tempDir + "/test.json")
-				assert.NoError(t, err)
-				defer os.Remove(file.Name())
-
-				_, err = io.WriteString(file, "{\"id\":1}")
+				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
 				fiber.StaticFS("static-fs", http.Dir("./"))
