@@ -2,8 +2,6 @@ package fiber
 
 import (
 	"net/http"
-	"net/url"
-	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -105,12 +103,9 @@ func (r *Group) Static(relativePath, root string) {
 	r.clearMiddlewares()
 }
 
-func (r *Group) StaticFile(relativePath, filePath string) {
+func (r *Group) StaticFile(relativePath, filepath string) {
 	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
-		dir, file := filepath.Split(filePath)
-		escapedFile := url.PathEscape(file)
-		escapedPath := filepath.Join(dir, escapedFile)
-		return c.SendFile(escapedPath, true)
+		return c.SendFile(filepath, true)
 	})
 	r.clearMiddlewares()
 }

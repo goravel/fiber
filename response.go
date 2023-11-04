@@ -1,9 +1,6 @@
 package fiber
 
 import (
-	"net/url"
-	"path/filepath"
-
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -35,10 +32,7 @@ type FileResponse struct {
 }
 
 func (r *FileResponse) Render() error {
-	dir, file := filepath.Split(r.filepath)
-	escapedFile := url.PathEscape(file)
-	escapedPath := filepath.Join(dir, escapedFile)
-	return r.instance.SendFile(escapedPath, true)
+	return r.instance.SendFile(r.filepath, true)
 }
 
 type JsonResponse struct {
