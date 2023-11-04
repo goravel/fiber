@@ -17,16 +17,18 @@ type Group struct {
 	instance          *fiber.App
 	originPrefix      string
 	prefix            string
+	globalMiddlewares []any
 	originMiddlewares []httpcontract.Middleware
 	middlewares       []httpcontract.Middleware
 	lastMiddlewares   []httpcontract.Middleware
 }
 
-func NewGroup(config config.Config, instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Router {
+func NewGroup(config config.Config, instance *fiber.App, prefix string, globalMiddlewares []any, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Router {
 	return &Group{
 		config:            config,
 		instance:          instance,
 		originPrefix:      prefix,
+		globalMiddlewares: globalMiddlewares,
 		originMiddlewares: originMiddlewares,
 		lastMiddlewares:   lastMiddlewares,
 	}
@@ -40,7 +42,7 @@ func (r *Group) Group(handler route.GroupFunc) {
 	prefix := pathToFiberPath(r.originPrefix + "/" + r.prefix)
 	r.prefix = ""
 
-	handler(NewGroup(r.config, r.instance, prefix, middlewares, r.lastMiddlewares))
+	handler(NewGroup(r.config, r.instance, prefix, r.globalMiddlewares, middlewares, r.lastMiddlewares))
 }
 
 func (r *Group) Prefix(addr string) route.Router {
@@ -56,57 +58,57 @@ func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Router 
 }
 
 func (r *Group) Any(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.All(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).All(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Get(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Get(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Post(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Post(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Delete(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Delete(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Delete(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Patch(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Patch(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Patch(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Put(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Put(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Put(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Options(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Options(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Options(r.getPath(relativePath), r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Resource(relativePath string, controller httpcontract.ResourceController) {
-	r.instance.Get(r.getPath(relativePath), r.getMiddlewares(controller.Index)...)
-	r.instance.Post(r.getPath(relativePath), r.getMiddlewares(controller.Store)...)
-	r.instance.Get(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Show)...)
-	r.instance.Put(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Patch(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Delete(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Destroy)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath), r.getMiddlewares(controller.Index)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(r.getPath(relativePath), r.getMiddlewares(controller.Store)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Show)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Put(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Patch(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Delete(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Destroy)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Static(relativePath, root string) {
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Static(r.getPath(relativePath), root)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Static(r.getPath(relativePath), root)
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFile(relativePath, filePath string) {
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
 		dir, file := filepath.Split(filePath)
 		escapedFile := url.PathEscape(file)
 		escapedPath := filepath.Join(dir, escapedFile)
@@ -117,7 +119,7 @@ func (r *Group) StaticFile(relativePath, filePath string) {
 }
 
 func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
 	r.clearMiddlewares()
@@ -157,6 +159,14 @@ func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract
 	for _, item := range middlewares {
 		handlers = append(handlers, item)
 	}
+
+	return handlers
+}
+
+func (r *Group) getGlobalMiddlewaresWithPath(relativePath string) []any {
+	var handlers []any
+	handlers = append(handlers, r.getPath(relativePath))
+	handlers = append(handlers, r.globalMiddlewares...)
 
 	return handlers
 }
