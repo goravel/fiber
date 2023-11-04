@@ -67,6 +67,9 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 			config,
 			app,
 			"",
+			[]any{func(c *fiber.Ctx) error {
+				return c.Next()
+			}},
 			[]httpcontract.Middleware{},
 			[]httpcontract.Middleware{},
 		),
@@ -79,34 +82,23 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 	r.instance.Use(func(ctx *fiber.Ctx) error {
-		exist := false
-		for _, item := range r.instance.GetRoutes() {
-			if item.Path == ctx.Path() && item.Method == ctx.Method() {
-				exist = true
-				break
-			}
+		if response := handler(NewContext(ctx)); response != nil {
+			return response.Render()
 		}
 
-		if !exist {
-			if response := handler(NewContext(ctx)); response != nil {
-				return response.Render()
-			}
-
-			return nil
-		}
-
-		return ctx.Next()
+		return nil
 	})
 }
 
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
-	middlewares = append(middlewares, Cors())
-	tempMiddlewares := []any{recover.New(recover.Config{
+	tempMiddlewares := []any{middlewareToFiberHandler(Cors()), recover.New(recover.Config{
 		EnableStackTrace: r.config.GetBool("app.debug", false),
 	})}
-	if r.config.GetBool("app.debug", false) {
+
+	debug := r.config.GetBool("app.debug", false)
+	if debug {
 		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
@@ -118,11 +110,11 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
-	r.instance.Use(tempMiddlewares...)
 	r.Router = NewGroup(
 		r.config,
 		r.instance,
 		"",
+		tempMiddlewares,
 		[]httpcontract.Middleware{},
 		[]httpcontract.Middleware{ResponseMiddleware()},
 	)

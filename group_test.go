@@ -3,6 +3,8 @@ package fiber
 import (
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -261,13 +263,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(3)
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(3)
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(3)
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(3)
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(3)
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(3)
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(3)
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -286,13 +288,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(2)
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(2)
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(2)
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(2)
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(2)
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(2)
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(2)
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -311,13 +313,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(4)
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(4)
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(4)
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(4)
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(4)
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(4)
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(4)
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -336,13 +338,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(5)
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(5)
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(5)
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(5)
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(5)
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(5)
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(5)
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -361,13 +363,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(6)
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(6)
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(6)
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(6)
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(6)
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(6)
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(6)
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -384,29 +386,50 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Static",
 			setup: func(req *http.Request) {
-				fiber.Static("static", "./")
+				tempDir, err := os.MkdirTemp("", "test")
+				assert.NoError(t, err)
+
+				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
+				assert.NoError(t, err)
+
+				fiber.Static("static", tempDir)
 			},
-			method:     "GET",
-			url:        "/static/README.md",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static/test.json",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "StaticFile",
 			setup: func(req *http.Request) {
-				fiber.StaticFile("static-file", "./README.md")
+				file, err := os.CreateTemp("", "test")
+				assert.NoError(t, err)
+
+				err = os.WriteFile(file.Name(), []byte("{\"id\":1}"), 0755)
+				assert.NoError(t, err)
+
+				fiber.StaticFile("static-file", file.Name())
 			},
-			method:     "GET",
-			url:        "/static-file",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static-file",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "StaticFS",
 			setup: func(req *http.Request) {
-				fiber.StaticFS("static-fs", http.Dir("./"))
+				tempDir, err := os.MkdirTemp("", "test")
+				assert.NoError(t, err)
+
+				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
+				assert.NoError(t, err)
+
+				fiber.StaticFS("static-fs", http.Dir(tempDir))
 			},
-			method:     "GET",
-			url:        "/static-fs/README.md",
-			expectCode: http.StatusOK,
+			method:         "GET",
+			url:            "/static-fs/test.json",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
 		},
 		{
 			name: "Abort Middleware",
