@@ -388,7 +388,6 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				tempDir, err := os.MkdirTemp("", "test")
 				assert.NoError(t, err)
-				defer os.RemoveAll(tempDir)
 
 				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
@@ -405,7 +404,6 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				file, err := os.CreateTemp("", "test")
 				assert.NoError(t, err)
-				defer os.Remove(file.Name())
 
 				err = os.WriteFile(file.Name(), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
