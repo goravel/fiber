@@ -63,6 +63,14 @@ func (r *ContextResponse) View() contractshttp.ResponseView {
 	return NewView(r.instance)
 }
 
+func (r *ContextResponse) Flush() {
+	r.instance.Fresh()
+}
+
+func (r *ContextResponse) Writer() http.ResponseWriter {
+	return &WriterAdapter{r.instance}
+}
+
 type WriterAdapter struct {
 	instance *fiber.Ctx
 }
@@ -82,14 +90,6 @@ func (w *WriterAdapter) Write(data []byte) (int, error) {
 
 func (w *WriterAdapter) WriteHeader(code int) {
 	w.instance.Context().SetStatusCode(code)
-}
-
-func (r *ContextResponse) Writer() http.ResponseWriter {
-	return &WriterAdapter{r.instance}
-}
-
-func (r *ContextResponse) Flush() {
-	r.instance.Fresh()
 }
 
 type Success struct {
