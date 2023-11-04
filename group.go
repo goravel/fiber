@@ -99,19 +99,19 @@ func (r *Group) Resource(relativePath string, controller httpcontract.ResourceCo
 }
 
 func (r *Group) Static(relativePath, root string) {
-	r.instance.Static(r.getPath(relativePath), root)
+	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Static(r.getPath(relativePath), root)
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFile(relativePath, filepath string) {
-	r.instance.Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
+	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
 		return c.SendFile(filepath, true)
 	})
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
-	r.instance.Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
+	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
 	r.clearMiddlewares()
