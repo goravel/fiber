@@ -99,19 +99,19 @@ func (r *Group) Resource(relativePath string, controller httpcontract.ResourceCo
 }
 
 func (r *Group) Static(relativePath, root string) {
-	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Static(r.getPath(relativePath), root)
+	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Static(r.getPath(relativePath), root)
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFile(relativePath, filepath string) {
-	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
+	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
 		return c.SendFile(filepath, true)
 	})
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
-	r.instance.Use(r.getPath(relativePath), r.getMiddlewares(nil)).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
+	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
 	r.clearMiddlewares()
@@ -134,6 +134,25 @@ func (r *Group) getPath(relativePath string) string {
 	r.prefix = ""
 
 	return path
+}
+
+func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract.HandlerFunc) []any {
+	var handlers []any
+	handlers = append(handlers, r.getPath(relativePath))
+	middlewares := r.getMiddlewares(handler)
+
+	// Fiber will panic if no middleware is provided, So we add a dummy middleware
+	if len(middlewares) == 0 {
+		middlewares = append(middlewares, func(c *fiber.Ctx) error {
+			return c.Next()
+		})
+	}
+
+	for _, item := range middlewares {
+		handlers = append(handlers, item)
+	}
+
+	return handlers
 }
 
 func (r *Group) clearMiddlewares() {
