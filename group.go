@@ -58,43 +58,51 @@ func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Router 
 }
 
 func (r *Group) Any(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).All(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).All(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Get(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Post(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Delete(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Delete(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Delete(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Patch(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Patch(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Patch(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Put(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Put(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Put(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Options(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Options(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Options(relativePath, r.getMiddlewares(handler)...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Resource(relativePath string, controller httpcontract.ResourceController) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath), r.getMiddlewares(controller.Index)...)
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(r.getPath(relativePath), r.getMiddlewares(controller.Store)...)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(relativePath, r.getMiddlewares(controller.Index)...)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Post(relativePath, r.getMiddlewares(controller.Store)...)
 	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Get(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Show)...)
 	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Put(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
 	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Patch(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
@@ -103,12 +111,14 @@ func (r *Group) Resource(relativePath string, controller httpcontract.ResourceCo
 }
 
 func (r *Group) Static(relativePath, root string) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Static(r.getPath(relativePath), root)
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Static(relativePath, root)
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFile(relativePath, filePath string) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), func(c *fiber.Ctx) error {
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, func(c *fiber.Ctx) error {
 		dir, file := filepath.Split(filePath)
 		escapedFile := url.PathEscape(file)
 		escapedPath := filepath.Join(dir, escapedFile)
@@ -119,7 +129,8 @@ func (r *Group) StaticFile(relativePath, filePath string) {
 }
 
 func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
-	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(r.getPath(relativePath), filesystem.New(filesystem.Config{
+	relativePath = r.getPath(relativePath)
+	r.instance.Use(r.getGlobalMiddlewaresWithPath(relativePath)...).Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
 	r.clearMiddlewares()
@@ -146,7 +157,7 @@ func (r *Group) getPath(relativePath string) string {
 
 func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract.HandlerFunc) []any {
 	var handlers []any
-	handlers = append(handlers, r.getPath(relativePath))
+	handlers = append(handlers, relativePath)
 	middlewares := r.getMiddlewares(handler)
 
 	// Fiber will panic if no middleware is provided, So we add a dummy middleware
@@ -165,7 +176,7 @@ func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract
 
 func (r *Group) getGlobalMiddlewaresWithPath(relativePath string) []any {
 	var handlers []any
-	handlers = append(handlers, r.getPath(relativePath))
+	handlers = append(handlers, relativePath)
 	handlers = append(handlers, r.globalMiddlewares...)
 
 	return handlers
