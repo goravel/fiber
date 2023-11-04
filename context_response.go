@@ -6,7 +6,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
-	"github.com/valyala/fasthttp"
 )
 
 type ContextResponse struct {
@@ -64,16 +63,33 @@ func (r *ContextResponse) View() contractshttp.ResponseView {
 	return NewView(r.instance)
 }
 
-func (r *ContextResponse) Writer() http.ResponseWriter {
-	panic("not support")
-}
-
-func (r *ContextResponse) FastHTTPWriter() *fasthttp.Response {
-	return r.instance.Response()
-}
-
 func (r *ContextResponse) Flush() {
 	r.instance.Fresh()
+}
+
+func (r *ContextResponse) Writer() http.ResponseWriter {
+	return &WriterAdapter{r.instance}
+}
+
+type WriterAdapter struct {
+	instance *fiber.Ctx
+}
+
+func (w *WriterAdapter) Header() http.Header {
+	result := http.Header{}
+	w.instance.Request().Header.VisitAll(func(key, value []byte) {
+		result.Add(string(key), string(value))
+	})
+
+	return result
+}
+
+func (w *WriterAdapter) Write(data []byte) (int, error) {
+	return w.instance.Context().Write(data)
+}
+
+func (w *WriterAdapter) WriteHeader(code int) {
+	w.instance.Context().SetStatusCode(code)
 }
 
 type Success struct {

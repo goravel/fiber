@@ -12,7 +12,8 @@ type DataResponse struct {
 }
 
 func (r *DataResponse) Render() error {
-	return r.instance.Status(r.code).Type(r.contentType).Send(r.data)
+	r.instance.Response().Header.SetContentType(r.contentType)
+	return r.instance.Status(r.code).Send(r.data)
 }
 
 type DownloadResponse struct {
@@ -66,7 +67,8 @@ func (r *StringResponse) Render() error {
 		return r.instance.Status(r.code).SendString(r.format)
 	}
 
-	return r.instance.Status(r.code).Type(r.format).SendString(r.values[0].(string))
+	r.instance.Response().Header.SetContentType(r.format)
+	return r.instance.Status(r.code).SendString(r.values[0].(string))
 }
 
 type HtmlResponse struct {

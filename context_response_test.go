@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -275,6 +276,27 @@ func TestResponse(t *testing.T) {
 				return nil
 			},
 			expectCode: http.StatusMovedPermanently,
+		},
+		{
+			name:   "Writer",
+			method: "GET",
+			url:    "/writer",
+			setup: func(method, url string) error {
+				fiber.Get("/writer", func(ctx contractshttp.Context) contractshttp.Response {
+					_, err = fmt.Fprintf(ctx.Response().Writer(), "Goravel")
+					return nil
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "Goravel",
 		},
 	}
 
