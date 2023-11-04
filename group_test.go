@@ -420,12 +420,11 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				tempDir, err := os.MkdirTemp("", "test")
 				assert.NoError(t, err)
-				defer os.RemoveAll(tempDir)
 
 				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
-				fiber.StaticFS("static-fs", http.Dir("./"))
+				fiber.StaticFS("static-fs", http.Dir(tempDir))
 			},
 			method:         "GET",
 			url:            "/static-fs/test.json",
