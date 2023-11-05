@@ -447,6 +447,34 @@ func (r *CreateUser) PrepareForValidation(ctx contractshttp.Context, data valida
 	return nil
 }
 
+type CreateUser2 struct {
+	ID int `form:"id" json:"id"`
+}
+
+func (r *CreateUser2) Authorize(ctx contractshttp.Context) error {
+	return nil
+}
+
+func (r *CreateUser2) Rules(ctx contractshttp.Context) map[string]string {
+	return map[string]string{
+		"id": "required|uint",
+	}
+}
+
+func (r *CreateUser2) Messages(ctx contractshttp.Context) map[string]string {
+	return map[string]string{}
+}
+
+func (r *CreateUser2) Attributes(ctx contractshttp.Context) map[string]string {
+	return map[string]string{}
+}
+
+func (r *CreateUser2) PrepareForValidation(ctx contractshttp.Context, data validation.Data) error {
+	_ = data.Set("id", ctx.Request().QueryInt("id"))
+
+	return nil
+}
+
 type Unauthorize struct {
 	Name string `form:"name" json:"name"`
 }

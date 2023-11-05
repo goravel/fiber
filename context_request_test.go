@@ -1177,6 +1177,41 @@ func TestRequest(t *testing.T) {
 			expectBodyJson: "{\"name\":\"Goravel1\"}",
 		},
 		{
+			name:   "GET with int validator and validate request pass",
+			method: "GET",
+			url:    "/validator/validate-request/success?id=1",
+			setup: func(method, url string) error {
+				fiber.Get("/validator/validate-request/success", func(ctx contractshttp.Context) contractshttp.Response {
+					mockValidation := &validationmocks.Validation{}
+					mockValidation.On("Rules").Return([]validation.Rule{}).Once()
+					ValidationFacade = mockValidation
+
+					var createUser CreateUser2
+					validateErrors, err := ctx.Request().ValidateRequest(&createUser)
+					if err != nil {
+						return ctx.Response().String(http.StatusBadRequest, "Validate error: "+err.Error())
+					}
+					if validateErrors != nil {
+						return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validateErrors.All()))
+					}
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"id": createUser.ID,
+					})
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":1}",
+		},
+		{
 			name:   "GET with validator but validate request fail",
 			method: "GET",
 			url:    "/validator/validate-request/fail?name1=Goravel",
