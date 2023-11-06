@@ -19,6 +19,7 @@ import (
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
+	"github.com/savioxavier/termlink"
 )
 
 // Route fiber route
@@ -138,7 +139,7 @@ func (r *Route) Run(host ...string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln("[HTTP] Listening and serving HTTP on " + host[0])
+	color.Greenln("[HTTP] Listening and serving HTTP on" + termlink.Link("", "http://"+host[0]))
 
 	return r.instance.Listen(host[0])
 }
@@ -183,7 +184,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln("[HTTPS] Listening and serving HTTPS on " + host)
+	color.Greenln("[HTTPS] Listening and serving HTTPS on" + termlink.Link("", "https://"+host))
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
