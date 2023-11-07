@@ -1361,6 +1361,41 @@ func TestRequest(t *testing.T) {
 			expectBody: "Validate fail: map[name:map[required:name is required to not be empty]]",
 		},
 		{
+			name:   "POST with validator use filter and validate request pass",
+			method: "POST",
+			url:    "/validator/validate-request/success",
+			setup: func(method, url string) error {
+				fiber.Post("/validator/validate-request/success", func(ctx contractshttp.Context) contractshttp.Response {
+					mockValidation := &validationmocks.Validation{}
+					mockValidation.On("Rules").Return([]validation.Rule{}).Once()
+					ValidationFacade = mockValidation
+
+					var createUser CreateUser
+					validateErrors, err := ctx.Request().ValidateRequest(&createUser)
+					if err != nil {
+						return ctx.Response().String(http.StatusBadRequest, "Validate error: "+err.Error())
+					}
+					if validateErrors != nil {
+						return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validateErrors.All()))
+					}
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"name": createUser.Name,
+					})
+				})
+
+				payload := strings.NewReader(`{
+					"name": " Goravel"
+				}`)
+				req, _ = http.NewRequest(method, url, payload)
+				req.Header.Set("Content-Type", "application/json")
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel1\"}",
+		},
+		{
 			name:   "POST with validator and validate request unauthorize",
 			method: "POST",
 			url:    "/validator/validate-request/unauthorize",

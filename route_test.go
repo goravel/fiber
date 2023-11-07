@@ -418,7 +418,7 @@ func TestNewRoute(t *testing.T) {
 }
 
 type CreateUser struct {
-	Name string `form:"name" json:"name"`
+	Name string `form:"name" json:"name" filter:"trim"`
 }
 
 func (r *CreateUser) Authorize(ctx contractshttp.Context) error {
