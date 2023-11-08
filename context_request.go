@@ -401,7 +401,7 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 
 	validation.AppendOptions(v, generateOptions)
 
-	return validation.NewValidator(v, dataFace), nil
+	return validation.NewValidator(v), nil
 }
 
 func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (contractsvalidate.Errors, error) {
