@@ -1212,6 +1212,41 @@ func TestRequest(t *testing.T) {
 			expectBody: "Validate fail: map[name:map[required:name is required to not be empty]]",
 		},
 		{
+			name:   "GET with validator use filter and validate request pass",
+			method: "GET",
+			url:    "/validator/filter/success?name= Goravel",
+			setup: func(method, url string) error {
+				fiber.Get("/validator/filter/success", func(ctx contractshttp.Context) contractshttp.Response {
+					mockValidation := &validationmocks.Validation{}
+					mockValidation.On("Rules").Return([]validation.Rule{}).Once()
+					ValidationFacade = mockValidation
+
+					var createUser CreateUser
+					validateErrors, err := ctx.Request().ValidateRequest(&createUser)
+					if err != nil {
+						return ctx.Response().String(http.StatusBadRequest, "Validate error: "+err.Error())
+					}
+					if validateErrors != nil {
+						return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validateErrors.All()))
+					}
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"name": createUser.Name,
+					})
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"name\":\"Goravel1\"}",
+		},
+		{
 			name:   "POST with validator and validate pass",
 			method: "POST",
 			url:    "/validator/validate/success",
@@ -1365,7 +1400,7 @@ func TestRequest(t *testing.T) {
 			method: "POST",
 			url:    "/validator/filter/success",
 			setup: func(method, url string) error {
-				fiber.Post("/validator/validate-request/success", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Post("/validator/filter/success", func(ctx contractshttp.Context) contractshttp.Response {
 					mockValidation := &validationmocks.Validation{}
 					mockValidation.On("Rules").Return([]validation.Rule{}).Once()
 					ValidationFacade = mockValidation
