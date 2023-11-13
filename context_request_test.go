@@ -1363,7 +1363,7 @@ func TestRequest(t *testing.T) {
 		{
 			name:   "POST with validator use filter and validate request pass",
 			method: "POST",
-			url:    "/validator/validate-request/success",
+			url:    "/validator/filter/success",
 			setup: func(method, url string) error {
 				fiber.Post("/validator/validate-request/success", func(ctx contractshttp.Context) contractshttp.Response {
 					mockValidation := &validationmocks.Validation{}
