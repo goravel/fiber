@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
+	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 )
