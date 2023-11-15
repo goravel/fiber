@@ -263,13 +263,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(3)
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(3)
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(3)
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(3)
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(3)
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(3)
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(3)
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -288,13 +288,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(2)
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(2)
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(2)
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(2)
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(2)
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(2)
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(2)
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -313,13 +313,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(4)
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(4)
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(4)
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(4)
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(4)
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(4)
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(4)
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -338,13 +338,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(5)
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(5)
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(5)
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(5)
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(5)
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(5)
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(5)
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -363,13 +363,13 @@ func TestGroup(t *testing.T) {
 			setup: func(req *http.Request) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Times(6)
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Times(6)
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Times(6)
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Times(6)
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Times(6)
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Times(6)
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Times(6)
+				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
+				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
