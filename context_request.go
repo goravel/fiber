@@ -156,6 +156,13 @@ func (r *ContextRequest) Method() string {
 
 func (r *ContextRequest) Next() {
 	if err := r.instance.Next(); err != nil {
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) {
+			if err := r.instance.Status(fiberErr.Code).SendString(fiberErr.Message); err == nil {
+				return
+			}
+		}
+
 		panic(err)
 	}
 }

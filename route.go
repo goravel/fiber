@@ -68,9 +68,6 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 			config,
 			app,
 			"",
-			[]any{func(c *fiber.Ctx) error {
-				return c.Next()
-			}},
 			[]httpcontract.Middleware{},
 			[]httpcontract.Middleware{},
 		),
@@ -111,11 +108,12 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		tempMiddlewares = append(tempMiddlewares, middleware)
 	}
 
+	r.instance.Use(tempMiddlewares...)
+
 	r.Router = NewGroup(
 		r.config,
 		r.instance,
 		"",
-		tempMiddlewares,
 		[]httpcontract.Middleware{},
 		[]httpcontract.Middleware{ResponseMiddleware()},
 	)
