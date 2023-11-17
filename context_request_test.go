@@ -1214,7 +1214,7 @@ func TestRequest(t *testing.T) {
 		{
 			name:   "GET with validator use filter and validate request pass",
 			method: "GET",
-			url:    "/validator/filter/success?name= Goravel",
+			url:    "/validator/filter/success?name= Goravel ",
 			setup: func(method, url string) error {
 				fiber.Get("/validator/filter/success", func(ctx contractshttp.Context) contractshttp.Response {
 					mockValidation := &validationmocks.Validation{}
@@ -1244,7 +1244,7 @@ func TestRequest(t *testing.T) {
 				return nil
 			},
 			expectCode:     http.StatusOK,
-			expectBodyJson: "{\"name\":\"Goravel1\"}",
+			expectBodyJson: "{\"name\":\"Goravel 1\"}",
 		},
 		{
 			name:   "POST with validator and validate pass",
@@ -1420,7 +1420,7 @@ func TestRequest(t *testing.T) {
 				})
 
 				payload := strings.NewReader(`{
-					"name": " Goravel"
+					"name": " Goravel "
 				}`)
 				req, _ = http.NewRequest(method, url, payload)
 				req.Header.Set("Content-Type", "application/json")
@@ -1428,7 +1428,7 @@ func TestRequest(t *testing.T) {
 				return nil
 			},
 			expectCode:     http.StatusOK,
-			expectBodyJson: "{\"name\":\"Goravel1\"}",
+			expectBodyJson: "{\"name\":\"Goravel 1\"}",
 		},
 		{
 			name:   "POST with validator and validate request unauthorize",
