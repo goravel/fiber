@@ -48,6 +48,10 @@ func (c *Context) Context() context.Context {
 	return c.instance.UserContext()
 }
 
+func (c *Context) SetContext(ctx http.Context) {
+	c.instance.SetUserContext(ctx)
+}
+
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return c.instance.UserContext().Deadline()
 }
