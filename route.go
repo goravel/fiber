@@ -57,6 +57,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 
 	app := fiber.New(fiber.Config{
 		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
+		BodyLimit:             config.GetInt("http.drivers.fiber.body_limit", 4) << 20,
 		DisableStartupMessage: true,
 		JSONEncoder:           json.Marshal,
 		JSONDecoder:           json.Unmarshal,
