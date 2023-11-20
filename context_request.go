@@ -55,6 +55,11 @@ func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 
 	var mu sync.RWMutex
+	for k, v := range r.instance.AllParams() {
+		mu.Lock()
+		data[k] = v
+		mu.Unlock()
+	}
 	for k, v := range r.instance.Queries() {
 		mu.Lock()
 		data[k] = v
@@ -381,18 +386,7 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 	generateOptions := validation.GenerateOptions(options)
 
 	var v *validate.Validation
-	dataFace, err := validate.FromRequest(r.Origin())
-	if err != nil {
-		return nil, err
-	}
-
-	for key, value := range r.instance.AllParams() {
-		if _, exist := dataFace.Get(key); !exist {
-			if _, err := dataFace.Set(key, value); err != nil {
-				return nil, err
-			}
-		}
-	}
+	dataFace := validate.FromMap(r.ctx.Request().All())
 
 	if generateOptions["prepareForValidation"] != nil {
 		if err := generateOptions["prepareForValidation"].(func(ctx contractshttp.Context, data contractsvalidate.Data) error)(r.ctx, validation.NewData(dataFace)); err != nil {
