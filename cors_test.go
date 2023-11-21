@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,6 +29,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
@@ -52,6 +53,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"api"}).Once()
 				ConfigFacade = mockConfig
 			},
@@ -69,6 +71,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"any/*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
@@ -92,6 +95,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"POST"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
@@ -115,6 +119,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"GET"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
@@ -138,6 +143,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"https://goravel.com"}).Once()
@@ -161,6 +167,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"https://www.goravel.dev"}).Once()
@@ -184,6 +191,7 @@ func TestCors(t *testing.T) {
 				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()

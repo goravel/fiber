@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,6 +23,7 @@ func TestResponse(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
@@ -351,6 +352,7 @@ func TestResponse_Success(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
@@ -478,6 +480,7 @@ func TestResponse_Status(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {

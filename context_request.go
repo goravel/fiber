@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -54,6 +55,11 @@ func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 
 	var mu sync.RWMutex
+	for k, v := range r.instance.AllParams() {
+		mu.Lock()
+		data[k] = v
+		mu.Unlock()
+	}
 	for k, v := range r.instance.Queries() {
 		mu.Lock()
 		data[k] = v
@@ -380,18 +386,7 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 	generateOptions := validation.GenerateOptions(options)
 
 	var v *validate.Validation
-	dataFace, err := validate.FromRequest(r.Origin())
-	if err != nil {
-		return nil, err
-	}
-
-	for key, value := range r.instance.AllParams() {
-		if _, exist := dataFace.Get(key); !exist {
-			if _, err := dataFace.Set(key, value); err != nil {
-				return nil, err
-			}
-		}
-	}
+	dataFace := validate.FromMap(r.ctx.Request().All())
 
 	if generateOptions["prepareForValidation"] != nil {
 		if err := generateOptions["prepareForValidation"].(func(ctx contractshttp.Context, data contractsvalidate.Data) error)(r.ctx, validation.NewData(dataFace)); err != nil {
@@ -401,9 +396,13 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 
 	v = dataFace.Create()
 
+	if generateOptions["filters"] != nil {
+		v.FilterRules(generateOptions["filters"].(map[string]string))
+	}
+
 	validation.AppendOptions(v, generateOptions)
 
-	return validation.NewValidator(v, dataFace), nil
+	return validation.NewValidator(v), nil
 }
 
 func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (contractsvalidate.Errors, error) {
@@ -411,8 +410,20 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 		return nil, err
 	}
 
+	filters := make(map[string]string)
+	val := reflect.Indirect(reflect.ValueOf(request))
+	for i := 0; i < val.Type().NumField(); i++ {
+		field := val.Type().Field(i)
+		form := field.Tag.Get("form")
+		filter := field.Tag.Get("filter")
+		if len(form) > 0 && len(filter) > 0 {
+			filters[form] = filter
+		}
+	}
+
 	validator, err := r.Validate(request.Rules(r.ctx), validation.Messages(request.Messages(r.ctx)), validation.Attributes(request.Attributes(r.ctx)), func(options map[string]any) {
 		options["prepareForValidation"] = request.PrepareForValidation
+		options["filters"] = filters
 	})
 	if err != nil {
 		return nil, err

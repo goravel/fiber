@@ -10,15 +10,16 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/validation"
+	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFallback(t *testing.T) {
 	mockConfig := &configmocks.Config{}
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	ConfigFacade = mockConfig
 
 	route, err := NewRoute(mockConfig, nil)
@@ -121,6 +122,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -232,6 +234,7 @@ func TestRunTLS(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -322,6 +325,7 @@ func TestRunTLSWithCert(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -367,6 +371,7 @@ func TestNewRoute(t *testing.T) {
 			name: "parameters is nil",
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			},
 			expectTemplate: nil,
 		},
@@ -375,6 +380,7 @@ func TestNewRoute(t *testing.T) {
 			parameters: map[string]any{"driver": "fiber"},
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "http.drivers.fiber.template").Return(template).Once()
 			},
 			expectTemplate: template,
@@ -384,6 +390,7 @@ func TestNewRoute(t *testing.T) {
 			parameters: map[string]any{"driver": "fiber"},
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "http.drivers.fiber.template").Return(func() (fiber.Views, error) {
 					return template, nil
 				}).Twice()
@@ -418,7 +425,7 @@ func TestNewRoute(t *testing.T) {
 }
 
 type CreateUser struct {
-	Name string `form:"name" json:"name"`
+	Name string `form:"name" json:"name" filter:"trim"`
 }
 
 func (r *CreateUser) Authorize(ctx contractshttp.Context) error {

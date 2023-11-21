@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	configmocks "github.com/goravel/framework/contracts/config/mocks"
 	contractshttp "github.com/goravel/framework/contracts/http"
-	httpmocks "github.com/goravel/framework/contracts/http/mocks"
+	configmocks "github.com/goravel/framework/mocks/config"
+	httpmocks "github.com/goravel/framework/mocks/http"
 	"github.com/goravel/framework/support/file"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,6 +34,7 @@ func TestView_Make(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
 
 		mockView = &httpmocks.View{}
@@ -256,6 +257,7 @@ func TestView_First(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
 
 		mockView = &httpmocks.View{}
