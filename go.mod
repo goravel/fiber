@@ -9,7 +9,7 @@ require (
 	github.com/gookit/validate v1.5.1
 	github.com/goravel/framework v1.13.1-0.20231121034700-e91df530a997
 	github.com/savioxavier/termlink v1.3.0
-	github.com/spf13/cast v1.5.1
+	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.51.0
 )
