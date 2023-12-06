@@ -57,7 +57,7 @@ import (
         "route": func() (route.Route, error) {
             return fiberfacades.Route("fiber"), nil
         },
-        //Optional, default is "html/template"
+        // Optional, default is "html/template"
         "template": func() (fiber.Views, error) {
             return html.New("./resources/views", ".tmpl"), nil
         },
