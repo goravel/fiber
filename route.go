@@ -55,12 +55,21 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		views = html.New("./resources/views", ".tmpl")
 	}
 
+	network := fiber.NetworkTCP
+	prefork := config.GetBool("http.drivers.fiber.prefork", false)
+	// Fiber not support prefork on dual stack
+	// https://docs.gofiber.io/api/fiber#config
+	if prefork {
+		network = fiber.NetworkTCP4
+	}
+
 	app := fiber.New(fiber.Config{
-		Prefork:               config.GetBool("http.drivers.fiber.prefork", false),
+		Prefork:               prefork,
 		BodyLimit:             config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
 		DisableStartupMessage: true,
 		JSONEncoder:           json.Marshal,
 		JSONDecoder:           json.Unmarshal,
+		Network:               network,
 		Views:                 views,
 	})
 
@@ -125,10 +134,6 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 func (r *Route) Run(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.host")
-		if defaultHost == "" {
-			return errors.New("host can't be empty")
-		}
-
 		defaultPort := r.config.GetString("http.port")
 		if defaultPort == "" {
 			return errors.New("port can't be empty")
@@ -138,7 +143,7 @@ func (r *Route) Run(host ...string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln("[HTTP] Listening and serving HTTP on" + termlink.Link("", "http://"+host[0]))
+	color.Greenln(termlink.Link("[HTTP] Listening and serving HTTP on", host[0]))
 
 	return r.instance.Listen(host[0])
 }
@@ -148,10 +153,6 @@ func (r *Route) Run(host ...string) error {
 func (r *Route) RunTLS(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.tls.host")
-		if defaultHost == "" {
-			return errors.New("host can't be empty")
-		}
-
 		defaultPort := r.config.GetString("http.tls.port")
 		if defaultPort == "" {
 			return errors.New("port can't be empty")
@@ -183,7 +184,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln("[HTTPS] Listening and serving HTTPS on" + termlink.Link("", "https://"+host))
+	color.Greenln(termlink.Link("[HTTPS] Listening and serving HTTPS on", host))
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }

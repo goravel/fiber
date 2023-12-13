@@ -58,19 +58,6 @@ func TestRun(t *testing.T) {
 		expectError error
 	}{
 		{
-			name: "error when default host is empty",
-			setup: func(host string, port string) error {
-				mockConfig.On("GetString", "http.host").Return(host).Once()
-
-				go func() {
-					assert.EqualError(t, route.Run(), "host can't be empty")
-				}()
-				time.Sleep(1 * time.Second)
-
-				return errors.New("error")
-			},
-		},
-		{
 			name: "error when default port is empty",
 			setup: func(host string, port string) error {
 				mockConfig.On("GetString", "http.host").Return(host).Once()
@@ -167,19 +154,6 @@ func TestRunTLS(t *testing.T) {
 		port        string
 		expectError error
 	}{
-		{
-			name: "error when default host is empty",
-			setup: func(host string, port string) error {
-				mockConfig.On("GetString", "http.tls.host").Return(host).Once()
-
-				go func() {
-					assert.EqualError(t, route.RunTLS(), "host can't be empty")
-				}()
-				time.Sleep(1 * time.Second)
-
-				return errors.New("error")
-			},
-		},
 		{
 			name: "error when default port is empty",
 			setup: func(host string, port string) error {
