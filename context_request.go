@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gookit/validate"
@@ -54,21 +53,14 @@ func (r *ContextRequest) AbortWithStatusJson(code int, jsonObj any) {
 func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 
-	var mu sync.RWMutex
 	for k, v := range r.instance.AllParams() {
-		mu.Lock()
 		data[k] = v
-		mu.Unlock()
 	}
 	for k, v := range r.instance.Queries() {
-		mu.Lock()
 		data[k] = v
-		mu.Unlock()
 	}
 	for k, v := range r.postData {
-		mu.Lock()
 		data[k] = v
-		mu.Unlock()
 	}
 
 	return data
