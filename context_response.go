@@ -17,6 +17,10 @@ func NewContextResponse(instance *fiber.Ctx, origin contractshttp.ResponseOrigin
 	return &ContextResponse{instance, origin}
 }
 
+func (r *ContextResponse) Cookie(cookie *contractshttp.Cookie) contractshttp.ContextResponse {
+	return r.WithCookie(cookie)
+}
+
 func (r *ContextResponse) Data(code int, contentType string, data []byte) contractshttp.Response {
 	return &DataResponse{code, contentType, data, r.instance}
 }
@@ -65,6 +69,30 @@ func (r *ContextResponse) View() contractshttp.ResponseView {
 
 func (r *ContextResponse) Flush() {
 	r.instance.Fresh()
+}
+
+func (r *ContextResponse) WithCookie(cookie *contractshttp.Cookie) contractshttp.ContextResponse {
+	r.instance.Cookie(&fiber.Cookie{
+		Name:     cookie.Name,
+		Value:    cookie.Value,
+		Path:     cookie.Path,
+		Domain:   cookie.Domain,
+		Expires:  cookie.Expires,
+		Secure:   cookie.Secure,
+		HTTPOnly: cookie.HttpOnly,
+		MaxAge:   cookie.MaxAge,
+		SameSite: cookie.SameSite,
+	})
+	return r
+}
+
+func (r *ContextResponse) WithoutCookie(name string) contractshttp.ContextResponse {
+	r.instance.Cookie(&fiber.Cookie{
+		Name:   name,
+		MaxAge: -1,
+	})
+
+	return r
 }
 
 func (r *ContextResponse) Writer() http.ResponseWriter {
