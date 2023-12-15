@@ -37,13 +37,15 @@ func TestRequest(t *testing.T) {
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
-		name           string
-		method         string
-		url            string
-		setup          func(method, url string) error
-		expectCode     int
-		expectBody     string
-		expectBodyJson string
+		name              string
+		method            string
+		url               string
+		cookieName        string
+		setup             func(method, url string) error
+		expectCode        int
+		expectBody        string
+		expectBodyJson    string
+		expectCookieValue string
 	}{
 		{
 			name:   "All when Get and query is empty",
@@ -1461,6 +1463,44 @@ func TestRequest(t *testing.T) {
 			expectCode: http.StatusBadRequest,
 			expectBody: "Validate error: error",
 		},
+		{
+			name:       "Cookie",
+			method:     "GET",
+			url:        "/cookie",
+			cookieName: "user",
+			setup: func(method, url string) error {
+				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Cookie(contractshttp.Cookie{
+						Name:  "cook",
+						Value: "Krishan",
+					}).Success().Json(nil)
+				})
+
+				req, _ = http.NewRequest(method, url, nil)
+
+				return nil
+			},
+			expectCode:        http.StatusOK,
+			expectCookieValue: "Krishan",
+		},
+		{
+			name:   "Cookie - default value",
+			method: "GET",
+			url:    "/cookie",
+			setup: func(method, url string) error {
+				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"cookie": ctx.Request().Cookie("cookie", "value"),
+					})
+				})
+
+				req, _ = http.NewRequest(method, url, nil)
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"cookie\":\"value\"}",
+		},
 	}
 
 	for _, test := range tests {
@@ -1494,6 +1534,15 @@ func TestRequest(t *testing.T) {
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)
+			}
+
+			if test.cookieName != "" {
+				cookies := resp.Cookies()
+				for _, cookie := range cookies {
+					if cookie.Name == test.cookieName {
+						assert.Equal(t, test.expectCookieValue, cookie.Value)
+					}
+				}
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
