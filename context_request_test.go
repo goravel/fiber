@@ -37,15 +37,13 @@ func TestRequest(t *testing.T) {
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
-		name              string
-		method            string
-		url               string
-		cookieName        string
-		setup             func(method, url string) error
-		expectCode        int
-		expectBody        string
-		expectBodyJson    string
-		expectCookieValue string
+		name           string
+		method         string
+		url            string
+		setup          func(method, url string) error
+		expectCode     int
+		expectBody     string
+		expectBodyJson string
 	}{
 		{
 			name:   "All when Get and query is empty",
@@ -1464,24 +1462,26 @@ func TestRequest(t *testing.T) {
 			expectBody: "Validate error: error",
 		},
 		{
-			name:       "Cookie",
-			method:     "GET",
-			url:        "/cookie",
-			cookieName: "user",
+			name:   "Cookie",
+			method: "GET",
+			url:    "/cookie",
 			setup: func(method, url string) error {
 				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
-					return ctx.Response().Cookie(contractshttp.Cookie{
-						Name:  "cook",
-						Value: "Krishan",
-					}).Success().Json(nil)
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"cookie": ctx.Request().Cookie("user"),
+					})
 				})
 
 				req, _ = http.NewRequest(method, url, nil)
+				req.AddCookie(&http.Cookie{
+					Name:  "user",
+					Value: "Krishan",
+				})
 
 				return nil
 			},
-			expectCode:        http.StatusOK,
-			expectCookieValue: "Krishan",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"cookie\":\"Krishan\"}",
 		},
 		{
 			name:   "Cookie - default value",
@@ -1534,15 +1534,6 @@ func TestRequest(t *testing.T) {
 				assert.Nil(t, err)
 
 				assert.Equal(t, exceptBodyMap, bodyMap)
-			}
-
-			if test.cookieName != "" {
-				cookies := resp.Cookies()
-				for _, cookie := range cookies {
-					if cookie.Name == test.cookieName {
-						assert.Equal(t, test.expectCookieValue, cookie.Value)
-					}
-				}
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
