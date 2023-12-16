@@ -390,11 +390,14 @@ func TestResponse(t *testing.T) {
 
 			if test.cookieName != "" {
 				cookies := resp.Cookies()
+				exist := false
 				for _, cookie := range cookies {
 					if cookie.Name == test.cookieName {
+						exist = true
 						assert.Equal(t, test.expectedCookieValue, cookie.Value)
 					}
 				}
+				assert.True(t, exist)
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
