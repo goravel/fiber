@@ -1461,6 +1461,46 @@ func TestRequest(t *testing.T) {
 			expectCode: http.StatusBadRequest,
 			expectBody: "Validate error: error",
 		},
+		{
+			name:   "Cookie",
+			method: "GET",
+			url:    "/cookie",
+			setup: func(method, url string) error {
+				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"cookie": ctx.Request().Cookie("user"),
+					})
+				})
+
+				req, _ = http.NewRequest(method, url, nil)
+				req.AddCookie(&http.Cookie{
+					Name:  "user",
+					Value: "Krishan",
+				})
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"cookie\":\"Krishan\"}",
+		},
+		{
+			name:   "Cookie - default value",
+			method: "GET",
+			url:    "/cookie",
+			setup: func(method, url string) error {
+				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"cookie": ctx.Request().Cookie("cookie", "value"),
+					})
+				})
+
+				req, _ = http.NewRequest(method, url, nil)
+
+				return nil
+			},
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"cookie\":\"value\"}",
+		},
 	}
 
 	for _, test := range tests {

@@ -27,14 +27,16 @@ func TestResponse(t *testing.T) {
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
-		name           string
-		method         string
-		url            string
-		setup          func(method, url string) error
-		expectCode     int
-		expectBody     string
-		expectBodyJson string
-		expectHeader   string
+		name                string
+		method              string
+		url                 string
+		cookieName          string
+		setup               func(method, url string) error
+		expectCode          int
+		expectBody          string
+		expectBodyJson      string
+		expectHeader        string
+		expectedCookieValue string
 	}{
 		{
 			name:   "Data",
@@ -299,6 +301,57 @@ func TestResponse(t *testing.T) {
 			expectCode: http.StatusOK,
 			expectBody: "Goravel",
 		},
+		{
+			name:       "WithoutCookie",
+			method:     "GET",
+			url:        "/without/cookie",
+			cookieName: "goravel",
+			setup: func(method, url string) error {
+				fiber.Get("/without/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().WithoutCookie("goravel").String(http.StatusOK, "Goravel")
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+				req.AddCookie(&http.Cookie{
+					Name:  "goravel",
+					Value: "goravel",
+				})
+
+				return nil
+			},
+			expectCode:          http.StatusOK,
+			expectBody:          "Goravel",
+			expectedCookieValue: "",
+		},
+		{
+			name:       "Cookie",
+			method:     "GET",
+			url:        "/cookie",
+			cookieName: "goravel",
+			setup: func(method, url string) error {
+				fiber.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Cookie(contractshttp.Cookie{
+						Name:  "goravel",
+						Value: "goravel",
+					}).String(http.StatusOK, "Goravel")
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode:          http.StatusOK,
+			expectBody:          "Goravel",
+			expectedCookieValue: "goravel",
+		},
 	}
 
 	for _, test := range tests {
@@ -333,6 +386,18 @@ func TestResponse(t *testing.T) {
 			}
 			if test.expectHeader != "" {
 				assert.Equal(t, test.expectHeader, strings.Join(resp.Header.Values("Hello"), ""))
+			}
+
+			if test.cookieName != "" {
+				cookies := resp.Cookies()
+				exist := false
+				for _, cookie := range cookies {
+					if cookie.Name == test.cookieName {
+						exist = true
+						assert.Equal(t, test.expectedCookieValue, cookie.Value)
+					}
+				}
+				assert.True(t, exist)
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)

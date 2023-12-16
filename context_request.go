@@ -70,6 +70,10 @@ func (r *ContextRequest) Bind(obj any) error {
 	return r.instance.BodyParser(obj)
 }
 
+func (r *ContextRequest) Cookie(key string, defaultValue ...string) string {
+	return r.instance.Cookies(key, defaultValue...)
+}
+
 func (r *ContextRequest) Form(key string, defaultValue ...string) string {
 	if len(defaultValue) == 0 {
 		return r.instance.FormValue(key)
