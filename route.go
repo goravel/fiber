@@ -176,12 +176,6 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	if certFile == "" || keyFile == "" {
 		return errors.New("certificate can't be empty")
 	}
-	if strings.HasPrefix(certFile, "/") {
-		certFile = "." + certFile
-	}
-	if strings.HasPrefix(keyFile, "/") {
-		keyFile = "." + keyFile
-	}
 
 	r.outputRoutes()
 	color.Greenln(termlink.Link("[HTTPS] Listening and serving HTTPS on", host))
