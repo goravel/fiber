@@ -3,7 +3,7 @@ module github.com/goravel/fiber
 go 1.20
 
 require (
-	github.com/gofiber/fiber/v2 v2.51.0
+	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gookit/color v1.5.4
 	github.com/gookit/validate v1.5.1
