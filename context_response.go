@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
@@ -103,7 +104,7 @@ type WriterAdapter struct {
 func (w *WriterAdapter) Header() http.Header {
 	result := http.Header{}
 	w.instance.Request().Header.VisitAll(func(key, value []byte) {
-		result.Add(string(key), string(value))
+		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
 	})
 
 	return result
@@ -180,7 +181,7 @@ func (w *ResponseOrigin) Body() *bytes.Buffer {
 func (w *ResponseOrigin) Header() http.Header {
 	result := http.Header{}
 	w.Ctx.Response().Header.VisitAll(func(key, value []byte) {
-		result.Add(string(key), string(value))
+		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
 	})
 
 	return result
