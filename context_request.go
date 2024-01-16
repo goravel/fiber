@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/gookit/validate"
 	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -120,7 +121,7 @@ func (r *ContextRequest) Header(key string, defaultValue ...string) string {
 func (r *ContextRequest) Headers() http.Header {
 	result := http.Header{}
 	r.instance.Request().Header.VisitAll(func(key, value []byte) {
-		result.Add(string(key), string(value))
+		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
 	})
 
 	return result
@@ -215,8 +216,8 @@ func (r *ContextRequest) QueryBool(key string, defaultValue ...bool) bool {
 func (r *ContextRequest) QueryArray(key string) []string {
 	var queries []string
 	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
-		if key == string(k) {
-			queries = append(queries, string(v))
+		if key == utils.UnsafeString(k) {
+			queries = append(queries, utils.UnsafeString(v))
 		}
 	})
 
@@ -228,7 +229,7 @@ func (r *ContextRequest) QueryMap(key string) map[string]string {
 	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
 		matches := regexp.MustCompile(`^` + key + `\[(.+)\]$`).FindSubmatch(k)
 		if len(matches) > 0 {
-			queries[string(matches[1])] = string(v)
+			queries[utils.UnsafeString(matches[1])] = utils.UnsafeString(v)
 		}
 	})
 
@@ -444,7 +445,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 		bodyBytes := ctx.instance.Body()
 
 		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("decode json [%v] error: %v", string(bodyBytes), err)
+			return nil, fmt.Errorf("decode json [%v] error: %v", utils.UnsafeString(bodyBytes), err)
 		}
 	}
 
@@ -464,7 +465,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 	if contentType == "application/x-www-form-urlencoded" {
 		args := ctx.instance.Request().PostArgs()
 		args.VisitAll(func(key, value []byte) {
-			data[string(key)] = string(value)
+			data[utils.UnsafeString(key)] = utils.UnsafeString(value)
 		})
 	}
 
