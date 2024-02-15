@@ -20,6 +20,7 @@ func TestFallback(t *testing.T) {
 	mockConfig := &configmocks.Config{}
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 	ConfigFacade = mockConfig
 
 	route, err := NewRoute(mockConfig, nil)
@@ -110,6 +111,7 @@ func TestRun(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -209,6 +211,7 @@ func TestRunTLS(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -300,6 +303,7 @@ func TestRunTLSWithCert(t *testing.T) {
 			mockConfig = &configmocks.Config{}
 			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -346,6 +350,7 @@ func TestNewRoute(t *testing.T) {
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			},
 			expectTemplate: nil,
 		},
@@ -355,6 +360,7 @@ func TestNewRoute(t *testing.T) {
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "http.drivers.fiber.template").Return(template).Once()
 			},
 			expectTemplate: template,
@@ -365,6 +371,7 @@ func TestNewRoute(t *testing.T) {
 			setup: func() {
 				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 				mockConfig.On("Get", "http.drivers.fiber.template").Return(func() (fiber.Views, error) {
 					return template, nil
 				}).Twice()
