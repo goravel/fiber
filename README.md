@@ -54,6 +54,7 @@ import (
         "prefork": false,
         // Optional, default is 4096 KB
         "body_limit": 4096,
+        "header_limit": 4096,
         "route": func() (route.Route, error) {
             return fiberfacades.Route("fiber"), nil
         },
