@@ -927,6 +927,7 @@ func TestRequest(t *testing.T) {
 					mockStorage.On("Disk", "local").Return(mockDriver).Once()
 					frameworkfilesystem.StorageFacade = mockStorage
 
+					name := ctx.Request().Input("name")
 					fileInfo, err := ctx.Request().File("file")
 
 					mockDriver.On("PutFile", "test", fileInfo).Return("test/README.md", nil).Once()
@@ -947,10 +948,11 @@ func TestRequest(t *testing.T) {
 
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"exist":              mockStorage.Exists(filePath),
+						"extension":          extension,
+						"file_path_length":   len(filePath),
 						"hash_name_length":   len(fileInfo.HashName()),
 						"hash_name_length1":  len(fileInfo.HashName("test")),
-						"file_path_length":   len(filePath),
-						"extension":          extension,
+						"name":               name,
 						"original_name":      fileInfo.GetClientOriginalName(),
 						"original_extension": fileInfo.GetClientOriginalExtension(),
 					})
@@ -962,7 +964,13 @@ func TestRequest(t *testing.T) {
 				if err != nil {
 					return err
 				}
+
 				defer readme.Close()
+
+				if err := writer.WriteField("name", "goravel"); err != nil {
+					return err
+				}
+
 				part1, err := writer.CreateFormFile("file", filepath.Base("./README.md"))
 				if err != nil {
 					return err
@@ -976,13 +984,17 @@ func TestRequest(t *testing.T) {
 					return err
 				}
 
-				req, _ = http.NewRequest(method, url, payload)
+				req, err = http.NewRequest(method, url, payload)
+				if err != nil {
+					return err
+				}
+
 				req.Header.Set("Content-Type", writer.FormDataContentType())
 
 				return nil
 			},
 			expectCode:     http.StatusOK,
-			expectBodyJson: "{\"exist\":true,\"extension\":\"txt\",\"file_path_length\":14,\"hash_name_length\":44,\"hash_name_length1\":49,\"original_extension\":\"md\",\"original_name\":\"README.md\"}",
+			expectBodyJson: "{\"exist\":true,\"extension\":\"txt\",\"file_path_length\":14,\"hash_name_length\":44,\"hash_name_length1\":49,\"name\":\"goravel\",\"original_extension\":\"md\",\"original_name\":\"README.md\"}",
 		},
 		{
 			name:   "GET with params and validator, validate pass",

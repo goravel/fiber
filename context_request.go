@@ -433,7 +433,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 	contentType := ctx.instance.Get("Content-Type")
 	data := make(map[string]any)
 
-	if contentType == "application/json" {
+	if strings.Contains(contentType, "application/json") {
 		bodyBytes := ctx.instance.Body()
 
 		if err := json.Unmarshal(bodyBytes, &data); err != nil {
@@ -441,7 +441,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 		}
 	}
 
-	if contentType == "multipart/form-data" {
+	if strings.Contains(contentType, "multipart/form-data") {
 		if form, err := ctx.instance.MultipartForm(); err == nil {
 			for k, v := range form.Value {
 				data[k] = strings.Join(v, ",")
@@ -454,7 +454,7 @@ func getPostData(ctx *Context) (map[string]any, error) {
 		}
 	}
 
-	if contentType == "application/x-www-form-urlencoded" {
+	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
 		args := ctx.instance.Request().PostArgs()
 		args.VisitAll(func(key, value []byte) {
 			data[string(key)] = string(value)
