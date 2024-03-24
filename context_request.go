@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -254,16 +255,20 @@ func (r *ContextRequest) Path() string {
 }
 
 func (r *ContextRequest) Input(key string, defaultValue ...string) string {
-	keys := strings.Split(key, ".")
-	current := r.httpBody
-	for _, k := range keys {
-		value, found := current[k]
-		if found {
-			if nestedMap, isMap := value.(map[string]any); isMap {
-				current = nestedMap
-			} else {
-				return cast.ToString(value)
+	valueFromHttpBody := r.getValueFromHttpBody(key)
+	if valueFromHttpBody != nil {
+		switch reflect.ValueOf(valueFromHttpBody).Kind() {
+		case reflect.Map:
+			valueFromHttpBodyByte, err := json.Marshal(valueFromHttpBody)
+			if err != nil {
+				return ""
 			}
+
+			return string(valueFromHttpBodyByte)
+		case reflect.Slice:
+			return strings.Join(cast.ToStringSlice(valueFromHttpBody), ",")
+		default:
+			return cast.ToString(valueFromHttpBody)
 		}
 	}
 
@@ -280,18 +285,8 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 }
 
 func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []string {
-	keys := strings.Split(key, ".")
-	current := r.httpBody
-	for _, k := range keys {
-		value, found := current[k]
-		if !found {
-			return []string{}
-		}
-		if nestedMap, isMap := value.(map[string]any); isMap {
-			current = nestedMap
-		} else {
-			return cast.ToStringSlice(value)
-		}
+	if valueFromHttpBody := r.getValueFromHttpBody(key); valueFromHttpBody != nil {
+		return cast.ToStringSlice(valueFromHttpBody)
 	}
 
 	if len(defaultValue) > 0 {
@@ -302,18 +297,8 @@ func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []stri
 }
 
 func (r *ContextRequest) InputMap(key string, defaultValue ...map[string]string) map[string]string {
-	keys := strings.Split(key, ".")
-	current := r.httpBody
-	for _, k := range keys {
-		value, found := current[k]
-		if !found {
-			return map[string]string{}
-		}
-		if nestedMap, isMap := value.(map[string]string); isMap {
-			current = cast.ToStringMap(nestedMap)
-		} else {
-			return cast.ToStringMapString(value)
-		}
+	if valueFromHttpBody := r.getValueFromHttpBody(key); valueFromHttpBody != nil {
+		return cast.ToStringMapString(valueFromHttpBody)
 	}
 
 	if len(defaultValue) > 0 {
@@ -433,6 +418,39 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 	return validator.Errors(), nil
 }
 
+func (r *ContextRequest) getValueFromHttpBody(key string) any {
+	if r.httpBody == nil {
+		return nil
+	}
+
+	var current any
+	current = r.httpBody
+	keys := strings.Split(key, ".")
+	for _, k := range keys {
+		currentValue := reflect.ValueOf(current)
+		switch currentValue.Kind() {
+		case reflect.Map:
+			if value := currentValue.MapIndex(reflect.ValueOf(k)); value.IsValid() {
+				current = value.Interface()
+			} else {
+				if value := currentValue.MapIndex(reflect.ValueOf(k + "[]")); value.IsValid() {
+					current = value.Interface()
+				} else {
+					return nil
+				}
+			}
+		case reflect.Slice:
+			if number, err := strconv.Atoi(k); err == nil {
+				return cast.ToStringSlice(current)[number]
+			} else {
+				return nil
+			}
+		}
+	}
+
+	return current
+}
+
 func getHttpBody(ctx *Context) (map[string]any, error) {
 	if len(ctx.instance.Request().Body()) == 0 {
 		return nil, nil
@@ -452,10 +470,16 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 	if strings.Contains(contentType, "multipart/form-data") {
 		if form, err := ctx.instance.MultipartForm(); err == nil {
 			for k, v := range form.Value {
-				data[k] = strings.Join(v, ",")
+				if len(v) > 1 {
+					data[k] = v
+				} else if len(v) == 1 {
+					data[k] = v[0]
+				}
 			}
 			for k, v := range form.File {
-				if len(v) > 0 {
+				if len(v) > 1 {
+					data[k] = v
+				} else if len(v) == 1 {
 					data[k] = v[0]
 				}
 			}
@@ -465,7 +489,11 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
 		args := ctx.instance.Request().PostArgs()
 		args.VisitAll(func(key, value []byte) {
-			data[utils.UnsafeString(key)] = utils.UnsafeString(value)
+			if existValue, exist := data[string(key)]; exist {
+				data[utils.UnsafeString(key)] = append([]string{cast.ToString(existValue)}, utils.UnsafeString(value))
+			} else {
+				data[utils.UnsafeString(key)] = utils.UnsafeString(value)
+			}
 		})
 	}
 
