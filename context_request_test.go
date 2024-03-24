@@ -473,8 +473,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"4\",\"map\":\"{\\\"a\\\":\\\"b\\\"}\",\"string\":\"string 1,string 2\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"4\",\"map\":\"{\\\"a\\\":\\\"b\\\"}\",\"string\":\"string 1,string 2\"}",
 		},
 		{
 			name:   "Input - application/x-www-form-urlencoded",
@@ -504,8 +504,8 @@ func TestRequest(t *testing.T) {
 
 				return nil
 			},
-			expectCode: http.StatusOK,
-			expectBody: "{\"id\":\"4\",\"map\":\"{\\\"a\\\":\\\"b\\\"}\",\"string\":\"string 1,string 2\"}",
+			expectCode:     http.StatusOK,
+			expectBodyJson: "{\"id\":\"4\",\"map\":\"{\\\"a\\\":\\\"b\\\"}\",\"string\":\"string 1,string 2\"}",
 		},
 		{
 			name:   "Input - from json, then Bind",
