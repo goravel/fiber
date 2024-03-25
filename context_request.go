@@ -15,6 +15,7 @@ import (
 	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/log"
+	contractsession "github.com/goravel/framework/contracts/session"
 	contractsvalidate "github.com/goravel/framework/contracts/validation"
 	"github.com/goravel/framework/filesystem"
 	"github.com/goravel/framework/support/json"
@@ -130,6 +131,11 @@ func (r *ContextRequest) Headers() http.Header {
 
 func (r *ContextRequest) Host() string {
 	return r.instance.Hostname()
+}
+
+func (r *ContextRequest) HasSession() bool {
+	_, ok := r.ctx.Value("session").(contractsession.Session)
+	return ok
 }
 
 func (r *ContextRequest) Json(key string, defaultValue ...string) string {
@@ -353,6 +359,20 @@ func (r *ContextRequest) RouteInt64(key string) int64 {
 	val := r.instance.Params(key)
 
 	return cast.ToInt64(val)
+}
+
+func (r *ContextRequest) Session() contractsession.Session {
+	s, ok := r.ctx.Value("session").(contractsession.Session)
+	if !ok {
+		return nil
+	}
+	return s
+}
+
+func (r *ContextRequest) SetSession(session contractsession.Session) contractshttp.ContextRequest {
+	r.ctx.WithValue("session", session)
+
+	return r
 }
 
 func (r *ContextRequest) Url() string {
