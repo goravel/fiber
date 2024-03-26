@@ -214,7 +214,7 @@ func TestCors(t *testing.T) {
 				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
-				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
+				assert.Equal(t, "Goravel", resp.Header.Get("Access-Control-Expose-Headers"))
 			},
 		},
 	}
