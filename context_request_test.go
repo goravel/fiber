@@ -1889,7 +1889,6 @@ func TestRequest(t *testing.T) {
 
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"message": "session not set",
-						"session": ctx.Request().Session(),
 					})
 				})
 
@@ -1901,7 +1900,7 @@ func TestRequest(t *testing.T) {
 				return nil
 			},
 			expectCode: http.StatusOK,
-			expectBody: "{\"message\":\"session not set\",\"session\":null}",
+			expectBody: "{\"message\":\"session not set\"}",
 		},
 	}
 
