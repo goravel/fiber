@@ -19,6 +19,7 @@ import (
 	filesystemmocks "github.com/goravel/framework/mocks/filesystem"
 	logmocks "github.com/goravel/framework/mocks/log"
 	validationmocks "github.com/goravel/framework/mocks/validation"
+	"github.com/goravel/framework/session"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1850,6 +1851,56 @@ func TestRequest(t *testing.T) {
 			},
 			expectCode:     http.StatusOK,
 			expectBodyJson: "{\"cookie\":\"value\"}",
+		},
+		{
+			name:   "Session",
+			method: "GET",
+			url:    "/session",
+			setup: func(method, url string) error {
+				fiber.Get("/session", func(ctx contractshttp.Context) contractshttp.Response {
+					ctx.Request().SetSession(session.NewSession("goravel_session", nil))
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"message": ctx.Request().Session().GetName(),
+					})
+				})
+
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "{\"message\":\"goravel_session\"}",
+		},
+		{
+			name:   "Session - not set",
+			method: "GET",
+			url:    "/session/not-set",
+			setup: func(method, url string) error {
+				fiber.Get("/session/not-set", func(ctx contractshttp.Context) contractshttp.Response {
+					if ctx.Request().HasSession() {
+						return ctx.Response().Success().Json(contractshttp.Json{
+							"message": ctx.Request().Session().GetName(),
+						})
+					}
+
+					return ctx.Response().Success().Json(contractshttp.Json{
+						"message": "session not set",
+					})
+				})
+
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+			expectCode: http.StatusOK,
+			expectBody: "{\"message\":\"session not set\"}",
 		},
 	}
 
