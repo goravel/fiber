@@ -11,7 +11,7 @@ require (
 	github.com/savioxavier/termlink v1.3.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/valyala/fasthttp v1.53.0
+	github.com/valyala/fasthttp v1.54.0
 )
 
 require (
