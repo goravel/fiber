@@ -68,8 +68,8 @@ func (r *ContextResponse) String(code int, format string, values ...any) contrac
 	return &StringResponse{code, format, r.instance, values}
 }
 
-func (r *ContextResponse) Success() contractshttp.ResponseSuccess {
-	return NewSuccess(r.instance)
+func (r *ContextResponse) Success() contractshttp.ResponseStatus {
+	return NewStatus(r.instance, http.StatusOK)
 }
 
 func (r *ContextResponse) Status(code int) contractshttp.ResponseStatus {
@@ -118,32 +118,12 @@ func (w *WriterAdapter) WriteHeader(code int) {
 	w.instance.Context().SetStatusCode(code)
 }
 
-type Success struct {
-	instance *fiber.Ctx
-}
-
-func NewSuccess(instance *fiber.Ctx) contractshttp.ResponseSuccess {
-	return &Success{instance}
-}
-
-func (r *Success) Data(contentType string, data []byte) contractshttp.Response {
-	return &DataResponse{http.StatusOK, contentType, data, r.instance}
-}
-
-func (r *Success) Json(obj any) contractshttp.Response {
-	return &JsonResponse{http.StatusOK, obj, r.instance}
-}
-
-func (r *Success) String(format string, values ...any) contractshttp.Response {
-	return &StringResponse{http.StatusOK, format, r.instance, values}
-}
-
 type Status struct {
 	instance *fiber.Ctx
 	status   int
 }
 
-func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseSuccess {
+func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseStatus {
 	return &Status{instance, code}
 }
 
