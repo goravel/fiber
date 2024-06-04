@@ -52,6 +52,15 @@ func (r *JsonResponse) Render() error {
 	return r.instance.Status(r.code).JSON(r.obj)
 }
 
+type NoContentResponse struct {
+	code     int
+	instance *fiber.Ctx
+}
+
+func (r *NoContentResponse) Render() error {
+	return r.instance.Status(r.code).Send(nil)
+}
+
 type RedirectResponse struct {
 	code     int
 	location string

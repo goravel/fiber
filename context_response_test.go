@@ -223,6 +223,42 @@ func TestResponse(t *testing.T) {
 			expectHeader: "goravel",
 		},
 		{
+			name:   "NoContent",
+			method: "GET",
+			url:    "/no/content",
+			setup: func(method, url string) error {
+				fiber.Get("/no/content", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().NoContent()
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+			expectCode: http.StatusNoContent,
+		},
+		{
+			name:   "NoContentWithCode",
+			method: "GET",
+			url:    "/no/content/with/code",
+			setup: func(method, url string) error {
+				fiber.Get("/no/content/with/code", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().NoContent(http.StatusCreated)
+				})
+
+				var err error
+				req, err = http.NewRequest(method, url, nil)
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+			expectCode: http.StatusCreated,
+		},
+		{
 			name:   "Origin",
 			method: "GET",
 			url:    "/origin",
