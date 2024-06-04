@@ -12,11 +12,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
-	"github.com/gookit/color"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
+	"github.com/goravel/framework/support/color"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/savioxavier/termlink"
@@ -144,7 +144,7 @@ func (r *Route) Run(host ...string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln(termlink.Link("[HTTP] Listening and serving HTTP on", host[0]))
+	color.Green().Println(termlink.Link("[HTTP] Listening and serving HTTP on", host[0]))
 
 	return r.instance.Listen(host[0])
 }
@@ -179,7 +179,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	}
 
 	r.outputRoutes()
-	color.Greenln(termlink.Link("[HTTPS] Listening and serving HTTPS on", host))
+	color.Green().Println(termlink.Link("[HTTPS] Listening and serving HTTPS on", host))
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
