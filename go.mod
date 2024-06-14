@@ -6,7 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/template/html/v2 v2.1.1
 	github.com/gookit/validate v1.5.2
-	github.com/goravel/framework v1.14.0
+	github.com/goravel/framework v1.14.1
 	github.com/savioxavier/termlink v1.3.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
