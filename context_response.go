@@ -3,15 +3,15 @@ package fiber
 import (
 	"bufio"
 	"bytes"
-	"github.com/gofiber/fiber/v2"
-	"github.com/valyala/fasthttp"
 	"io"
 	"net"
 	"net/http"
 	"sync"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	"github.com/valyala/fasthttp"
 )
 
 type ContextResponse struct {
