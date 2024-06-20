@@ -1,12 +1,17 @@
 package fiber
 
 import (
+	"bufio"
 	"bytes"
+	"io"
+	"net"
 	"net/http"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	"github.com/valyala/fasthttp"
 )
 
 type ContextResponse struct {
@@ -102,28 +107,82 @@ func (r *ContextResponse) WithoutCookie(name string) contractshttp.ContextRespon
 }
 
 func (r *ContextResponse) Writer() http.ResponseWriter {
-	return &WriterAdapter{r.instance}
+	return &netHTTPResponseWriter{
+		w:   r.instance.Response().BodyWriter(),
+		ctx: r.instance.Context(),
+	}
 }
 
-type WriterAdapter struct {
-	instance *fiber.Ctx
+// https://github.com/valyala/fasthttp/blob/master/fasthttpadaptor/adaptor.go#L90
+type netHTTPResponseWriter struct {
+	statusCode int
+	h          http.Header
+	w          io.Writer
+	ctx        *fasthttp.RequestCtx
 }
 
-func (w *WriterAdapter) Header() http.Header {
-	result := http.Header{}
-	w.instance.Request().Header.VisitAll(func(key, value []byte) {
-		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
+func (w *netHTTPResponseWriter) StatusCode() int {
+	if w.statusCode == 0 {
+		return http.StatusOK
+	}
+	return w.statusCode
+}
+
+func (w *netHTTPResponseWriter) Header() http.Header {
+	if w.h == nil {
+		w.h = make(http.Header)
+	}
+	return w.h
+}
+
+func (w *netHTTPResponseWriter) WriteHeader(statusCode int) {
+	w.statusCode = statusCode
+}
+
+func (w *netHTTPResponseWriter) Write(p []byte) (int, error) {
+	return w.w.Write(p)
+}
+
+func (w *netHTTPResponseWriter) Flush() {}
+
+type wrappedConn struct {
+	net.Conn
+
+	wg   sync.WaitGroup
+	once sync.Once
+}
+
+func (c *wrappedConn) Close() (err error) {
+	c.once.Do(func() {
+		err = c.Conn.Close()
+		c.wg.Done()
+	})
+	return
+}
+
+func (w *netHTTPResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	// Hijack assumes control of the connection, so we need to prevent fasthttp from closing it or
+	// doing anything else with it.
+	w.ctx.HijackSetNoResponse(true)
+
+	conn := &wrappedConn{Conn: w.ctx.Conn()}
+	conn.wg.Add(1)
+	w.ctx.Hijack(func(net.Conn) {
+		conn.wg.Wait()
 	})
 
-	return result
-}
+	bufW := bufio.NewWriter(conn)
 
-func (w *WriterAdapter) Write(data []byte) (int, error) {
-	return w.instance.Context().Write(data)
-}
+	// Write any unflushed body to the hijacked connection buffer.
+	unflushedBody := w.ctx.Response.Body()
+	if len(unflushedBody) > 0 {
+		if _, err := bufW.Write(unflushedBody); err != nil {
+			_ = conn.Close()
+			return nil, nil, err
+		}
+	}
 
-func (w *WriterAdapter) WriteHeader(code int) {
-	w.instance.Context().SetStatusCode(code)
+	return conn, &bufio.ReadWriter{Reader: bufio.NewReader(conn), Writer: bufW}, nil
 }
 
 type Status struct {

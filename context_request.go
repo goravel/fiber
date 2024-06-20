@@ -270,7 +270,7 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 				return ""
 			}
 
-			return string(valueFromHttpBodyByte)
+			return utils.UnsafeString(valueFromHttpBodyByte)
 		case reflect.Slice:
 			return strings.Join(cast.ToStringSlice(valueFromHttpBody), ",")
 		default:
@@ -509,7 +509,7 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
 		args := ctx.instance.Request().PostArgs()
 		args.VisitAll(func(key, value []byte) {
-			if existValue, exist := data[string(key)]; exist {
+			if existValue, exist := data[utils.UnsafeString(key)]; exist {
 				data[utils.UnsafeString(key)] = append([]string{cast.ToString(existValue)}, utils.UnsafeString(value))
 			} else {
 				data[utils.UnsafeString(key)] = utils.UnsafeString(value)
