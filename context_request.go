@@ -415,20 +415,8 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 		return nil, err
 	}
 
-	filters := make(map[string]string)
-	val := reflect.Indirect(reflect.ValueOf(request))
-	for i := 0; i < val.Type().NumField(); i++ {
-		field := val.Type().Field(i)
-		form := field.Tag.Get("form")
-		filter := field.Tag.Get("filter")
-		if len(form) > 0 && len(filter) > 0 {
-			filters[form] = filter
-		}
-	}
-
-	validator, err := r.Validate(request.Rules(r.ctx), validation.Messages(request.Messages(r.ctx)), validation.Attributes(request.Attributes(r.ctx)), func(options map[string]any) {
+	validator, err := r.Validate(request.Rules(r.ctx), validation.Filters(request.Filters(r.ctx)), validation.Messages(request.Messages(r.ctx)), validation.Attributes(request.Attributes(r.ctx)), func(options map[string]any) {
 		options["prepareForValidation"] = request.PrepareForValidation
-		options["filters"] = filters
 	})
 	if err != nil {
 		return nil, err

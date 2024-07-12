@@ -1128,7 +1128,10 @@ func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"uuid": "min_len:2",
 			"name": "required",
-		})
+		}, validation.Filters(map[string]string{
+			"uuid": "trim",
+			"name": "trim",
+		}))
 		if err != nil {
 			return ctx.Response().String(400, "Validate error: "+err.Error())
 		}
@@ -1151,7 +1154,7 @@ func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 		})
 	})
 
-	req, err := http.NewRequest("GET", "/validate/get-success/abc?name=Goravel", nil)
+	req, err := http.NewRequest("GET", "/validate/get-success/abc?name= Goravel ", nil)
 	s.Require().Nil(err)
 
 	code, body, _, _ := s.request(req)
@@ -1165,7 +1168,10 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"uuid": "min_len:4",
 			"name": "required",
-		})
+		}, validation.Filters(map[string]string{
+			"uuid": "trim",
+			"name": "trim",
+		}))
 		if err != nil {
 			return ctx.Response().String(400, "Validate error: "+err.Error())
 		}
@@ -1176,7 +1182,7 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 		return nil
 	})
 
-	req, err := http.NewRequest("GET", "/validate/get-fail/abc?name=Goravel", nil)
+	req, err := http.NewRequest("GET", "/validate/get-fail/abc?name= Goravel ", nil)
 	s.Require().Nil(err)
 
 	code, body, _, _ := s.request(req)
@@ -1192,7 +1198,12 @@ func (s *ContextRequestSuite) TestValidate_PostSuccess() {
 			"uuid": "required",
 			"age":  "required",
 			"name": "required",
-		})
+		}, validation.Filters(map[string]string{
+			"id":   "trim",
+			"uuid": "trim",
+			"age":  "trim",
+			"name": "trim",
+		}))
 		if err != nil {
 			return ctx.Response().String(400, "Validate error: "+err.Error())
 		}
@@ -1220,8 +1231,8 @@ func (s *ContextRequestSuite) TestValidate_PostSuccess() {
 	})
 
 	payload := strings.NewReader(`{
-		"name": "Goravel",
-		"uuid": "3"
+		"name": " Goravel ",
+		"uuid": " 3 "
 	}`)
 	req, err := http.NewRequest("POST", "/validate/post-success/1/2?age=2", payload)
 	s.Require().Nil(err)
@@ -1237,7 +1248,9 @@ func (s *ContextRequestSuite) TestValidate_PostFail() {
 	s.route.Post("/validate/post-fail", func(ctx contractshttp.Context) contractshttp.Response {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"name1": "required",
-		})
+		}, validation.Filters(map[string]string{
+			"name1": "trim",
+		}))
 		if err != nil {
 			return ctx.Response().String(400, "Validate error: "+err.Error())
 		}
@@ -1514,8 +1527,7 @@ func (s *ContextRequestSuite) TestValidateRequest_GetSuccessWithFilter() {
 
 	code, body, _, _ := s.request(req)
 
-	// TODO Optimize the assertation in https://github.com/goravel/goravel/issues/416
-	s.Equal("{\"name\":\" Goravel 1\"}", body)
+	s.Equal("{\"name\":\"Goravel 1\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -1544,8 +1556,7 @@ func (s *ContextRequestSuite) TestValidateRequest_PostSuccessWithFilter() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	// TODO Optimize the assertation in https://github.com/goravel/goravel/issues/416
-	s.Equal("{\"name\":\" Goravel 1\"}", body)
+	s.Equal("{\"name\":\"Goravel 1\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -1591,70 +1602,70 @@ func (s *ContextRequestSuite) request(req *http.Request) (int, string, http.Head
 func TestGetValueFromHttpBody(t *testing.T) {
 	tests := []struct {
 		name        string
-		postData    map[string]any
+		httpBody    map[string]any
 		key         string
 		expectValue any
 	}{
 		{
-			name: "Return nil when postData is nil",
+			name: "Return nil when httpBody is nil",
 		},
 		{
-			name:        "Return string when postData is map[string]string",
-			postData:    map[string]any{"name": "goravel"},
+			name:        "Return string when httpBody is map[string]string",
+			httpBody:    map[string]any{"name": "goravel"},
 			key:         "name",
 			expectValue: "goravel",
 		},
 		{
-			name:        "Return map when postData is map[string]map[string]string",
-			postData:    map[string]any{"name": map[string]string{"sub": "goravel"}},
+			name:        "Return map when httpBody is map[string]map[string]string",
+			httpBody:    map[string]any{"name": map[string]string{"sub": "goravel"}},
 			key:         "name",
 			expectValue: map[string]string{"sub": "goravel"},
 		},
 		{
-			name:        "Return slice when postData is map[string][]string",
-			postData:    map[string]any{"name[]": []string{"a", "b"}},
+			name:        "Return slice when httpBody is map[string][]string",
+			httpBody:    map[string]any{"name[]": []string{"a", "b"}},
 			key:         "name[]",
 			expectValue: []string{"a", "b"},
 		},
 		{
-			name:        "Return slice when postData is map[string][]string, but key doesn't contain []",
-			postData:    map[string]any{"name": []string{"a", "b"}},
+			name:        "Return slice when httpBody is map[string][]string, but key doesn't contain []",
+			httpBody:    map[string]any{"name": []string{"a", "b"}},
 			key:         "name",
 			expectValue: []string{"a", "b"},
 		},
 		{
-			name:        "Return string when postData is map[string]map[string]string and key with point",
-			postData:    map[string]any{"name": map[string]string{"sub": "goravel"}},
+			name:        "Return string when httpBody is map[string]map[string]string and key with point",
+			httpBody:    map[string]any{"name": map[string]string{"sub": "goravel"}},
 			key:         "name.sub",
 			expectValue: "goravel",
 		},
 		{
-			name:        "Return int when postData is map[string]map[string]int and key with point",
-			postData:    map[string]any{"name": map[string]int{"sub": 1}},
+			name:        "Return int when httpBody is map[string]map[string]int and key with point",
+			httpBody:    map[string]any{"name": map[string]int{"sub": 1}},
 			key:         "name.sub",
 			expectValue: 1,
 		},
 		{
-			name:        "Return string when postData is map[string][]string and key with point",
-			postData:    map[string]any{"name[]": []string{"a", "b"}},
+			name:        "Return string when httpBody is map[string][]string and key with point",
+			httpBody:    map[string]any{"name[]": []string{"a", "b"}},
 			key:         "name[].0",
 			expectValue: "a",
 		},
 		{
-			name:        "Return string when postData is map[string][]string and key with point and index is 1",
-			postData:    map[string]any{"name[]": []string{"a", "b"}},
+			name:        "Return string when httpBody is map[string][]string and key with point and index is 1",
+			httpBody:    map[string]any{"name[]": []string{"a", "b"}},
 			key:         "name[].1",
 			expectValue: "b",
 		},
 		{
-			name:        "Return string when postData is map[string][]string and key with point, but key doesn't contain []",
-			postData:    map[string]any{"name[]": []string{"a", "b"}},
+			name:        "Return string when httpBody is map[string][]string and key with point, but key doesn't contain []",
+			httpBody:    map[string]any{"name[]": []string{"a", "b"}},
 			key:         "name.0",
 			expectValue: "a",
 		},
 		{
-			name:        "Return string when postData is map[string][]string and key with point and index is 1, but key doesn't contain []",
-			postData:    map[string]any{"name[]": []string{"a", "b"}},
+			name:        "Return string when httpBody is map[string][]string and key with point and index is 1, but key doesn't contain []",
+			httpBody:    map[string]any{"name[]": []string{"a", "b"}},
 			key:         "name.1",
 			expectValue: "b",
 		},
@@ -1663,7 +1674,7 @@ func TestGetValueFromHttpBody(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			contextRequest := &ContextRequest{
-				httpBody: test.postData,
+				httpBody: test.httpBody,
 			}
 
 			value := contextRequest.getValueFromHttpBody(test.key)
