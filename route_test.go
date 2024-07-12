@@ -407,11 +407,17 @@ func TestNewRoute(t *testing.T) {
 }
 
 type CreateUser struct {
-	Name string `form:"name" json:"name" filter:"trim"`
+	Name string `form:"name" json:"name"`
 }
 
 func (r *CreateUser) Authorize(ctx contractshttp.Context) error {
 	return nil
+}
+
+func (r *CreateUser) Filters(ctx contractshttp.Context) map[string]string {
+	return map[string]string{
+		"name": "trim",
+	}
 }
 
 func (r *CreateUser) Rules(ctx contractshttp.Context) map[string]string {
@@ -450,6 +456,12 @@ func (r *Unauthorize) Rules(ctx contractshttp.Context) map[string]string {
 	}
 }
 
+func (r *Unauthorize) Filters(ctx contractshttp.Context) map[string]string {
+	return map[string]string{
+		"name": "trim",
+	}
+}
+
 func (r *Unauthorize) Messages(ctx contractshttp.Context) map[string]string {
 	return map[string]string{}
 }
@@ -471,6 +483,12 @@ type FileImageJson struct {
 
 func (r *FileImageJson) Authorize(ctx contractshttp.Context) error {
 	return nil
+}
+
+func (r *FileImageJson) Filters(ctx contractshttp.Context) map[string]string {
+	return map[string]string{
+		"name": "trim",
+	}
 }
 
 func (r *FileImageJson) Rules(ctx contractshttp.Context) map[string]string {
