@@ -247,6 +247,10 @@ func (r *ContextRequest) Queries() map[string]string {
 	return r.instance.Queries()
 }
 
+func (r *ContextRequest) BindQuery(obj any) error {
+	return r.instance.QueryParser(obj)
+}
+
 func (r *ContextRequest) Origin() *http.Request {
 	var req http.Request
 	if err := fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true); err != nil {
