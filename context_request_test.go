@@ -327,6 +327,55 @@ func (s *ContextRequestSuite) TestBind_Query() {
 	s.Equal(http.StatusOK, code)
 }
 
+func (s *ContextRequestSuite) TestBindQueryToStruct() {
+	s.route.Get("/bind/query/struct", func(ctx contractshttp.Context) contractshttp.Response {
+		type Test struct {
+			ID string `form:"id"`
+		}
+		var test Test
+		_ = ctx.Request().BindQuery(&test)
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"id": test.ID,
+		})
+	})
+
+	req, err := http.NewRequest("GET", "/bind/query/struct?id=2", nil)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"id\":\"2\"}", body)
+	s.Equal(http.StatusOK, code)
+
+	// complex struct
+	s.route.Get("/bind/query/struct/complex", func(ctx contractshttp.Context) contractshttp.Response {
+		type Person struct {
+			Name string `form:"name" json:"name"`
+			Age  int    `form:"age" json:"age"`
+		}
+		type Test struct {
+			ID      string   `form:"id"`
+			Persons []Person `form:"persons"`
+		}
+		var test Test
+		_ = ctx.Request().BindQuery(&test)
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"id":      test.ID,
+			"persons": test.Persons,
+		})
+	})
+
+	req, err = http.NewRequest("GET", "/bind/query/struct/complex?id=2&persons[0][name]=John&persons[0][age]=30&persons[1][name]=Doe&persons[1][age]=40", nil)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ = s.request(req)
+
+	s.Equal("{\"id\":\"2\",\"persons\":[{\"name\":\"John\",\"age\":30},{\"name\":\"Doe\",\"age\":40}]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestBind_ThenInput() {
 	s.route.Post("/bind/input", func(ctx contractshttp.Context) contractshttp.Response {
 		type Test struct {
