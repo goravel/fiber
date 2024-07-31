@@ -1,10 +1,13 @@
 package fiber
 
 import (
+	"bufio"
 	"net/url"
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
+
+	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 type DataResponse struct {
@@ -95,4 +98,23 @@ type HtmlResponse struct {
 
 func (r *HtmlResponse) Render() error {
 	return r.instance.Render(r.view, r.data)
+}
+
+type StreamResponse struct {
+	code        int
+	contentType string
+	instance    *fiber.Ctx
+	writer      func(w contractshttp.StreamWriter) error
+}
+
+func (r *StreamResponse) Render() (err error) {
+	r.instance.Set(fiber.HeaderContentType, r.contentType)
+	r.instance.Status(r.code)
+
+	ctx := r.instance.Context()
+	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		err = r.writer(w)
+	})
+
+	return err
 }
