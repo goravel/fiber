@@ -101,14 +101,12 @@ func (r *HtmlResponse) Render() error {
 }
 
 type StreamResponse struct {
-	code        int
-	contentType string
-	instance    *fiber.Ctx
-	writer      func(w contractshttp.StreamWriter) error
+	code     int
+	instance *fiber.Ctx
+	writer   func(w contractshttp.StreamWriter) error
 }
 
 func (r *StreamResponse) Render() (err error) {
-	r.instance.Set(fiber.HeaderContentType, r.contentType)
 	r.instance.Status(r.code)
 
 	ctx := r.instance.Context()

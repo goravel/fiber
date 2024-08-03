@@ -89,8 +89,8 @@ func (r *ContextResponse) Status(code int) contractshttp.ResponseStatus {
 	return NewStatus(r.instance, code)
 }
 
-func (r *ContextResponse) Stream(step func(w contractshttp.StreamWriter) error, code int, contentType string) contractshttp.Response {
-	return &StreamResponse{code, contentType, r.instance, step}
+func (r *ContextResponse) Stream(step func(w contractshttp.StreamWriter) error, code int) contractshttp.Response {
+	return &StreamResponse{code, r.instance, step}
 }
 
 func (r *ContextResponse) View() contractshttp.ResponseView {
