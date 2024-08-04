@@ -6,7 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/template/html/v2 v2.1.2
 	github.com/gookit/validate v1.5.2
-	github.com/goravel/framework v1.14.1-0.20240802052104-488ee246d523
+	github.com/goravel/framework v1.14.1-0.20240804133715-98a226e9dfb8
 	github.com/savioxavier/termlink v1.3.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
@@ -38,7 +38,7 @@ require (
 	github.com/charmbracelet/bubbles v0.18.0 // indirect
 	github.com/charmbracelet/bubbletea v0.26.6 // indirect
 	github.com/charmbracelet/huh v0.5.2 // indirect
-	github.com/charmbracelet/huh/spinner v0.0.0-20240725212135-67d4a4354ed1 // indirect
+	github.com/charmbracelet/huh/spinner v0.0.0-20240803000013-2eb851f67645 // indirect
 	github.com/charmbracelet/lipgloss v0.12.1 // indirect
 	github.com/charmbracelet/x/ansi v0.1.4 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
