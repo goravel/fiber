@@ -89,7 +89,7 @@ func (r *ContextResponse) Status(code int) contractshttp.ResponseStatus {
 	return NewStatus(r.instance, code)
 }
 
-func (r *ContextResponse) Stream(step func(w contractshttp.StreamWriter) error, code int) contractshttp.Response {
+func (r *ContextResponse) Stream(code int, step func(w contractshttp.StreamWriter) error) contractshttp.Response {
 	return &StreamResponse{code, r.instance, step}
 }
 
@@ -208,6 +208,10 @@ func (r *Status) Json(obj any) contractshttp.Response {
 
 func (r *Status) String(format string, values ...any) contractshttp.Response {
 	return &StringResponse{r.status, format, r.instance, values}
+}
+
+func (r *Status) Stream(step func(w contractshttp.StreamWriter) error) contractshttp.Response {
+	return &StreamResponse{r.status, r.instance, step}
 }
 
 func ResponseMiddleware() contractshttp.Middleware {
