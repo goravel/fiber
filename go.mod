@@ -8,7 +8,7 @@ require (
 	github.com/gookit/validate v1.5.2
 	github.com/goravel/framework v1.14.1-0.20240713081914-3c96472aa3a4
 	github.com/savioxavier/termlink v1.3.0
-	github.com/spf13/cast v1.6.0
+	github.com/spf13/cast v1.7.0
 	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fasthttp v1.55.0
 )
