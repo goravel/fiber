@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/http"
@@ -700,4 +701,48 @@ func TestResponse_Status(t *testing.T) {
 			mockConfig.AssertExpectations(t)
 		})
 	}
+}
+
+func TestResponse_Stream(t *testing.T) {
+	mockConfig := &configmocks.Config{}
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+
+	fiber, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
+	fiber.Get("/stream", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Status(http.StatusCreated).Stream(func(w contractshttp.StreamWriter) error {
+			b := []string{"a", "b", "c"}
+			for _, a := range b {
+				if _, err := w.Write([]byte(a + "\n")); err != nil {
+					return err
+				}
+
+				if err := w.Flush(); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+	})
+
+	req, err := http.NewRequest("GET", "/stream", nil)
+	assert.Nil(t, err)
+
+	resp, err := fiber.Test(req)
+	assert.NoError(t, err)
+
+	scanner := bufio.NewScanner(resp.Body)
+	var output []string
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+
+	assert.Equal(t, []string{"a", "b", "c"}, output)
+
+	mockConfig.AssertExpectations(t)
+
 }
