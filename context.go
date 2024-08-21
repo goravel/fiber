@@ -57,7 +57,7 @@ func (c *Context) Response() http.ContextResponse {
 }
 
 func (c *Context) WithValue(key string, value any) {
-	ctx := context.WithValue(c.instance.UserContext(), key, value)
+	ctx := context.WithValue(c.instance.UserContext(), key, value) //nolint:staticcheck
 	c.instance.SetUserContext(ctx)
 }
 

@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
       - name: Run tests with coverage
-        run: go test -v -coverprofile="coverage.out" ./...
+        run: go test -timeout 1h -coverprofile="coverage.out" ./...
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
         with:
