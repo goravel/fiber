@@ -8,9 +8,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	"github.com/gookit/validate"
 	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -24,21 +25,19 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
+var contextRequestPool = sync.Pool{New: func() any {
+	return &ContextRequest{
+		log:        LogFacade,
+		validation: ValidationFacade,
+	}
+}}
+
 type ContextRequest struct {
 	ctx        *Context
-	instance   *fiber.Ctx
+	instance   fiber.Ctx
 	httpBody   map[string]any
 	log        log.Log
 	validation contractsvalidate.Validation
-}
-
-func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.Validation) contractshttp.ContextRequest {
-	httpBody, err := getHttpBody(ctx)
-	if err != nil {
-		LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
-	}
-
-	return &ContextRequest{ctx: ctx, instance: ctx.instance, httpBody: httpBody, log: log, validation: validation}
 }
 
 func (r *ContextRequest) AbortWithStatus(code int) {
@@ -56,9 +55,7 @@ func (r *ContextRequest) AbortWithStatusJson(code int, jsonObj any) {
 func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 
-	for k, v := range r.instance.AllParams() {
-		data[k] = v
-	}
+	_ = r.instance.Bind().URI(data)
 	for k, v := range r.instance.Queries() {
 		data[k] = v
 	}
@@ -70,11 +67,11 @@ func (r *ContextRequest) All() map[string]any {
 }
 
 func (r *ContextRequest) Bind(obj any) error {
-	return r.instance.BodyParser(obj)
+	return r.instance.Bind().Body(obj)
 }
 
 func (r *ContextRequest) BindQuery(obj any) error {
-	return r.instance.QueryParser(obj)
+	return r.instance.Bind().Query(obj)
 }
 
 func (r *ContextRequest) Cookie(key string, defaultValue ...string) string {
@@ -403,7 +400,8 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 		}
 	}
 
-	for key, param := range r.instance.AllParams() {
+	for _, key := range r.instance.Route().Params {
+		param := r.instance.Params(key)
 		if _, exist := dataFace.Get(key); !exist {
 			if _, err := dataFace.Set(key, param); err != nil {
 				return nil, err

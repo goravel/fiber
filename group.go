@@ -1,12 +1,13 @@
 package fiber
 
 import (
+	"io/fs"
 	"net/http"
 	"net/url"
 	"path/filepath"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -56,85 +57,91 @@ func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Router 
 }
 
 func (r *Group) Any(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.All(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.All(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Get(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Get(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Get(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Post(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Post(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Post(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Delete(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Delete(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Delete(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Patch(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Patch(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Patch(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Put(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Put(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Put(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Options(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Options(r.getPath(relativePath), r.getMiddlewares(handler)...)
+	r.instance.Options(r.getPath(relativePath), handlerToFiberHandler(handler), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Resource(relativePath string, controller httpcontract.ResourceController) {
 	relativePath = r.getPath(relativePath)
-	r.instance.Get(relativePath, r.getMiddlewares(controller.Index)...)
-	r.instance.Post(relativePath, r.getMiddlewares(controller.Store)...)
-	r.instance.Get(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Show)...)
-	r.instance.Put(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Patch(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Delete(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Destroy)...)
+	r.instance.Get(relativePath, handlerToFiberHandler(controller.Index), r.getMiddlewares()...)
+	r.instance.Post(relativePath, handlerToFiberHandler(controller.Store), r.getMiddlewares()...)
+	r.instance.Get(r.getPath(relativePath+"/{id}"), handlerToFiberHandler(controller.Show), r.getMiddlewares()...)
+	r.instance.Put(r.getPath(relativePath+"/{id}"), handlerToFiberHandler(controller.Update), r.getMiddlewares()...)
+	r.instance.Patch(r.getPath(relativePath+"/{id}"), handlerToFiberHandler(controller.Update), r.getMiddlewares()...)
+	r.instance.Delete(r.getPath(relativePath+"/{id}"), handlerToFiberHandler(controller.Destroy), r.getMiddlewares()...)
 	r.clearMiddlewares()
 }
 
 func (r *Group) Static(relativePath, root string) {
 	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(r.getPath(relativePath), nil)...).Static(relativePath, root)
+	r.instance.Use(r.getMiddlewaresWithPath(r.getPath(relativePath))...).Use(relativePath, static.New(root))
 	r.clearMiddlewares()
 }
 
 func (r *Group) StaticFile(relativePath, filePath string) {
 	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, func(c *fiber.Ctx) error {
+	r.instance.Use(r.getMiddlewaresWithPath(relativePath)...).Use(relativePath, func(c fiber.Ctx) error {
 		dir, file := filepath.Split(filePath)
 		escapedFile := url.PathEscape(file)
 		escapedPath := filepath.Join(dir, escapedFile)
 
-		return c.SendFile(escapedPath, true)
+		return c.SendFile(escapedPath)
 	})
 	r.clearMiddlewares()
 }
 
+// fsWrapper is a wrapper for http.FileSystem to implement fs.FS interface
+type fsWrapper struct {
+	fs http.FileSystem
+}
+
+func (h fsWrapper) Open(name string) (fs.File, error) {
+	return h.fs.Open(name)
+}
+
 func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
 	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, filesystem.New(filesystem.Config{
-		Root: fs,
+	r.instance.Use(r.getMiddlewaresWithPath(relativePath)...).Use(relativePath, static.New("", static.Config{
+		FS: fsWrapper{fs},
 	}))
 	r.clearMiddlewares()
 }
 
-func (r *Group) getMiddlewares(handler httpcontract.HandlerFunc) []fiber.Handler {
+func (r *Group) getMiddlewares() []fiber.Handler {
 	var middlewares []fiber.Handler
 	middlewares = append(middlewares, middlewaresToFiberHandlers(r.originMiddlewares)...)
 	middlewares = append(middlewares, middlewaresToFiberHandlers(r.middlewares)...)
 	middlewares = append(middlewares, middlewaresToFiberHandlers(r.lastMiddlewares)...)
-	if handler != nil {
-		middlewares = append(middlewares, handlerToFiberHandler(handler))
-	}
 
 	return middlewares
 }
@@ -146,14 +153,14 @@ func (r *Group) getPath(relativePath string) string {
 	return path
 }
 
-func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract.HandlerFunc) []any {
+func (r *Group) getMiddlewaresWithPath(relativePath string) []any {
 	var handlers []any
 	handlers = append(handlers, relativePath)
-	middlewares := r.getMiddlewares(handler)
+	middlewares := r.getMiddlewares()
 
 	// Fiber will panic if no middleware is provided, So we add a dummy middleware
 	if len(middlewares) == 0 {
-		middlewares = append(middlewares, func(c *fiber.Ctx) error {
+		middlewares = append(middlewares, func(c fiber.Ctx) error {
 			return c.Next()
 		})
 	}

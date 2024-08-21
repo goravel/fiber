@@ -2,45 +2,62 @@ package fiber
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/goravel/framework/contracts/http"
 	"github.com/valyala/fasthttp"
 )
 
 func Background() http.Context {
 	app := fiber.New()
-	httpCtx := app.AcquireCtx(&fasthttp.RequestCtx{})
+	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
 
-	return NewContext(httpCtx)
+	return &Context{instance: ctx}
 }
+
+var contextPool = sync.Pool{New: func() any {
+	return &Context{}
+}}
 
 type Context struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	request  http.ContextRequest
-}
-
-type ctxKey string
-
-func NewContext(ctx *fiber.Ctx) http.Context {
-	return &Context{instance: ctx}
+	response http.ContextResponse
 }
 
 func (c *Context) Request() http.ContextRequest {
 	if c.request == nil {
-		c.request = NewContextRequest(c, LogFacade, ValidationFacade)
+		request := contextRequestPool.Get().(*ContextRequest)
+		httpBody, err := getHttpBody(c)
+		if err != nil {
+			LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
+		}
+		request.ctx = c
+		request.instance = c.instance
+		request.httpBody = httpBody
+		c.request = request
 	}
 
 	return c.request
 }
 
 func (c *Context) Response() http.ContextResponse {
-	return NewContextResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
+	if c.response == nil {
+		response := contextResponsePool.Get().(*ContextResponse)
+		response.instance = c.instance
+		response.origin = &ResponseOrigin{Ctx: c.instance}
+		c.response = response
+	}
+
+	return c.response
 }
 
 func (c *Context) WithValue(key string, value any) {
-	ctx := context.WithValue(c.instance.UserContext(), ctxKey(key), value)
+	ctx := context.WithValue(c.instance.UserContext(), key, value)
 	c.instance.SetUserContext(ctx)
 }
 
@@ -62,12 +79,12 @@ func (c *Context) Err() error {
 
 func (c *Context) Value(key any) any {
 	if keyStr, ok := key.(string); ok {
-		return c.instance.UserContext().Value(ctxKey(keyStr))
+		return c.instance.UserContext().Value(keyStr)
 	}
 
 	return nil
 }
 
-func (c *Context) Instance() *fiber.Ctx {
+func (c *Context) Instance() fiber.Ctx {
 	return c.instance
 }

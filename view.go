@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 type View struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
-func NewView(instance *fiber.Ctx) *View {
+func NewView(instance fiber.Ctx) *View {
 	return &View{instance: instance}
 }
 
@@ -33,7 +33,7 @@ func (receive *View) Make(view string, data ...any) contractshttp.Response {
 		case reflect.Map:
 			fillShared(data[0], shared)
 
-			return &HtmlResponse{data[0], receive.instance, view}
+			return &HtmlResponse{data[0].(map[string]any), receive.instance, view}
 		default:
 			panic(fmt.Sprintf("make %s view failed, data must be map or struct", view))
 		}

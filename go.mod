@@ -3,8 +3,9 @@ module github.com/goravel/fiber
 go 1.21
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/gofiber/fiber/v3 v3.0.0-beta.3
 	github.com/gofiber/template/html/v2 v2.1.2
+	github.com/gofiber/utils/v2 v2.0.0-beta.6
 	github.com/gookit/validate v1.5.2
 	github.com/goravel/framework v1.14.1-0.20240804133715-98a226e9dfb8
 	github.com/savioxavier/termlink v1.4.0
@@ -153,7 +154,7 @@ require (
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
