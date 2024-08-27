@@ -8,19 +8,19 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/valyala/fasthttp"
 )
 
-type ContextResponse struct {
-	instance *fiber.Ctx
-	origin   contractshttp.ResponseOrigin
-}
+var contextResponsePool = sync.Pool{New: func() any {
+	return &ContextResponse{}
+}}
 
-func NewContextResponse(instance *fiber.Ctx, origin contractshttp.ResponseOrigin) *ContextResponse {
-	return &ContextResponse{instance, origin}
+type ContextResponse struct {
+	instance fiber.Ctx
+	origin   contractshttp.ResponseOrigin
 }
 
 func (r *ContextResponse) Cookie(cookie contractshttp.Cookie) contractshttp.ContextResponse {
@@ -190,11 +190,11 @@ func (w *netHTTPResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 type Status struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	status   int
 }
 
-func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseStatus {
+func NewStatus(instance fiber.Ctx, code int) contractshttp.ResponseStatus {
 	return &Status{instance, code}
 }
 
@@ -226,7 +226,7 @@ func ResponseMiddleware() contractshttp.Middleware {
 }
 
 type ResponseOrigin struct {
-	*fiber.Ctx
+	fiber.Ctx
 }
 
 func (w *ResponseOrigin) Body() *bytes.Buffer {

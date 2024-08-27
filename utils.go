@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
@@ -22,18 +22,35 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 }
 
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		if response := handler(NewContext(ctx)); response != nil {
+	return func(c fiber.Ctx) error {
+		context := contextPool.Get().(*Context)
+		context.instance = c
+		if response := handler(context); response != nil {
 			return response.Render()
 		}
+
+		contextRequestPool.Put(context.request)
+		contextResponsePool.Put(context.response)
+		context.request = nil
+		context.response = nil
+		contextPool.Put(context)
 
 		return nil
 	}
 }
 
 func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
-	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewContext(fiberCtx))
+	return func(c fiber.Ctx) error {
+		context := contextPool.Get().(*Context)
+		context.instance = c
+		handler(context)
+
+		contextRequestPool.Put(context.request)
+		contextResponsePool.Put(context.response)
+		context.request = nil
+		context.response = nil
+		contextPool.Put(context)
+
 		return nil
 	}
 }

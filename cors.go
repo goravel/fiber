@@ -1,10 +1,9 @@
 package fiber
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/goravel/framework/contracts/http"
 )
 
@@ -53,77 +52,45 @@ func Cors() http.Middleware {
 	}
 }
 
-func allowedMethods() string {
-	var allowedMethods string
+func allowedMethods() []string {
+	var allowedMethods []string
 	allowedMethodConfigs := ConfigFacade.Get("cors.allowed_methods").([]string)
-	for i, method := range allowedMethodConfigs {
+	for _, method := range allowedMethodConfigs {
 		if method == "*" {
-			allowedMethods = fmt.Sprintf("%s,%s,%s,%s,%s,%s", http.MethodGet, http.MethodPost, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodPatch)
+			allowedMethods = []string{http.MethodGet, http.MethodPost, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodPatch}
 			break
 		}
-		if i == len(allowedMethodConfigs)-1 {
-			allowedMethods += method
-			break
-		}
-
-		allowedMethods += method + ","
+		allowedMethods = append(allowedMethods, method)
 	}
 
 	return allowedMethods
 }
 
-func allowedOrigins() string {
-	var allowedOrigins string
-	allowedOriginConfigs := ConfigFacade.Get("cors.allowed_origins").([]string)
-	for i, origin := range allowedOriginConfigs {
-		if origin == "*" {
-			allowedOrigins = "*"
-			break
-		}
-		if i == len(allowedOriginConfigs)-1 {
-			allowedOrigins += origin
-			break
-		}
-
-		allowedOrigins += origin + ","
-	}
-
-	return allowedOrigins
+func allowedOrigins() []string {
+	return ConfigFacade.Get("cors.allowed_origins").([]string)
 }
 
-func allowedHeaders() string {
-	var allowedHeaders string
+func allowedHeaders() []string {
+	var allowedHeaders []string
 	allowedHeaderConfigs := ConfigFacade.Get("cors.allowed_headers").([]string)
-	for i, header := range allowedHeaderConfigs {
+	for _, header := range allowedHeaderConfigs {
 		if header == "*" {
-			allowedHeaders = ""
 			break
 		}
-		if i == len(allowedHeaderConfigs)-1 {
-			allowedHeaders += header
-			break
-		}
-
-		allowedHeaders += header + ","
+		allowedHeaders = append(allowedHeaders, header)
 	}
 
 	return allowedHeaders
 }
 
-func exposedHeaders() string {
-	var exposedHeaders string
+func exposedHeaders() []string {
+	var exposedHeaders []string
 	exposedHeaderConfigs := ConfigFacade.Get("cors.exposed_headers").([]string)
-	for i, header := range exposedHeaderConfigs {
+	for _, header := range exposedHeaderConfigs {
 		if header == "*" {
-			exposedHeaders = ""
 			break
 		}
-		if i == len(exposedHeaderConfigs)-1 {
-			exposedHeaders += header
-			break
-		}
-
-		exposedHeaders += header + ","
+		exposedHeaders = append(exposedHeaders, header)
 	}
 
 	return exposedHeaders

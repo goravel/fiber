@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -55,23 +55,12 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		views = html.New("./resources/views", ".tmpl")
 	}
 
-	network := fiber.NetworkTCP
-	prefork := config.GetBool("http.drivers.fiber.prefork", false)
-	// Fiber not support prefork on dual stack
-	// https://docs.gofiber.io/api/fiber#config
-	if prefork {
-		network = fiber.NetworkTCP4
-	}
-
 	app := fiber.New(fiber.Config{
-		Prefork:               prefork,
-		BodyLimit:             config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
-		ReadBufferSize:        config.GetInt("http.drivers.fiber.header_limit", 4096),
-		DisableStartupMessage: true,
-		JSONEncoder:           json.Marshal,
-		JSONDecoder:           json.Unmarshal,
-		Network:               network,
-		Views:                 views,
+		BodyLimit:      config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
+		ReadBufferSize: config.GetInt("http.drivers.fiber.header_limit", 4096),
+		JSONEncoder:    json.Marshal,
+		JSONDecoder:    json.Unmarshal,
+		Views:          views,
 	})
 
 	return &Route{
@@ -90,10 +79,19 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
-	r.instance.Use(func(ctx *fiber.Ctx) error {
-		if response := handler(NewContext(ctx)); response != nil {
+	r.instance.Use(func(c fiber.Ctx) error {
+		context := contextPool.Get().(*Context)
+
+		context.instance = c
+		if response := handler(context); response != nil {
 			return response.Render()
 		}
+
+		contextRequestPool.Put(context.request)
+		contextResponsePool.Put(context.response)
+		context.request = nil
+		context.response = nil
+		contextPool.Put(context)
 
 		return nil
 	})
@@ -143,10 +141,18 @@ func (r *Route) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
+	network := fiber.NetworkTCP
+	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
+	// Fiber not support prefork on dual stack
+	// https://docs.gofiber.io/api/fiber#config
+	if prefork {
+		network = fiber.NetworkTCP4
+	}
+
 	r.outputRoutes()
 	color.Green().Println(termlink.Link("[HTTP] Listening and serving HTTP on", "http://"+host[0]))
 
-	return r.instance.Listen(host[0])
+	return r.instance.Listen(host[0], fiber.ListenConfig{DisableStartupMessage: true, EnablePrefork: prefork, ListenerNetwork: network})
 }
 
 // RunTLS run TLS server
@@ -178,10 +184,18 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
+	network := fiber.NetworkTCP
+	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
+	// Fiber not support prefork on dual stack
+	// https://docs.gofiber.io/api/fiber#config
+	if prefork {
+		network = fiber.NetworkTCP4
+	}
+
 	r.outputRoutes()
 	color.Green().Println(termlink.Link("[HTTPS] Listening and serving HTTPS on", "https://"+host))
 
-	return r.instance.ListenTLS(host, certFile, keyFile)
+	return r.instance.Listen(host, fiber.ListenConfig{DisableStartupMessage: true, EnablePrefork: prefork, ListenerNetwork: network, CertFile: certFile, CertKeyFile: keyFile})
 }
 
 // ServeHTTP serve http request (Not support)

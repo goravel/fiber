@@ -5,8 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/gofiber/fiber/v2"
-
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
@@ -14,7 +13,7 @@ type DataResponse struct {
 	code        int
 	contentType string
 	data        []byte
-	instance    *fiber.Ctx
+	instance    fiber.Ctx
 }
 
 func (r *DataResponse) Render() error {
@@ -25,7 +24,7 @@ func (r *DataResponse) Render() error {
 type DownloadResponse struct {
 	filename string
 	filepath string
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
 func (r *DownloadResponse) Render() error {
@@ -34,7 +33,7 @@ func (r *DownloadResponse) Render() error {
 
 type FileResponse struct {
 	filepath string
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
 func (r *FileResponse) Render() error {
@@ -42,13 +41,13 @@ func (r *FileResponse) Render() error {
 	escapedFile := url.PathEscape(file)
 	escapedPath := filepath.Join(dir, escapedFile)
 
-	return r.instance.SendFile(escapedPath, true)
+	return r.instance.SendFile(escapedPath)
 }
 
 type JsonResponse struct {
 	code     int
 	obj      any
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
 func (r *JsonResponse) Render() error {
@@ -57,7 +56,7 @@ func (r *JsonResponse) Render() error {
 
 type NoContentResponse struct {
 	code     int
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
 func (r *NoContentResponse) Render() error {
@@ -67,17 +66,17 @@ func (r *NoContentResponse) Render() error {
 type RedirectResponse struct {
 	code     int
 	location string
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
 func (r *RedirectResponse) Render() error {
-	return r.instance.Redirect(r.location, r.code)
+	return r.instance.Redirect().Status(r.code).To(r.location)
 }
 
 type StringResponse struct {
 	code     int
 	format   string
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	values   []any
 }
 
@@ -91,8 +90,8 @@ func (r *StringResponse) Render() error {
 }
 
 type HtmlResponse struct {
-	data     any
-	instance *fiber.Ctx
+	data     fiber.Map
+	instance fiber.Ctx
 	view     string
 }
 
@@ -102,7 +101,7 @@ func (r *HtmlResponse) Render() error {
 
 type StreamResponse struct {
 	code     int
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	writer   func(w contractshttp.StreamWriter) error
 }
 
