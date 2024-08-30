@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -182,6 +183,10 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	color.Green().Println(termlink.Link("[HTTPS] Listening and serving HTTPS on", "https://"+host))
 
 	return r.instance.ListenTLS(host, certFile, keyFile)
+}
+
+func (r *Route) Shutdown(ctx context.Context) error {
+	return r.instance.ShutdownWithContext(ctx)
 }
 
 // ServeHTTP serve http request (Not support)
