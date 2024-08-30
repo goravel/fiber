@@ -1,11 +1,15 @@
 package fiber
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -403,6 +407,115 @@ func TestNewRoute(t *testing.T) {
 
 			mockConfig.AssertExpectations(t)
 		})
+	}
+}
+
+func TestShutdown(t *testing.T) {
+	var (
+		err        error
+		mockConfig *configmocks.Config
+		route      *Route
+		count      atomic.Int64
+	)
+
+	tests := []struct {
+		name  string
+		setup func(host string, port string) error
+		host  string
+		port  string
+	}{
+		{
+			name: "no new requests will be accepted after shutdown",
+			setup: func(host string, port string) error {
+				mockConfig.On("GetString", "http.host").Return(host).Once()
+				mockConfig.On("GetString", "http.port").Return(port).Once()
+
+				go func() {
+					route.Run()
+				}()
+
+				time.Sleep(1 * time.Second)
+
+				addr := "http://" + host + ":" + port
+				assertHttpNormal(t, addr, true)
+
+				assert.Nil(t, route.Shutdown(context.Background()))
+
+				assertHttpNormal(t, addr, false)
+				return nil
+			},
+			host: "127.0.0.1",
+			port: "3031",
+		},
+		{
+			name: "Ensure that received requests are processed",
+			setup: func(host string, port string) error {
+				mockConfig.On("GetString", "http.host").Return(host).Once()
+				mockConfig.On("GetString", "http.port").Return(port).Once()
+
+				go func() {
+					err := route.Run()
+					fmt.Println(err)
+				}()
+
+				time.Sleep(1 * time.Second)
+
+				addr := "http://" + host + ":" + port
+				wg := sync.WaitGroup{}
+				count.Store(0)
+				for i := 0; i < 3; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						assertHttpNormal(t, addr, true)
+					}()
+				}
+				time.Sleep(100 * time.Millisecond)
+				assert.Nil(t, route.Shutdown(context.Background()))
+				assertHttpNormal(t, addr, false)
+				wg.Wait()
+				assert.Equal(t, count.Load(), int64(3))
+				return nil
+			},
+			host: "127.0.0.1",
+			port: "3031",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockConfig = &configmocks.Config{}
+			mockConfig.On("GetBool", "app.debug").Return(true).Once()
+			mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			ConfigFacade = mockConfig
+
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+				time.Sleep(time.Second)
+				defer count.Add(1)
+				return ctx.Response().Json(200, contractshttp.Json{
+					"Hello": "Goravel",
+				})
+			})
+			if err := test.setup(test.host, test.port); err == nil {
+				assert.Nil(t, err)
+			}
+			mockConfig.AssertExpectations(t)
+		})
+	}
+}
+
+func assertHttpNormal(t *testing.T, addr string, expectNormal bool) {
+	resp, err := http.DefaultClient.Get(addr)
+	if !expectNormal {
+		assert.NotNil(t, err)
+		assert.Nil(t, resp)
+	} else {
+		assert.Nil(t, err)
+		assert.NotNil(t, resp)
 	}
 }
 
