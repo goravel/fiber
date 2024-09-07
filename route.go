@@ -187,8 +187,13 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 
 // Shutdown gracefully shuts down the server
 // Shutdown 优雅退出HTTP Server
-func (r *Route) Shutdown(ctx context.Context) error {
-	return r.instance.ShutdownWithContext(ctx)
+func (r *Route) Shutdown(ctx ...context.Context) error {
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return r.instance.ShutdownWithContext(c)
 }
 
 // ServeHTTP serve http request (Not support)
