@@ -21,8 +21,6 @@ type Context struct {
 	request  http.ContextRequest
 }
 
-type ctxKey string
-
 func NewContext(ctx *fiber.Ctx) http.Context {
 	return &Context{instance: ctx}
 }
@@ -61,11 +59,7 @@ func (c *Context) Err() error {
 }
 
 func (c *Context) Value(key any) any {
-	if keyStr, ok := key.(string); ok {
-		return c.instance.UserContext().Value(ctxKey(keyStr))
-	}
-
-	return nil
+	return c.instance.UserContext().Value(key)
 }
 
 func (c *Context) Instance() *fiber.Ctx {
