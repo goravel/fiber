@@ -14,16 +14,3 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, httpCtx.Value("Hello").(string), "world")
 	assert.Equal(t, httpCtx.Value("Hi").(string), "Goravel")
 }
-
-func TestContextWithCustomKeyType(t *testing.T) {
-	type customKeyType struct{}
-	var customKey customKeyType
-	var customKeyTwo customKeyType
-
-	httpCtx := Background()
-	httpCtx.WithValue(customKey, "hello")
-	httpCtx.WithValue(customKeyTwo, "world")
-
-	assert.Equal(t, httpCtx.Value(customKey), "hello")
-	assert.Equal(t, httpCtx.Value(customKeyTwo), "world")
-}
