@@ -107,6 +107,8 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		EnableStackTrace: r.config.GetBool("app.debug", false),
 	})}
 
+	tempMiddlewares = append(tempMiddlewares, TimeoutMiddleware())
+	
 	debug := r.config.GetBool("app.debug", false)
 	if debug {
 		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
