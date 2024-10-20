@@ -485,6 +485,29 @@ func TestStop(t *testing.T) {
 	}
 }
 
+func TestTimeoutMiddlewareIntegration(t *testing.T) {
+	mockConfig := configmocks.NewConfig(t)
+	mockConfig.EXPECT().GetInt("http.timeout_request", 3).Return(1).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
+	route.Use(TimeoutMiddleware())
+
+	route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+		time.Sleep(2 * time.Second)
+		return ctx.Response().String(200, "Hello, World!")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+
+	route.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	assert.Equal(t, "Request timed out", w.Body.String())
+}
+
 func assertHttpNormal(t *testing.T, addr string, expectNormal bool) {
 	resp, err := http.DefaultClient.Get(addr)
 	if !expectNormal {
