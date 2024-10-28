@@ -6,26 +6,28 @@ import (
 	"time"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
-	"github.com/goravel/framework/contracts/config"
+	"github.com/goravel/framework/errors"
 )
 
-// TimeoutMiddleware creates middleware to set a timeout for a request
-func TimeoutMiddleware() contractshttp.Middleware {
+// Timeout creates middleware to set a timeout for a request
+func Timeout(timeout time.Duration) contractshttp.Middleware {
 	return func(ctx contractshttp.Context) {
-		timeout := config.GetInt("http.timeout_request", 3) * time.Second
 		timeoutCtx, cancel := context.WithTimeout(ctx.Context(), timeout)
 		defer cancel()
 
 		ctx.WithContext(timeoutCtx)
 
-		ctx.Request().Next()
+		done := make(chan struct{})
 
-		select{
+		go func() {
+			ctx.Request().Next()
+			close(done)
+		}()
+
+		select {
+		case <-done:
 		case <-ctx.Request().Origin().Context().Done():
-			
-			if timeoutCtx.Err() == context.DeadlineExceeded {
-				ctx.Response().Writer().WriteHeader(http.StatusGatewayTimeout)
-				_, _ = ctx.Response().Writer().Write([]byte("Request timed out"))
+			if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
 				ctx.Request().AbortWithStatus(http.StatusGatewayTimeout)
 			}
 		}
