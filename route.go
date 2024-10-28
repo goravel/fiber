@@ -103,11 +103,12 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
+	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
 	tempMiddlewares := []any{middlewareToFiberHandler(Cors()), recover.New(recover.Config{
 		EnableStackTrace: r.config.GetBool("app.debug", false),
-	})}
+	}),Timeout(timeout)}
 
-	tempMiddlewares = append(tempMiddlewares, TimeoutMiddleware())
+	tempMiddlewares = append(tempMiddlewares, middlewares...)
 	
 	debug := r.config.GetBool("app.debug", false)
 	if debug {
