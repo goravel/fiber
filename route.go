@@ -120,19 +120,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		}))
 	}
 
-	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
-		tempMiddlewares = append(tempMiddlewares, middleware)
-	}
-
-	r.instance.Use(tempMiddlewares...)
-
-	r.Router = NewGroup(
-		r.config,
-		r.instance,
-		"",
-		[]httpcontract.Middleware{},
-		[]httpcontract.Middleware{ResponseMiddleware()},
-	)
+	r.setMiddlewares(middlewares)
 }
 
 // Run run server
