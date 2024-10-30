@@ -14,54 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type resourceController struct{}
-
-func (c resourceController) Index(ctx contractshttp.Context) contractshttp.Response {
-	action := ctx.Value("action")
-
-	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
-		"action": action,
-	})
-}
-
-func (c resourceController) Show(ctx contractshttp.Context) contractshttp.Response {
-	action := ctx.Value("action")
-	id := ctx.Request().Input("id")
-
-	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
-		"action": action,
-		"id":     id,
-	})
-}
-
-func (c resourceController) Store(ctx contractshttp.Context) contractshttp.Response {
-	action := ctx.Value("action")
-
-	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
-		"action": action,
-	})
-}
-
-func (c resourceController) Update(ctx contractshttp.Context) contractshttp.Response {
-	action := ctx.Value("action")
-	id := ctx.Request().Input("id")
-
-	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
-		"action": action,
-		"id":     id,
-	})
-}
-
-func (c resourceController) Destroy(ctx contractshttp.Context) contractshttp.Response {
-	action := ctx.Value("action")
-	id := ctx.Request().Input("id")
-
-	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
-		"action": action,
-		"id":     id,
-	})
-}
-
 func TestGroup(t *testing.T) {
 	var (
 		fiber      *Route
@@ -249,10 +201,10 @@ func TestGroup(t *testing.T) {
 				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "index")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "GET",
@@ -263,21 +215,11 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Show",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "show")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "GET",
@@ -288,21 +230,11 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Store",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "store")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "POST",
@@ -313,21 +245,11 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Update (PUT)",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "update")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "PUT",
@@ -338,18 +260,8 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Update (PATCH)",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "update")
 					ctx.Request().Next()
 				})
@@ -363,21 +275,11 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Destroy",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
 				resource := resourceController{}
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "destroy")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "DELETE",
@@ -542,6 +444,7 @@ func TestGroup(t *testing.T) {
 				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
 				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
 				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.On("GetInt", "http.request_timeout", 3).Return(1).Once()
 
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
 					ctx.WithValue("global", "goravel")
@@ -648,4 +551,52 @@ func contextMiddleware2() contractshttp.Middleware {
 
 		ctx.Request().Next()
 	}
+}
+
+type resourceController struct{}
+
+func (c resourceController) Index(ctx contractshttp.Context) contractshttp.Response {
+	action := ctx.Value("action")
+
+	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+		"action": action,
+	})
+}
+
+func (c resourceController) Show(ctx contractshttp.Context) contractshttp.Response {
+	action := ctx.Value("action")
+	id := ctx.Request().Input("id")
+
+	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+		"action": action,
+		"id":     id,
+	})
+}
+
+func (c resourceController) Store(ctx contractshttp.Context) contractshttp.Response {
+	action := ctx.Value("action")
+
+	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+		"action": action,
+	})
+}
+
+func (c resourceController) Update(ctx contractshttp.Context) contractshttp.Response {
+	action := ctx.Value("action")
+	id := ctx.Request().Input("id")
+
+	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+		"action": action,
+		"id":     id,
+	})
+}
+
+func (c resourceController) Destroy(ctx contractshttp.Context) contractshttp.Response {
+	action := ctx.Value("action")
+	id := ctx.Request().Input("id")
+
+	return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+		"action": action,
+		"id":     id,
+	})
 }
