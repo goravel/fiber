@@ -586,6 +586,7 @@ func TestResponse_Status(t *testing.T) {
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		s.mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
