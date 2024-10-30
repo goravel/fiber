@@ -15,7 +15,7 @@ func TestCors(t *testing.T) {
 		resp       *http.Response
 	)
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
+		mockConfig = configmocks.NewConfig(t)
 	}
 
 	tests := []struct {
