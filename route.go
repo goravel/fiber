@@ -123,6 +123,17 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	r.setMiddlewares(middlewares)
 }
 
+func (r *Route) setMiddlewares(middlewares []httpcontract.Middleware) {
+	r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
+	r.Router = NewGroup(
+		r.config,
+		r.instance.Group("/"),
+		"",
+		[]httpcontract.Middleware{},
+		[]httpcontract.Middleware{ResponseMiddleware()},
+	)
+}
+
 // Run run server
 // Run 运行服务器
 func (r *Route) Run(host ...string) error {
