@@ -273,6 +273,7 @@ func TestResponse(t *testing.T) {
 				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
 				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
 				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
 				ConfigFacade = mockConfig
 
 				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
@@ -586,7 +587,6 @@ func TestResponse_Status(t *testing.T) {
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-		s.mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
