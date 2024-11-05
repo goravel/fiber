@@ -264,7 +264,7 @@ func TestGroup(t *testing.T) {
 				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
 					ctx.WithValue("action", "update")
 					ctx.Request().Next()
-				})
+				}})
 				fiber.Resource("/resource", resource)
 			},
 			method:         "PATCH",
