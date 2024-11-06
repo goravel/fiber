@@ -43,7 +43,7 @@ func (c *Context) WithValue(key any, value any) {
 }
 
 func (c *Context) WithContext(ctx context.Context) {
-	c.instance.Request = c.instance.Request.WithContext(ctx)
+	c.instance.SetUserContext(ctx)
 }
 
 func (c *Context) Context() context.Context {
