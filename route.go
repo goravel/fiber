@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -105,14 +105,18 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
-	tempMiddlewares := []any{middlewareToFiberHandler(Cors()), recover.New(recover.Config{
-		EnableStackTrace: r.config.GetBool("app.debug", false),
-	}),Timeout(timeout)}
+	tempMiddlewares := []fiber.Handler{
+		toFiberHandler(Cors()),
+		recover.New(recover.Config{
+			EnableStackTrace: r.config.GetBool("app.debug", false),
+		}),
+		toFiberHandler(Timeout(timeout)),
+	}
 
-	tempMiddlewares = append(tempMiddlewares, middlewares...)
-	
-	debug := r.config.GetBool("app.debug", false)
-	if debug {
+	// Конвертируем все middlewares в fiber.Handler
+	tempMiddlewares = append(tempMiddlewares, middlewaresToFiberHandlers(middlewares)...)
+
+	if r.config.GetBool("app.debug", false) {
 		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
@@ -120,18 +124,17 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		}))
 	}
 
-	r.setMiddlewares(middlewares)
+	// Используем spread-синтаксис для передачи слайса fiber.Handler
+	for _, middleware := range tempMiddlewares {
+		r.instance.Use(middleware)
+	}
 }
 
 func (r *Route) setMiddlewares(middlewares []httpcontract.Middleware) {
-	r.instance.Use(middlewaresToFiberHandlers(middlewares)...)
-	r.Router = NewGroup(
-		r.config,
-		r.instance.Group("/"),
-		"",
-		[]httpcontract.Middleware{},
-		[]httpcontract.Middleware{ResponseMiddleware()},
-	)
+	// Используем spread-синтаксис для передачи слайса fiber.Handler
+	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
+		r.instance.Use(middleware)
+	}
 }
 
 // Run run server
