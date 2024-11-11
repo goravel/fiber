@@ -26,14 +26,13 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 		if response := handler(NewContext(ctx)); response != nil {
 			return response.Render()
 		}
-
 		return nil
 	}
 }
 
-func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
-	return func(fiberCtx *fiber.Ctx) error {
-		handler(NewContext(fiberCtx))
+func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		middleware(NewContext(ctx))
 		return nil
 	}
 }

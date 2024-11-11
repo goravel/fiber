@@ -30,3 +30,4 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "one", ctx.Value(1))
 	assert.Equal(t, "two point two", ctx.Value(2.2))
 }
+

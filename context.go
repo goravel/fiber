@@ -42,6 +42,10 @@ func (c *Context) WithValue(key any, value any) {
 	c.instance.SetUserContext(ctx)
 }
 
+func (c *Context) WithContext(ctx context.Context) {
+	c.instance.SetUserContext(ctx)
+}
+
 func (c *Context) Context() context.Context {
 	return c.instance.UserContext()
 }
