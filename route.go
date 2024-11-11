@@ -128,12 +128,6 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	r.setMiddlewares(fiberHandlers)
 }
 
-func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
-	for _, middleware := range middlewares {
-		r.instance.Use(middleware)
-	}
-}
-
 // Run run server
 // Run 运行服务器
 func (r *Route) Run(host ...string) error {
@@ -188,11 +182,6 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
 
-// DEPRECATED Use Stop instead
-func (r *Route) Shutdown(ctx ...context.Context) error {
-	return r.Stop(ctx...)
-}
-
 // Stop gracefully shuts down the server
 // Stop 优雅退出HTTP Server
 func (r *Route) Stop(ctx ...context.Context) error {
@@ -228,5 +217,11 @@ func (r *Route) outputRoutes() {
 				}
 			}
 		}
+	}
+}
+
+func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
+	for _, middleware := range middlewares {
+		r.instance.Use(middleware)
 	}
 }
