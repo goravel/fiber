@@ -1,13 +1,13 @@
 package fiber
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	contractsroute "github.com/goravel/framework/contracts/route"
 	configmocks "github.com/goravel/framework/mocks/config"

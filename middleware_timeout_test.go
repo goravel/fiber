@@ -65,5 +65,9 @@ func TestTimeoutMiddleware(t *testing.T) {
 	resp, err = route.instance.Test(req)
 	fmt.Printf("resp: %+v\n", resp)
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+
+	body, err = io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Internal Server Error", string(body))
 }

@@ -3,12 +3,12 @@ package fiber
 import (
 	"bufio"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"

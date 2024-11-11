@@ -26,7 +26,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 				if r := recover(); r != nil {
 					LogFacade.Request(ctx.Request()).Error(r)
 					// TODO can be customized in https://github.com/goravel/goravel/issues/521
-					ctx.Response().Status(http.StatusInternalServerError).String("Internal Server Error").Render()
+					_ = ctx.Response().Status(http.StatusInternalServerError).String("Internal Server Error").Render()
 				}
 				close(done)
 			}()
