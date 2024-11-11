@@ -12,13 +12,6 @@ func pathToFiberPath(relativePath string) string {
 	return bracketToColon(mergeSlashForPath(relativePath))
 }
 
-func toFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		middleware(NewContext(c))
-		return nil
-	}
-}
-
 func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.Handler {
 	var fiberHandlers []fiber.Handler
 	for _, item := range middlewares {
@@ -38,8 +31,8 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 }
 
 func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		middleware(NewContext(c))
+	return func(ctx *fiber.Ctx) error {
+		middleware(NewContext(ctx))
 		return nil
 	}
 }

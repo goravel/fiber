@@ -1,8 +1,8 @@
 package fiber
 
 import (
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -14,8 +14,9 @@ import (
 
 func TestTimeoutMiddleware(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.gin.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 
 	route, err := NewRoute(mockConfig, nil)
 	require.NoError(t, err)
@@ -29,18 +30,21 @@ func TestTimeoutMiddleware(t *testing.T) {
 		return ctx.Response().Success().String("normal")
 	})
 
-	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/timeout", nil)
 	require.NoError(t, err)
 
-	route.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	resp, err := route.instance.Test(req, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
 
-	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/normal", nil)
 	require.NoError(t, err)
 
-	route.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "normal", w.Body.String())
+	resp, err = route.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "normal", string(body))
 }

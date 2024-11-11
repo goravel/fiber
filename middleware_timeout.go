@@ -2,9 +2,9 @@ package fiber
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
-	"errors"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
@@ -26,7 +26,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 
 		select {
 		case <-done:
-		case <-ctx.Request().Origin().Context().Done():
+		case <-ctx.Context().Done():
 			if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
 				ctx.Request().AbortWithStatus(http.StatusGatewayTimeout)
 			}

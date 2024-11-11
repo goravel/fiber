@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
+
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
@@ -26,18 +28,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow all paths",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -51,12 +51,10 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow path",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"api"}).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"api"}).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -70,18 +68,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow path with *",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"any/*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"any/*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -95,18 +91,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "only allow POST",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"POST"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"POST"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -120,18 +114,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow POST",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"GET"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"GET"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -145,18 +137,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow origin",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"https://goravel.com"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"https://goravel.com"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -170,18 +160,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow specific origin",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"https://www.goravel.dev"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"https://www.goravel.dev"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -195,18 +183,16 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow exposed headers",
 			setup: func() {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"Goravel"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.allowed_headers").Return([]string{"*"}).Once()
+				mockConfig.EXPECT().Get("cors.exposed_headers").Return([]string{"Goravel"}).Once()
+				mockConfig.EXPECT().GetInt("cors.max_age").Return(0).Once()
+				mockConfig.EXPECT().GetBool("cors.supports_credentials").Return(false).Once()
 				ConfigFacade = mockConfig
 			},
 			assert: func() {
@@ -224,10 +210,12 @@ func TestCors(t *testing.T) {
 			beforeEach()
 			test.setup()
 
-			f, err := NewRoute(mockConfig, nil)
+			route, err := NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			f.GlobalMiddleware()
-			f.Post("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+			route.setMiddlewares([]fiber.Handler{
+				middlewareToFiberHandler(Cors()),
+			})
+			route.Post("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 				return ctx.Response().Success().Json(contractshttp.Json{
 					"id": ctx.Request().Input("id"),
 				})
@@ -235,15 +223,14 @@ func TestCors(t *testing.T) {
 
 			req, err := http.NewRequest("OPTIONS", "/any/1", nil)
 			assert.Nil(t, err)
+
 			req.Header.Set("Origin", "https://www.goravel.dev")
 			req.Header.Set("Access-Control-Request-Method", "POST")
 
-			resp, err = f.Test(req)
+			resp, err = route.Test(req)
 			assert.NoError(t, err, test.name)
 
 			test.assert()
-
-			mockConfig.AssertExpectations(t)
 		})
 	}
 }

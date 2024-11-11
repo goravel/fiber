@@ -104,35 +104,32 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
+	debug := r.config.GetBool("app.debug", false)
 	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
-	tempMiddlewares := []fiber.Handler{
-		toFiberHandler(Cors()),
+	fiberHandlers := []fiber.Handler{
 		recover.New(recover.Config{
-			EnableStackTrace: r.config.GetBool("app.debug", false),
+			EnableStackTrace: debug,
 		}),
-		toFiberHandler(Timeout(timeout)),
 	}
 
-	// Конвертируем все middlewares в fiber.Handler
-	tempMiddlewares = append(tempMiddlewares, middlewaresToFiberHandlers(middlewares)...)
-
-	if r.config.GetBool("app.debug", false) {
-		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
+	if debug {
+		fiberHandlers = append(fiberHandlers, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
 			TimeFormat: "2006/01/02 - 15:04:05",
 		}))
 	}
 
-	// Используем spread-синтаксис для передачи слайса fiber.Handler
-	for _, middleware := range tempMiddlewares {
-		r.instance.Use(middleware)
-	}
+	globalMiddlewares := append([]httpcontract.Middleware{
+		Cors(), Timeout(timeout),
+	}, middlewares...)
+	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
+
+	r.setMiddlewares(fiberHandlers)
 }
 
-func (r *Route) setMiddlewares(middlewares []httpcontract.Middleware) {
-	// Используем spread-синтаксис для передачи слайса fiber.Handler
-	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
+func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
+	for _, middleware := range middlewares {
 		r.instance.Use(middleware)
 	}
 }

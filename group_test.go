@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"io"
 	"net/http"
 	"os"
@@ -8,7 +9,7 @@ import (
 	"testing"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
-	"github.com/goravel/framework/contracts/route"
+	contractsroute "github.com/goravel/framework/contracts/route"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 
 func TestGroup(t *testing.T) {
 	var (
-		fiber      *Route
+		route      *Route
 		mockConfig *configmocks.Config
 	)
 	beforeEach := func() {
@@ -37,7 +38,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Get",
 			setup: func(req *http.Request) {
-				fiber.Get("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -51,7 +52,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Post",
 			setup: func(req *http.Request) {
-				fiber.Post("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Post("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -65,7 +66,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Put",
 			setup: func(req *http.Request) {
-				fiber.Put("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Put("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -79,7 +80,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Delete",
 			setup: func(req *http.Request) {
-				fiber.Delete("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Delete("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -93,7 +94,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Options",
 			setup: func(req *http.Request) {
-				fiber.Options("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Options("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -106,7 +107,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Patch",
 			setup: func(req *http.Request) {
-				fiber.Patch("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Patch("/input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -120,7 +121,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Any Get",
 			setup: func(req *http.Request) {
-				fiber.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -134,7 +135,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Any Post",
 			setup: func(req *http.Request) {
-				fiber.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -148,7 +149,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Any Put",
 			setup: func(req *http.Request) {
-				fiber.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -162,7 +163,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Any Delete",
 			setup: func(req *http.Request) {
-				fiber.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -176,7 +177,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Any Patch",
 			setup: func(req *http.Request) {
-				fiber.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Any("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -190,22 +191,13 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Index",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
-				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
-				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_origins").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.allowed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("Get", "cors.exposed_headers").Return([]string{"*"}).Once()
-				mockConfig.On("GetInt", "cors.max_age").Return(0).Once()
-				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
-
-				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "index")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "index")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resourceController{})
 			},
 			method:         "GET",
 			url:            "/resource",
@@ -216,11 +208,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Show",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "show")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "show")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resource)
 			},
 			method:         "GET",
 			url:            "/resource/1",
@@ -231,11 +225,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Store",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "store")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "store")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resource)
 			},
 			method:         "POST",
 			url:            "/resource",
@@ -246,11 +242,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Update (PUT)",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "update")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "update")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resource)
 			},
 			method:         "PUT",
 			url:            "/resource/1",
@@ -261,11 +259,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Update (PATCH)",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "update")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "update")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resource)
 			},
 			method:         "PATCH",
 			url:            "/resource/1",
@@ -276,11 +276,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Destroy",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				fiber.setMiddlewares([]contractshttp.Middleware{func(ctx contractshttp.Context) {
-					ctx.WithValue("action", "destroy")
-					ctx.Request().Next()
-				}})
-				fiber.Resource("/resource", resource)
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(ctx contractshttp.Context) {
+						ctx.WithValue("action", "destroy")
+						ctx.Request().Next()
+					}),
+				})
+				route.Resource("/resource", resource)
 			},
 			method:         "DELETE",
 			url:            "/resource/1",
@@ -296,7 +298,7 @@ func TestGroup(t *testing.T) {
 				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
-				fiber.Static("static", tempDir)
+				route.Static("static", tempDir)
 			},
 			method:         "GET",
 			url:            "/static/test.json",
@@ -312,7 +314,7 @@ func TestGroup(t *testing.T) {
 				err = os.WriteFile(file.Name(), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
-				fiber.StaticFile("static-file", file.Name())
+				route.StaticFile("static-file", file.Name())
 			},
 			method:         "GET",
 			url:            "/static-file",
@@ -328,7 +330,7 @@ func TestGroup(t *testing.T) {
 				err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 				assert.NoError(t, err)
 
-				fiber.StaticFS("static-fs", http.Dir(tempDir))
+				route.StaticFS("static-fs", http.Dir(tempDir))
 			},
 			method:         "GET",
 			url:            "/static-fs/test.json",
@@ -338,7 +340,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Abort Middleware",
 			setup: func(req *http.Request) {
-				fiber.Middleware(abortMiddleware()).Get("/middleware/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Middleware(abortMiddleware()).Get("/middleware/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -351,7 +353,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Multiple Middleware",
 			setup: func(req *http.Request) {
-				fiber.Middleware(contextMiddleware(), contextMiddleware1()).Get("/middlewares/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Middleware(contextMiddleware(), contextMiddleware1()).Get("/middlewares/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id":   ctx.Request().Input("id"),
 						"ctx":  ctx.Value("ctx"),
@@ -367,7 +369,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Multiple Prefix",
 			setup: func(req *http.Request) {
-				fiber.Prefix("prefix1").Prefix("prefix2").Get("input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Prefix("prefix1").Prefix("prefix2").Get("input/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": ctx.Request().Input("id"),
 					})
@@ -381,8 +383,8 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Multiple Prefix Group Middleware",
 			setup: func(req *http.Request) {
-				fiber.Prefix("group1").Middleware(contextMiddleware()).Group(func(route1 route.Router) {
-					route1.Prefix("group2").Middleware(contextMiddleware1()).Group(func(route2 route.Router) {
+				route.Prefix("group1").Middleware(contextMiddleware()).Group(func(route1 contractsroute.Router) {
+					route1.Prefix("group2").Middleware(contextMiddleware1()).Group(func(route2 contractsroute.Router) {
 						route2.Get("/middleware/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 							return ctx.Response().Success().Json(contractshttp.Json{
 								"id":   ctx.Request().Input("id"),
@@ -408,8 +410,8 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Multiple Group Middleware",
 			setup: func(req *http.Request) {
-				fiber.Prefix("group1").Middleware(contextMiddleware()).Group(func(route1 route.Router) {
-					route1.Prefix("group2").Middleware(contextMiddleware1()).Group(func(route2 route.Router) {
+				route.Prefix("group1").Middleware(contextMiddleware()).Group(func(route1 contractsroute.Router) {
+					route1.Prefix("group2").Middleware(contextMiddleware1()).Group(func(route2 contractsroute.Router) {
 						route2.Get("/middleware/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 							return ctx.Response().Success().Json(contractshttp.Json{
 								"id":   ctx.Request().Input("id"),
@@ -435,7 +437,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Global Middleware",
 			setup: func(req *http.Request) {
-				mockConfig.On("GetBool", "app.debug", false).Return(true).Twice()
+				mockConfig.On("GetBool", "app.debug", false).Return(true).Once()
 				mockConfig.On("GetString", "app.timezone", "UTC").Return("UTC").Once()
 				mockConfig.On("Get", "cors.paths").Return([]string{"*"}).Once()
 				mockConfig.On("Get", "cors.allowed_methods").Return([]string{"*"}).Once()
@@ -446,11 +448,11 @@ func TestGroup(t *testing.T) {
 				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 				mockConfig.On("GetInt", "http.request_timeout", 3).Return(1).Once()
 
-				fiber.GlobalMiddleware(func(ctx contractshttp.Context) {
+				route.GlobalMiddleware(func(ctx contractshttp.Context) {
 					ctx.WithValue("global", "goravel")
 					ctx.Request().Next()
 				})
-				fiber.Get("/global-middleware", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/global-middleware", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 						"global": ctx.Value("global"),
 					})
@@ -464,7 +466,7 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Middleware Conflict",
 			setup: func(req *http.Request) {
-				fiber.Prefix("conflict").Group(func(route1 route.Router) {
+				route.Prefix("conflict").Group(func(route1 contractsroute.Router) {
 					route1.Middleware(contextMiddleware()).Get("/middleware1/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 						return ctx.Response().Success().Json(contractshttp.Json{
 							"id":   ctx.Request().Input("id"),
@@ -493,14 +495,14 @@ func TestGroup(t *testing.T) {
 			req, err := http.NewRequest(test.method, test.url, nil)
 			assert.Nil(t, err)
 
-			fiber, err = NewRoute(mockConfig, nil)
+			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
 			if test.setup != nil {
 				test.setup(req)
 			}
 
-			resp, err := fiber.Test(req)
+			resp, err := route.Test(req)
 			assert.NoError(t, err, test.name)
 
 			if test.expectBodyJson != "" {
