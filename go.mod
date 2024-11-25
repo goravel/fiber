@@ -11,7 +11,7 @@ require (
 	github.com/goravel/framework v1.14.1-0.20241104083014-534a84b5ab1b
 	github.com/savioxavier/termlink v1.4.1
 	github.com/spf13/cast v1.7.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.57.0
 )
 
