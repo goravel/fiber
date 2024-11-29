@@ -82,18 +82,18 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 	r.instance.Use(func(c fiber.Ctx) error {
-		context := contextPool.Get().(*Context)
+		ctx := contextPool.Get().(*Context)
 
-		context.instance = c
-		if response := handler(context); response != nil {
+		ctx.instance = c
+		if response := handler(ctx); response != nil {
 			return response.Render()
 		}
 
-		contextRequestPool.Put(context.request)
-		contextResponsePool.Put(context.response)
-		context.request = nil
-		context.response = nil
-		contextPool.Put(context)
+		contextRequestPool.Put(ctx.request)
+		contextResponsePool.Put(ctx.response)
+		ctx.request = nil
+		ctx.response = nil
+		contextPool.Put(ctx)
 
 		return nil
 	})

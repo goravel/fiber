@@ -25,6 +25,7 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		context := contextPool.Get().(*Context)
 		context.instance = c
+
 		if response := handler(context); response != nil {
 			return response.Render()
 		}
@@ -43,6 +44,7 @@ func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler 
 	return func(c fiber.Ctx) error {
 		context := contextPool.Get().(*Context)
 		context.instance = c
+
 		middleware(context)
 
 		contextRequestPool.Put(context.request)
