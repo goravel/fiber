@@ -17,6 +17,10 @@ type DataResponse struct {
 }
 
 func (r *DataResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	r.instance.Response().Header.SetContentType(r.contentType)
 	return r.instance.Status(r.code).Send(r.data)
 }
@@ -28,6 +32,10 @@ type DownloadResponse struct {
 }
 
 func (r *DownloadResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	return r.instance.Download(r.filepath, r.filename)
 }
 
@@ -37,6 +45,10 @@ type FileResponse struct {
 }
 
 func (r *FileResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	dir, file := filepath.Split(r.filepath)
 	escapedFile := url.PathEscape(file)
 	escapedPath := filepath.Join(dir, escapedFile)
@@ -51,6 +63,10 @@ type JsonResponse struct {
 }
 
 func (r *JsonResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	return r.instance.Status(r.code).JSON(r.obj)
 }
 
@@ -60,6 +76,10 @@ type NoContentResponse struct {
 }
 
 func (r *NoContentResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	return r.instance.Status(r.code).Send(nil)
 }
 
@@ -70,7 +90,11 @@ type RedirectResponse struct {
 }
 
 func (r *RedirectResponse) Render() error {
-	return r.instance.Redirect().Status(r.code).To(r.location)
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Status(r.code).To(r.location)
 }
 
 type StringResponse struct {
@@ -81,6 +105,10 @@ type StringResponse struct {
 }
 
 func (r *StringResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	if len(r.values) == 0 {
 		return r.instance.Status(r.code).SendString(r.format)
 	}
@@ -96,6 +124,10 @@ type HtmlResponse struct {
 }
 
 func (r *HtmlResponse) Render() error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	return r.instance.Render(r.view, r.data)
 }
 
@@ -106,6 +138,10 @@ type StreamResponse struct {
 }
 
 func (r *StreamResponse) Render() (err error) {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	r.instance.Status(r.code)
 
 	ctx := r.instance.Context()
@@ -114,4 +150,10 @@ func (r *StreamResponse) Render() (err error) {
 	})
 
 	return err
+}
+
+// invalidFiber instance.Context() will be nil when the request is timeout,
+// the request will panic if ctx.Response() is called in this situation.
+func invalidFiber(instance fiber.Ctx) bool {
+	return instance.Context() == nil
 }

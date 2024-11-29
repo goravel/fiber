@@ -57,7 +57,11 @@ func (c *Context) Response() http.ContextResponse {
 }
 
 func (c *Context) WithValue(key string, value any) {
-	ctx := context.WithValue(c.instance.UserContext(), key, value) //nolint:staticcheck
+	ctx := context.WithValue(c.instance.UserContext(), key, value)
+	c.instance.SetUserContext(ctx)
+}
+
+func (c *Context) WithContext(ctx context.Context) {
 	c.instance.SetUserContext(ctx)
 }
 
@@ -78,11 +82,7 @@ func (c *Context) Err() error {
 }
 
 func (c *Context) Value(key any) any {
-	if keyStr, ok := key.(string); ok {
-		return c.instance.UserContext().Value(keyStr)
-	}
-
-	return nil
+	return c.instance.UserContext().Value(key)
 }
 
 func (c *Context) Instance() fiber.Ctx {

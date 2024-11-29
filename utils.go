@@ -39,11 +39,11 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 	}
 }
 
-func middlewareToFiberHandler(handler httpcontract.Middleware) fiber.Handler {
+func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		context := contextPool.Get().(*Context)
 		context.instance = c
-		handler(context)
+		middleware(context)
 
 		contextRequestPool.Put(context.request)
 		contextResponsePool.Put(context.response)

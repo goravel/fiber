@@ -1,12 +1,14 @@
 package fiber
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/logger"
@@ -100,32 +102,28 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
-	tempMiddlewares := []any{middlewareToFiberHandler(Cors()), recover.New(recover.Config{
-		EnableStackTrace: r.config.GetBool("app.debug", false),
-	})}
-
 	debug := r.config.GetBool("app.debug", false)
+	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
+	fiberHandlers := []fiber.Handler{
+		recover.New(recover.Config{
+			EnableStackTrace: debug,
+		}),
+	}
+
 	if debug {
-		tempMiddlewares = append(tempMiddlewares, logger.New(logger.Config{
+		fiberHandlers = append(fiberHandlers, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
 			TimeFormat: "2006/01/02 - 15:04:05",
 		}))
 	}
 
-	for _, middleware := range middlewaresToFiberHandlers(middlewares) {
-		tempMiddlewares = append(tempMiddlewares, middleware)
-	}
+	globalMiddlewares := append([]httpcontract.Middleware{
+		Cors(), Timeout(timeout),
+	}, middlewares...)
+	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
 
-	r.instance.Use(tempMiddlewares...)
-
-	r.Router = NewGroup(
-		r.config,
-		r.instance,
-		"",
-		[]httpcontract.Middleware{},
-		[]httpcontract.Middleware{ResponseMiddleware()},
-	)
+	r.setMiddlewares(fiberHandlers)
 }
 
 // Run run server
@@ -198,6 +196,17 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.Listen(host, fiber.ListenConfig{DisableStartupMessage: true, EnablePrefork: prefork, ListenerNetwork: network, CertFile: certFile, CertKeyFile: keyFile})
 }
 
+// Stop gracefully shuts down the server
+// Stop 优雅退出HTTP Server
+func (r *Route) Stop(ctx ...context.Context) error {
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
+
+	return r.instance.ShutdownWithContext(c)
+}
+
 // ServeHTTP serve http request (Not support)
 // ServeHTTP 服务 HTTP 请求 (不支持)
 func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -222,5 +231,11 @@ func (r *Route) outputRoutes() {
 				}
 			}
 		}
+	}
+}
+
+func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
+	for _, middleware := range middlewares {
+		r.instance.Use(middleware)
 	}
 }
