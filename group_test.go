@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	contractsroute "github.com/goravel/framework/contracts/route"
 	configmocks "github.com/goravel/framework/mocks/config"

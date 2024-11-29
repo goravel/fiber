@@ -94,7 +94,7 @@ func (r *RedirectResponse) Render() error {
 		return nil
 	}
 
-	return r.instance.Status(r.code).To(r.location)
+	return r.instance.Redirect().Status(r.code).To(r.location)
 }
 
 type StringResponse struct {

@@ -56,7 +56,7 @@ func (c *Context) Response() http.ContextResponse {
 	return c.response
 }
 
-func (c *Context) WithValue(key string, value any) {
+func (c *Context) WithValue(key any, value any) {
 	ctx := context.WithValue(c.instance.UserContext(), key, value)
 	c.instance.SetUserContext(ctx)
 }

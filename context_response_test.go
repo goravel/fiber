@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
