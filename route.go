@@ -83,17 +83,18 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 	r.instance.Use(func(c fiber.Ctx) error {
 		ctx := contextPool.Get().(*Context)
+		defer func() {
+			contextRequestPool.Put(ctx.request)
+			contextResponsePool.Put(ctx.response)
+			ctx.request = nil
+			ctx.response = nil
+			contextPool.Put(ctx)
+		}()
 
 		ctx.instance = c
 		if response := handler(ctx); response != nil {
 			return response.Render()
 		}
-
-		contextRequestPool.Put(ctx.request)
-		contextResponsePool.Put(ctx.response)
-		ctx.request = nil
-		ctx.response = nil
-		contextPool.Put(ctx)
 
 		return nil
 	})
@@ -139,17 +140,10 @@ func (r *Route) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
-	network := fiber.NetworkTCP
-	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
-	// Fiber not support prefork on dual stack
-	// https://docs.gofiber.io/api/fiber#config
-	if prefork {
-		network = fiber.NetworkTCP4
-	}
-
 	r.outputRoutes()
 	color.Green().Println(termlink.Link("[HTTP] Listening and serving HTTP on", "http://"+host[0]))
 
+	network, prefork := r.getNetworkConfig()
 	return r.instance.Listen(host[0], fiber.ListenConfig{DisableStartupMessage: true, EnablePrefork: prefork, ListenerNetwork: network})
 }
 
@@ -182,17 +176,10 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
-	network := fiber.NetworkTCP
-	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
-	// Fiber not support prefork on dual stack
-	// https://docs.gofiber.io/api/fiber#config
-	if prefork {
-		network = fiber.NetworkTCP4
-	}
-
 	r.outputRoutes()
 	color.Green().Println(termlink.Link("[HTTPS] Listening and serving HTTPS on", "https://"+host))
 
+	network, prefork := r.getNetworkConfig()
 	return r.instance.Listen(host, fiber.ListenConfig{DisableStartupMessage: true, EnablePrefork: prefork, ListenerNetwork: network, CertFile: certFile, CertKeyFile: keyFile})
 }
 
@@ -238,4 +225,13 @@ func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
 	for _, middleware := range middlewares {
 		r.instance.Use(middleware)
 	}
+}
+
+func (r *Route) getNetworkConfig() (string, bool) {
+	network := fiber.NetworkTCP
+	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
+	if prefork {
+		network = fiber.NetworkTCP4
+	}
+	return network, prefork
 }
