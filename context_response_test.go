@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
@@ -24,7 +24,6 @@ func TestResponse(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
@@ -446,7 +445,6 @@ func TestResponse_Success(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
@@ -575,7 +573,6 @@ func TestResponse_Status(t *testing.T) {
 	)
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
@@ -697,7 +694,6 @@ func TestResponse_Status(t *testing.T) {
 
 func TestResponse_Stream(t *testing.T) {
 	mockConfig := &configmocks.Config{}
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 

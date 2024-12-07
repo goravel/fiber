@@ -44,7 +44,7 @@ import "github.com/goravel/fiber"
 import (
     fiberfacades "github.com/goravel/fiber/facades"
     "github.com/gofiber/template/html/v2"
-    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v3"
 )
 
 "default": "fiber",
