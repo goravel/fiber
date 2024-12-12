@@ -35,7 +35,7 @@ type ContextRequest struct {
 func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.Validation) contractshttp.ContextRequest {
 	httpBody, err := getHttpBody(ctx)
 	if err != nil {
-		LogFacade.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
+		LogFacade.Error(fmt.Sprintf("%+v", err))
 	}
 
 	return &ContextRequest{ctx: ctx, instance: ctx.instance, httpBody: httpBody, log: log, validation: validation}
@@ -477,8 +477,10 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 	if strings.Contains(contentType, "application/json") {
 		bodyBytes := ctx.instance.Body()
 
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("decode json [%v] error: %v", utils.UnsafeString(bodyBytes), err)
+		if len(bodyBytes) > 0 {
+			if err := json.Unmarshal(bodyBytes, &data); err != nil {
+				return nil, fmt.Errorf("decode json [%v] error: %v", utils.UnsafeString(bodyBytes), err)
+			}
 		}
 	}
 

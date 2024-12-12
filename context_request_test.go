@@ -1032,6 +1032,26 @@ func (s *ContextRequestSuite) TestInputBool() {
 	s.Equal(http.StatusOK, code)
 }
 
+// Test Issue: https://github.com/goravel/goravel/issues/528
+func (s *ContextRequestSuite) TestPostWithEmpty() {
+	s.route.Post("/post-with-empty", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"all": ctx.Request().All(),
+		})
+	})
+
+	payload := strings.NewReader("")
+	req, err := http.NewRequest("POST", "/post-with-empty?a=1", payload)
+	req.ContentLength = 1
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"all\":{\"a\":\"1\"}}", body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestQuery() {
 	s.route.Get("/query", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
