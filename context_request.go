@@ -19,6 +19,7 @@ import (
 	contractsvalidate "github.com/goravel/framework/contracts/validation"
 	"github.com/goravel/framework/filesystem"
 	"github.com/goravel/framework/support/json"
+	"github.com/goravel/framework/support/str"
 	"github.com/goravel/framework/validation"
 	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
@@ -282,21 +283,36 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 		}
 	}
 
-	if r.instance.Query(key) != "" {
+	if r.instance.Context().QueryArgs().Has(key) {
 		return r.instance.Query(key)
 	}
 
-	value := r.instance.Params(key)
-	if len(value) == 0 && len(defaultValue) > 0 {
-		return defaultValue[0]
-	}
-
-	return value
+	return r.instance.Params(key, defaultValue...)
 }
 
 func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []string {
 	if valueFromHttpBody := r.getValueFromHttpBody(key); valueFromHttpBody != nil {
-		return cast.ToStringSlice(valueFromHttpBody)
+		if value := cast.ToStringSlice(valueFromHttpBody); value == nil {
+			return []string{}
+		} else {
+			return value
+		}
+	}
+
+	if r.instance.Context().QueryArgs().Has(key) {
+		valueSlice := r.instance.Context().QueryArgs().PeekMulti(key)
+		value := make([]string, 0)
+		for _, item := range valueSlice {
+			if itemStr := utils.UnsafeString(item); itemStr != "" {
+				value = append(value, itemStr)
+			}
+		}
+
+		return value
+	}
+
+	if value, exist := r.instance.AllParams()[key]; exist {
+		return str.Of(value).Split(",")
 	}
 
 	if len(defaultValue) > 0 {
@@ -311,11 +327,21 @@ func (r *ContextRequest) InputMap(key string, defaultValue ...map[string]string)
 		return cast.ToStringMapString(valueFromHttpBody)
 	}
 
+	if r.instance.Context().QueryArgs().Has(key) {
+		valueStr := r.instance.Query(key)
+		var value map[string]string
+		if err := json.Unmarshal([]byte(valueStr), &value); err != nil {
+			return map[string]string{}
+		}
+
+		return value
+	}
+
 	if len(defaultValue) > 0 {
 		return defaultValue[0]
-	} else {
-		return map[string]string{}
 	}
+
+	return map[string]string{}
 }
 
 func (r *ContextRequest) InputInt(key string, defaultValue ...int) int {

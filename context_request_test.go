@@ -649,14 +649,34 @@ func (s *ContextRequestSuite) TestInput_Route() {
 	s.Equal(http.StatusOK, code)
 }
 
-func (s *ContextRequestSuite) TestInput_Empty() {
+func (s *ContextRequestSuite) TestInput_KeyInBodyIsEmpty() {
 	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"id1": ctx.Request().Input("id1"),
+			"id1": ctx.Request().Input("id1", "a"),
 		})
 	})
 
-	req, err := http.NewRequest("POST", "/input/empty/1", nil)
+	payload := strings.NewReader(`{
+		"id1": ""
+	}`)
+	req, err := http.NewRequest("POST", "/input/empty/1", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"id1\":\"\"}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInput_KeyInQueryIsEmpty() {
+	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"id1": ctx.Request().Input("id1", "a"),
+		})
+	})
+
+	req, err := http.NewRequest("POST", "/input/empty/1?id1=", nil)
 	s.Require().Nil(err)
 
 	req.Header.Set("Content-Type", "application/json")
@@ -669,7 +689,7 @@ func (s *ContextRequestSuite) TestInput_Empty() {
 func (s *ContextRequestSuite) TestInput_Default() {
 	s.route.Post("/input/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"id1": ctx.Request().Input("id1", "2"),
+			"id1": ctx.Request().Input("id1", "a"),
 		})
 	})
 
@@ -679,7 +699,7 @@ func (s *ContextRequestSuite) TestInput_Default() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"id1\":\"2\"}", body)
+	s.Equal("{\"id1\":\"a\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -782,17 +802,34 @@ func (s *ContextRequestSuite) TestInputArray_Default() {
 	s.Equal(http.StatusOK, code)
 }
 
-func (s *ContextRequestSuite) TestInputArray_Empty() {
+func (s *ContextRequestSuite) TestInputArray_KeyInBodyIsEmpty() {
 	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": ctx.Request().InputArray("name"),
+			"name": ctx.Request().InputArray("name", []string{"a", "b"}),
 		})
 	})
 
 	payload := strings.NewReader(`{
-		"id": ["id 0", "id 1"]
+		"name": []
 	}`)
-	req, err := http.NewRequest("POST", "/input-array/empty/1?id=2", payload)
+	req, err := http.NewRequest("POST", "/input-array/empty/1", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"name\":[]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputArray_KeyInQueryIsEmpty() {
+	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"name": ctx.Request().InputArray("name", []string{"a", "b"}),
+		})
+	})
+
+	req, err := http.NewRequest("POST", "/input-array/empty/1?name=", nil)
 	s.Require().Nil(err)
 
 	req.Header.Set("Content-Type", "application/json")
@@ -892,17 +929,38 @@ func (s *ContextRequestSuite) TestInputMap_Default() {
 	s.Equal(http.StatusOK, code)
 }
 
-func (s *ContextRequestSuite) TestInputMap_Empty() {
+func (s *ContextRequestSuite) TestInputMap_KeyInBodyIsEmpty() {
 	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": ctx.Request().InputMap("name"),
+			"name": ctx.Request().InputMap("name", map[string]string{
+				"a": "b",
+			}),
 		})
 	})
 
 	payload := strings.NewReader(`{
-		"id": {"a": "3", "b": "4"}
+		"name": {}
 	}`)
-	req, err := http.NewRequest("POST", "/input-map/empty/1?id=2", payload)
+	req, err := http.NewRequest("POST", "/input-map/empty/1", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"name\":{}}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputMap_KeyInQueryIsEmpty() {
+	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"name": ctx.Request().InputMap("name", map[string]string{
+				"a": "b",
+			}),
+		})
+	})
+
+	req, err := http.NewRequest("POST", "/input-map/empty/1?name=", nil)
 	s.Require().Nil(err)
 
 	req.Header.Set("Content-Type", "application/json")
