@@ -445,9 +445,21 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 		return nil, err
 	}
 
-	validator, err := r.Validate(request.Rules(r.ctx), validation.Filters(request.Filters(r.ctx)), validation.Messages(request.Messages(r.ctx)), validation.Attributes(request.Attributes(r.ctx)), func(options map[string]any) {
-		options["prepareForValidation"] = request.PrepareForValidation
-	})
+	var options []contractsvalidate.Option
+	if requestWithFilters, ok := request.(contractshttp.FormRequestWithFilters); ok {
+		options = append(options, validation.Filters(requestWithFilters.Filters(r.ctx)))
+	}
+	if requestWithMessage, ok := request.(contractshttp.FormRequestWithMessages); ok {
+		options = append(options, validation.Messages(requestWithMessage.Messages(r.ctx)))
+	}
+	if requestWithAttributes, ok := request.(contractshttp.FormRequestWithAttributes); ok {
+		options = append(options, validation.Attributes(requestWithAttributes.Attributes(r.ctx)))
+	}
+	if prepareForValidation, ok := request.(contractshttp.FormRequestWithPrepareForValidation); ok {
+		options = append(options, validation.PrepareForValidation(prepareForValidation.PrepareForValidation))
+	}
+
+	validator, err := r.Validate(request.Rules(r.ctx), options...)
 	if err != nil {
 		return nil, err
 	}
