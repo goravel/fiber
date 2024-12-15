@@ -9,6 +9,18 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+const (
+	contextKey = "goravel_contextKey"
+	sessionKey = "goravel_session"
+)
+
+var (
+	internalContextKeys = []any{
+		contextKey,
+		sessionKey,
+	}
+)
+
 func Background() http.Context {
 	app := fiber.New()
 	httpCtx := app.AcquireCtx(&fasthttp.RequestCtx{})
@@ -38,7 +50,9 @@ func (c *Context) Response() http.ContextResponse {
 }
 
 func (c *Context) WithValue(key any, value any) {
-	ctx := context.WithValue(c.instance.UserContext(), key, value)
+	values := c.getGoravelContextValues()
+	values[key] = value
+	ctx := context.WithValue(c.instance.UserContext(), contextKey, values)
 	c.instance.SetUserContext(ctx)
 }
 
@@ -47,7 +61,22 @@ func (c *Context) WithContext(ctx context.Context) {
 }
 
 func (c *Context) Context() context.Context {
-	return c.instance.UserContext()
+	ctx := c.instance.UserContext()
+	values := c.getGoravelContextValues()
+	for key, value := range values {
+		skip := false
+		for _, internalContextKey := range internalContextKeys {
+			if key == internalContextKey {
+				skip = true
+			}
+		}
+
+		if !skip {
+			ctx = context.WithValue(ctx, key, value)
+		}
+	}
+
+	return ctx
 }
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
@@ -63,9 +92,23 @@ func (c *Context) Err() error {
 }
 
 func (c *Context) Value(key any) any {
+	values := c.getGoravelContextValues()
+	if value, exist := values[key]; exist {
+		return value
+	}
+
 	return c.instance.UserContext().Value(key)
 }
 
 func (c *Context) Instance() *fiber.Ctx {
 	return c.instance
+}
+
+func (c *Context) getGoravelContextValues() map[any]any {
+	value := c.instance.UserContext().Value(contextKey)
+	if goravelCtxVal, ok := value.(map[any]any); ok {
+		return goravelCtxVal
+	}
+
+	return make(map[any]any)
 }
