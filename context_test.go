@@ -17,6 +17,7 @@ func TestContext(t *testing.T) {
 	httpCtx.WithValue(customTypeKey, "halo")
 
 	userContext := context.Background()
+	//nolint:all
 	userContext = context.WithValue(userContext, "user_a", "b")
 	httpCtx.WithContext(userContext)
 

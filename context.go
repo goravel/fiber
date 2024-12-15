@@ -53,6 +53,9 @@ func (c *Context) Response() http.ContextResponse {
 func (c *Context) WithValue(key any, value any) {
 	// Not store the value in the context directly, because we want to return the value map when calling `Context()`.
 	values := c.getGoravelContextValues()
+	if values == nil {
+		values = make(map[any]any)
+	}
 	values[key] = value
 	ctx := context.WithValue(c.instance.UserContext(), contextKey, values)
 	c.instance.SetUserContext(ctx)
