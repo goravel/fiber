@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	contextKey = "goravel_contextKey"
-	sessionKey = "goravel_session"
+	userContextKey = "goravel_userContextKey"
+	contextKey     = "goravel_contextKey"
+	sessionKey     = "goravel_session"
 )
 
 var (
@@ -50,6 +51,7 @@ func (c *Context) Response() http.ContextResponse {
 }
 
 func (c *Context) WithValue(key any, value any) {
+	// Not store the value in the context directly, because we want to return the value map when calling `Context()`.
 	values := c.getGoravelContextValues()
 	values[key] = value
 	ctx := context.WithValue(c.instance.UserContext(), contextKey, values)
@@ -57,11 +59,14 @@ func (c *Context) WithValue(key any, value any) {
 }
 
 func (c *Context) WithContext(ctx context.Context) {
+	// We want to return the original context back when calling `Context()`, so we need to store it.
+	ctx = context.WithValue(ctx, userContextKey, ctx)
+	ctx = context.WithValue(ctx, contextKey, c.getGoravelContextValues())
 	c.instance.SetUserContext(ctx)
 }
 
 func (c *Context) Context() context.Context {
-	ctx := c.instance.UserContext()
+	ctx := c.getUserContext()
 	values := c.getGoravelContextValues()
 	for key, value := range values {
 		skip := false
@@ -111,4 +116,13 @@ func (c *Context) getGoravelContextValues() map[any]any {
 	}
 
 	return make(map[any]any)
+}
+
+func (c *Context) getUserContext() context.Context {
+	ctx, exist := c.instance.UserContext().Value(userContextKey).(context.Context)
+	if !exist {
+		ctx = context.Background()
+	}
+
+	return ctx
 }
