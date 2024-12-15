@@ -9,16 +9,18 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const (
-	userContextKey = "goravel_userContextKey"
-	contextKey     = "goravel_contextKey"
-	sessionKey     = "goravel_session"
-)
+type contextKeyType struct{}
+type sessionKeyType struct{}
+type userContextKeyType struct{}
 
 var (
+	contextKey          = contextKeyType{}
+	sessionKey          = sessionKeyType{}
+	userContextKey      = userContextKeyType{}
 	internalContextKeys = []any{
 		contextKey,
 		sessionKey,
+		userContextKey,
 	}
 )
 
