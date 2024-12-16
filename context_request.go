@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
@@ -25,6 +26,13 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
+var contextRequestPool = sync.Pool{New: func() any {
+	return &ContextRequest{
+		log:        LogFacade,
+		validation: ValidationFacade,
+	}
+}}
+
 type ContextRequest struct {
 	ctx        *Context
 	instance   *fiber.Ctx
@@ -34,12 +42,16 @@ type ContextRequest struct {
 }
 
 func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.Validation) contractshttp.ContextRequest {
+	request := contextRequestPool.Get().(*ContextRequest)
 	httpBody, err := getHttpBody(ctx)
 	if err != nil {
-		LogFacade.Error(fmt.Sprintf("%+v", err))
+		log.Error(fmt.Sprintf("%+v", errors.Unwrap(err)))
 	}
-
-	return &ContextRequest{ctx: ctx, instance: ctx.instance, httpBody: httpBody, log: log, validation: validation}
+	request.ctx = ctx
+	request.instance = ctx.instance
+	request.httpBody = httpBody
+	request.validation = validation
+	return request
 }
 
 func (r *ContextRequest) AbortWithStatus(code int) {

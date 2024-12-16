@@ -22,8 +22,17 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 }
 
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		if response := handler(NewContext(ctx)); response != nil {
+	return func(c *fiber.Ctx) error {
+		context := NewContext(c)
+		defer func() {
+			contextRequestPool.Put(context.request)
+			contextResponsePool.Put(context.response)
+			context.request = nil
+			context.response = nil
+			contextPool.Put(context)
+		}()
+
+		if response := handler(context); response != nil {
 			return response.Render()
 		}
 		return nil
@@ -31,8 +40,17 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 }
 
 func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		middleware(NewContext(ctx))
+	return func(c *fiber.Ctx) error {
+		context := NewContext(c)
+		defer func() {
+			contextRequestPool.Put(context.request)
+			contextResponsePool.Put(context.response)
+			context.request = nil
+			context.response = nil
+			contextPool.Put(context)
+		}()
+
+		middleware(context)
 		return nil
 	}
 }

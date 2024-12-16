@@ -14,13 +14,20 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+var contextResponsePool = sync.Pool{New: func() any {
+	return &ContextResponse{}
+}}
+
 type ContextResponse struct {
 	instance *fiber.Ctx
 	origin   contractshttp.ResponseOrigin
 }
 
-func NewContextResponse(instance *fiber.Ctx, origin contractshttp.ResponseOrigin) *ContextResponse {
-	return &ContextResponse{instance, origin}
+func NewContextResponse(instance *fiber.Ctx, origin contractshttp.ResponseOrigin) contractshttp.ContextResponse {
+	response := contextResponsePool.Get().(*ContextResponse)
+	response.instance = instance
+	response.origin = origin
+	return response
 }
 
 func (r *ContextResponse) Cookie(cookie contractshttp.Cookie) contractshttp.ContextResponse {
