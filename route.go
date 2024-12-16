@@ -2,8 +2,10 @@ package fiber
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -126,6 +128,33 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
 
 	r.setMiddlewares(fiberHandlers)
+}
+
+// Listen listen server
+// Listen 监听服务器
+func (r *Route) Listen(l net.Listener) error {
+	return r.instance.Listener(l)
+}
+
+// ListenTLS listen TLS server
+// ListenTLS 监听 TLS 服务器
+func (r *Route) ListenTLS(l net.Listener, certFile, keyFile string) error {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return err
+	}
+
+	tlsHandler := &fiber.TLSHandler{}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		Certificates: []tls.Certificate{
+			cert,
+		},
+		GetCertificate: tlsHandler.GetClientInfo,
+	}
+
+	r.instance.SetTLSHandler(tlsHandler)
+	return r.Listen(tls.NewListener(l, tlsConfig))
 }
 
 // Run run server
