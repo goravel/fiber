@@ -138,7 +138,13 @@ func (r *Route) Listen(l net.Listener) error {
 
 // ListenTLS listen TLS server
 // ListenTLS 监听 TLS 服务器
-func (r *Route) ListenTLS(l net.Listener, certFile, keyFile string) error {
+func (r *Route) ListenTLS(l net.Listener) error {
+	return r.ListenTLSWithCert(l, r.config.GetString("http.tls.ssl.cert"), r.config.GetString("http.tls.ssl.key"))
+}
+
+// ListenTLSWithCert listen TLS server with cert file and key file
+// ListenTLSWithCert 使用证书文件和密钥文件监听 TLS 服务器
+func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) error {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return err

@@ -104,7 +104,6 @@ func TestListen(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
-			mockConfig.AssertExpectations(t)
 		})
 	}
 }
@@ -128,7 +127,70 @@ func TestListenTLS(t *testing.T) {
 				go func() {
 					l, err := net.Listen("tcp", host)
 					assert.Nil(t, err)
-					assert.Nil(t, route.ListenTLS(l, "test_ca.crt", "test_ca.key"))
+					assert.Nil(t, route.ListenTLS(l))
+				}()
+
+				return nil
+			},
+			host: "127.0.0.1:3101",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockConfig = configmocks.NewConfig(t)
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
+			mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+			ConfigFacade = mockConfig
+
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+				return ctx.Response().Json(200, contractshttp.Json{
+					"Hello": "Goravel",
+				})
+			})
+			if err := test.setup(test.host); err == nil {
+				time.Sleep(1 * time.Second)
+				tr := &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				}
+				client := &http.Client{Transport: tr}
+				resp, err := client.Get("https://" + test.host)
+				assert.Nil(t, err)
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
+			}
+		})
+	}
+}
+
+func TestListenTLSWithCert(t *testing.T) {
+	var (
+		err        error
+		mockConfig *configmocks.Config
+		route      *Route
+	)
+
+	tests := []struct {
+		name        string
+		setup       func(host string) error
+		host        string
+		expectError error
+	}{
+		{
+			name: "success listen",
+			setup: func(host string) error {
+				go func() {
+					l, err := net.Listen("tcp", host)
+					assert.Nil(t, err)
+					assert.Nil(t, route.ListenTLSWithCert(l, "test_ca.crt", "test_ca.key"))
 				}()
 
 				return nil
