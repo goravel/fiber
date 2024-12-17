@@ -195,7 +195,7 @@ func TestListenTLSWithCert(t *testing.T) {
 
 				return nil
 			},
-			host: "127.0.0.1:3101",
+			host: "127.0.0.1:3102",
 		},
 	}
 
