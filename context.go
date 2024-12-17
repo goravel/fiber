@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,25 +32,38 @@ func Background() http.Context {
 	return NewContext(httpCtx)
 }
 
+var contextPool = sync.Pool{New: func() any {
+	return &Context{}
+}}
+
 type Context struct {
 	instance *fiber.Ctx
 	request  http.ContextRequest
+	response http.ContextResponse
 }
 
-func NewContext(ctx *fiber.Ctx) http.Context {
-	return &Context{instance: ctx}
+func NewContext(c *fiber.Ctx) *Context {
+	ctx := contextPool.Get().(*Context)
+	ctx.instance = c
+	return ctx
 }
 
 func (c *Context) Request() http.ContextRequest {
 	if c.request == nil {
-		c.request = NewContextRequest(c, LogFacade, ValidationFacade)
+		request := NewContextRequest(c, LogFacade, ValidationFacade)
+		c.request = request
 	}
 
 	return c.request
 }
 
 func (c *Context) Response() http.ContextResponse {
-	return NewContextResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
+	if c.response == nil {
+		response := NewContextResponse(c.instance, &ResponseOrigin{Ctx: c.instance})
+		c.response = response
+	}
+
+	return c.response
 }
 
 func (c *Context) WithValue(key any, value any) {
