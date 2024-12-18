@@ -64,7 +64,7 @@ func (r *ContextResponse) Header(key, value string) contractshttp.ContextRespons
 	return r
 }
 
-func (r *ContextResponse) Json(code int, obj any) contractshttp.Response {
+func (r *ContextResponse) Json(code int, obj any) contractshttp.AbortResponse {
 	return &JsonResponse{code, obj, r.instance}
 }
 
@@ -84,7 +84,7 @@ func (r *ContextResponse) Redirect(code int, location string) contractshttp.Resp
 	return &RedirectResponse{code, location, r.instance}
 }
 
-func (r *ContextResponse) String(code int, format string, values ...any) contractshttp.Response {
+func (r *ContextResponse) String(code int, format string, values ...any) contractshttp.AbortResponse {
 	return &StringResponse{code, format, r.instance, values}
 }
 
@@ -209,11 +209,11 @@ func (r *Status) Data(contentType string, data []byte) contractshttp.Response {
 	return &DataResponse{r.status, contentType, data, r.instance}
 }
 
-func (r *Status) Json(obj any) contractshttp.Response {
+func (r *Status) Json(obj any) contractshttp.AbortResponse {
 	return &JsonResponse{r.status, obj, r.instance}
 }
 
-func (r *Status) String(format string, values ...any) contractshttp.Response {
+func (r *Status) String(format string, values ...any) contractshttp.AbortResponse {
 	return &StringResponse{r.status, format, r.instance, values}
 }
 

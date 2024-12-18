@@ -71,6 +71,10 @@ func (r *JsonResponse) Render() error {
 	return r.instance.Status(r.code).JSON(r.obj)
 }
 
+func (r *JsonResponse) Abort() error {
+	return nil
+}
+
 type NoContentResponse struct {
 	code     int
 	instance *fiber.Ctx
@@ -116,6 +120,10 @@ func (r *StringResponse) Render() error {
 
 	r.instance.Response().Header.SetContentType(r.format)
 	return r.instance.Status(r.code).SendString(r.values[0].(string))
+}
+
+func (r *StringResponse) Abort() error {
+	return nil
 }
 
 type HtmlResponse struct {
