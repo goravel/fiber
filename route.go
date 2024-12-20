@@ -217,9 +217,9 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
 
-// Stop gracefully shuts down the server
-// Stop 优雅退出HTTP Server
-func (r *Route) Stop(ctx ...context.Context) error {
+// Shutdown gracefully shuts down the server
+// Shutdown 优雅退出HTTP Server
+func (r *Route) Shutdown(ctx ...context.Context) error {
 	c := context.Background()
 	if len(ctx) > 0 {
 		c = ctx[0]
