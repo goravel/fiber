@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/template/html/v2 v2.1.2
-	github.com/gookit/validate v1.5.3
+	github.com/gookit/validate v1.5.4
 	github.com/goravel/framework v1.14.1-0.20241220071314-f839c5572ddd
 	github.com/savioxavier/termlink v1.4.1
 	github.com/spf13/cast v1.7.1
@@ -72,7 +72,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
 	github.com/gookit/color v1.5.4 // indirect
-	github.com/gookit/filter v1.2.1 // indirect
+	github.com/gookit/filter v1.2.2 // indirect
 	github.com/gookit/goutil v0.6.18 // indirect
 	github.com/goravel/file-rotatelogs/v2 v2.4.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
