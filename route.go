@@ -26,6 +26,8 @@ import (
 	"github.com/savioxavier/termlink"
 )
 
+var globalRecoverCallback func(ctx httpcontract.Context, err any)
+
 // Route fiber route
 // Route fiber 路由
 type Route struct {
@@ -128,6 +130,26 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
 
 	r.setMiddlewares(fiberHandlers)
+}
+
+func HandleRecover(ctx httpcontract.Context, recoverCallback func(ctx httpcontract.Context, err any)) {
+	if err := recover(); err != nil {
+		if recoverCallback != nil {
+			recoverCallback(ctx, err)
+		} else {
+			ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, `{"error": "Internal Server Error"}`)
+		}
+	}
+}
+
+func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
+	globalRecoverCallback = callback
+	r.setMiddlewares([]httpcontract.Middleware{
+		func(ctx httpcontract.Context) {
+			defer HandleRecover(ctx, globalRecoverCallback)
+			ctx.Request().Next()
+		},
+	})
 }
 
 // Listen listen server
