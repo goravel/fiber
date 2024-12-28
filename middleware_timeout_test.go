@@ -43,9 +43,9 @@ func TestTimeoutMiddleware(t *testing.T) {
 	route.Recover(globalRecover)
 
 	mockLog := mockslog.NewLog(t)
-	mockLog.On("Error", mock.Anything).Return(nil)
-	mockLog.On("Info", "Request completed normally").Return(nil)
 	mockLog.On("Error", "Timeout occurred").Return(nil)
+	mockLog.On("Error", "test panic").Return(nil)
+	mockLog.On("Info", "Request completed normally").Return(nil)
 	LogFacade = mockLog
 
 	t.Run("timeout", func(t *testing.T) {
