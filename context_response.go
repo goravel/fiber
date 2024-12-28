@@ -46,7 +46,7 @@ func (r *ContextResponse) Cookie(cookie contractshttp.Cookie) contractshttp.Cont
 	return r
 }
 
-func (r *ContextResponse) Data(code int, contentType string, data []byte) contractshttp.Response {
+func (r *ContextResponse) Data(code int, contentType string, data []byte) contractshttp.ResponseWithAbort {
 	return &DataResponse{code, contentType, data, r.instance}
 }
 
@@ -64,11 +64,11 @@ func (r *ContextResponse) Header(key, value string) contractshttp.ContextRespons
 	return r
 }
 
-func (r *ContextResponse) Json(code int, obj any) contractshttp.AbortResponse {
+func (r *ContextResponse) Json(code int, obj any) contractshttp.ResponseWithAbort {
 	return &JsonResponse{code, obj, r.instance}
 }
 
-func (r *ContextResponse) NoContent(code ...int) contractshttp.Response {
+func (r *ContextResponse) NoContent(code ...int) contractshttp.ResponseWithAbort {
 	if len(code) == 0 {
 		code = append(code, http.StatusNoContent)
 	}
@@ -80,11 +80,11 @@ func (r *ContextResponse) Origin() contractshttp.ResponseOrigin {
 	return r.origin
 }
 
-func (r *ContextResponse) Redirect(code int, location string) contractshttp.Response {
+func (r *ContextResponse) Redirect(code int, location string) contractshttp.ResponseWithAbort {
 	return &RedirectResponse{code, location, r.instance}
 }
 
-func (r *ContextResponse) String(code int, format string, values ...any) contractshttp.AbortResponse {
+func (r *ContextResponse) String(code int, format string, values ...any) contractshttp.ResponseWithAbort {
 	return &StringResponse{code, format, r.instance, values}
 }
 
@@ -205,15 +205,15 @@ func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseStatus {
 	return &Status{instance, code}
 }
 
-func (r *Status) Data(contentType string, data []byte) contractshttp.Response {
+func (r *Status) Data(contentType string, data []byte) contractshttp.ResponseWithAbort {
 	return &DataResponse{r.status, contentType, data, r.instance}
 }
 
-func (r *Status) Json(obj any) contractshttp.AbortResponse {
+func (r *Status) Json(obj any) contractshttp.ResponseWithAbort {
 	return &JsonResponse{r.status, obj, r.instance}
 }
 
-func (r *Status) String(format string, values ...any) contractshttp.AbortResponse {
+func (r *Status) String(format string, values ...any) contractshttp.ResponseWithAbort {
 	return &StringResponse{r.status, format, r.instance, values}
 }
 

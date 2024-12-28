@@ -26,6 +26,10 @@ func (r *DataResponse) Render() error {
 	return r.instance.Status(r.code).Send(r.data)
 }
 
+func (r *DataResponse) Abort() error {
+	return r.Render()
+}
+
 type DownloadResponse struct {
 	filename string
 	filepath string
@@ -72,7 +76,7 @@ func (r *JsonResponse) Render() error {
 }
 
 func (r *JsonResponse) Abort() error {
-	return nil
+	return r.Render()
 }
 
 type NoContentResponse struct {
@@ -88,6 +92,10 @@ func (r *NoContentResponse) Render() error {
 	return r.instance.Status(r.code).Send(nil)
 }
 
+func (r *NoContentResponse) Abort() error {
+	return r.Render()
+}
+
 type RedirectResponse struct {
 	code     int
 	location string
@@ -100,6 +108,10 @@ func (r *RedirectResponse) Render() error {
 	}
 
 	return r.instance.Redirect(r.location, r.code)
+}
+
+func (r *RedirectResponse) Abort() error {
+	return r.Render()
 }
 
 type StringResponse struct {
@@ -123,7 +135,7 @@ func (r *StringResponse) Render() error {
 }
 
 func (r *StringResponse) Abort() error {
-	return nil
+	return r.Render()
 }
 
 type HtmlResponse struct {
