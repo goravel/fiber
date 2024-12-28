@@ -11,7 +11,6 @@ import (
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	mockslog "github.com/goravel/framework/mocks/log"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
