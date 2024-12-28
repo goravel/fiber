@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
@@ -22,16 +23,26 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		done := make(chan struct{})
 
 		go func() {
-			defer HandleRecover(ctx, globalRecoverCallback)
+			defer func() {
+				if err := recover(); err != nil {
+					if globalRecoverCallback != nil {
+						globalRecoverCallback(ctx, err)
+					} else {
+						LogFacade.Error(err)
+						ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Server Error"})
+					}
+				}
+
+				close(done)
+			}()
 			ctx.Request().Next()
-			close(done)
 		}()
 
 		select {
 		case <-done:
 		case <-timeoutCtx.Done():
 			if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
-				ctx.Request().AbortWithStatus(http.StatusGatewayTimeout)
+				ctx.Request().AbortWithStatusJson(http.StatusGatewayTimeout, fiber.Map{"error": "Request Timeout"})
 			}
 		}
 	}
