@@ -132,24 +132,19 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	r.setMiddlewares(fiberHandlers)
 }
 
-func HandleRecover(ctx httpcontract.Context, recoverCallback func(ctx httpcontract.Context, err any)) {
-	if err := recover(); err != nil {
-		if recoverCallback != nil {
-			recoverCallback(ctx, err)
-		} else {
-			ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Server Error"})
-		}
-	}
-}
-
 func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
 	globalRecoverCallback = callback
-	r.setMiddlewares([]fiber.Handler{
-		func(c *fiber.Ctx) error {
-			defer HandleRecover(NewContext(c), globalRecoverCallback)
-			return c.Next()
+	middleware := middlewaresToFiberHandlers([]httpcontract.Middleware{
+		func(ctx httpcontract.Context) {
+			defer func() {
+				if err := recover(); err != nil {
+					callback(ctx, err)
+				}
+			}()
+			ctx.Request().Next()
 		},
 	})
+	r.setMiddlewares(middleware)
 }
 
 // Listen listen server
