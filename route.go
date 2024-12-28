@@ -14,7 +14,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	fiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
+	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -111,7 +111,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
 	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
 	fiberHandlers := []fiber.Handler{
-		fiberRecover.New(fiberRecover.Config{
+		fiberrecover.New(fiberrecover.Config{
 			EnableStackTrace: debug,
 		}),
 	}
