@@ -42,10 +42,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 	route.Recover(globalRecover)
 
 	mockLog := mockslog.NewLog(t)
-	mockLog.On("Error", "Timeout occurred").Return(nil)
-	mockLog.On("Error", "test panic").Return(nil)
-	mockLog.On("Info", "Request completed normally").Return(nil)
-	LogFacade = mockLog
 
 	t.Run("timeout", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
@@ -53,7 +49,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		resp, err := route.instance.Test(req, -1)
 		require.NoError(t, err)
-		require.NotNil(t, resp) // Проверяем, что ответ не nil
+		require.NotNil(t, resp)
 
 		assert.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
 
@@ -89,4 +85,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"error":"Internal Panic"}`, string(body))
 	})
+
+	mockLog.AssertExpectations(t)
 }
