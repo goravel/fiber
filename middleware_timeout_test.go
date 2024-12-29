@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	mocksconfig "github.com/goravel/framework/mocks/config"
-	mockslog "github.com/goravel/framework/mocks/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,8 +39,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 		ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
 	}
 	route.Recover(globalRecover)
-
-	mockLog := mockslog.NewLog(t)
 
 	t.Run("timeout", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
@@ -85,6 +82,4 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"error":"Internal Panic"}`, string(body))
 	})
-
-	mockLog.AssertExpectations(t)
 }
