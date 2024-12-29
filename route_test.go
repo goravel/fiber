@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,6 +21,36 @@ import (
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRecoverWithCustomCallback(t *testing.T) {
+	mockConfig := configmocks.NewConfig(t)
+
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
+	globalRecoverCallback := func(ctx contractshttp.Context, err any) {
+		ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
+	}
+
+	route.Recover(globalRecoverCallback)
+
+	route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
+		panic(1)
+	})
+
+	req := httptest.NewRequest("GET", "/recover", nil)
+	resp, err := route.Test(req)
+	assert.Nil(t, err)
+
+	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "{\"error\":\"Internal Panic\"}", string(body))
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
 
 func TestFallback(t *testing.T) {
 	mockConfig := configmocks.NewConfig(t)
@@ -588,7 +619,7 @@ func TestNewRoute(t *testing.T) {
 	}
 }
 
-func TestStop(t *testing.T) {
+func TestShutdown(t *testing.T) {
 	var (
 		err        error
 		mockConfig *configmocks.Config
@@ -614,7 +645,7 @@ func TestStop(t *testing.T) {
 
 				assertHttpNormal(t, addr, true)
 
-				assert.Nil(t, route.Stop())
+				assert.Nil(t, route.Shutdown())
 
 				assertHttpNormal(t, addr, false)
 				return nil
@@ -639,7 +670,7 @@ func TestStop(t *testing.T) {
 					}()
 				}
 				time.Sleep(100 * time.Millisecond)
-				assert.Nil(t, route.Stop())
+				assert.Nil(t, route.Shutdown())
 				assertHttpNormal(t, addr, false)
 				wg.Wait()
 				assert.Equal(t, count.Load(), int64(3))

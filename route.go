@@ -14,7 +14,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -25,6 +25,8 @@ import (
 	"github.com/goravel/framework/support/json"
 	"github.com/savioxavier/termlink"
 )
+
+var globalRecoverCallback func(ctx httpcontract.Context, err any)
 
 // Route fiber route
 // Route fiber 路由
@@ -109,7 +111,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
 	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
 	fiberHandlers := []fiber.Handler{
-		recover.New(recover.Config{
+		fiberrecover.New(fiberrecover.Config{
 			EnableStackTrace: debug,
 		}),
 	}
@@ -128,6 +130,23 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
 
 	r.setMiddlewares(fiberHandlers)
+}
+
+func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
+	globalRecoverCallback = callback
+	middleware := middlewaresToFiberHandlers([]httpcontract.Middleware{
+		func(ctx httpcontract.Context) {
+			defer func() {
+				if err := recover(); err != nil {
+					if callback != nil {
+						callback(ctx, err)
+					}
+				}
+			}()
+			ctx.Request().Next()
+		},
+	})
+	r.setMiddlewares(middleware)
 }
 
 // Listen listen server
@@ -217,9 +236,9 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
 
-// Stop gracefully shuts down the server
-// Stop 优雅退出HTTP Server
-func (r *Route) Stop(ctx ...context.Context) error {
+// Shutdown gracefully shuts down the server
+// Shutdown 优雅退出HTTP Server
+func (r *Route) Shutdown(ctx ...context.Context) error {
 	c := context.Background()
 	if len(ctx) > 0 {
 		c = ctx[0]
