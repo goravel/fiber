@@ -23,6 +23,7 @@ import (
 )
 
 func TestRecoverWithDefaultCallback(t *testing.T) {
+	globalRecoverCallback = nil
 	mockConfig := configmocks.NewConfig(t)
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
