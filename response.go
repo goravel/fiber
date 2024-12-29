@@ -26,6 +26,10 @@ func (r *DataResponse) Render() error {
 	return r.instance.Status(r.code).Send(r.data)
 }
 
+func (r *DataResponse) Abort() error {
+	return r.Render()
+}
+
 type DownloadResponse struct {
 	filename string
 	filepath string
@@ -71,6 +75,10 @@ func (r *JsonResponse) Render() error {
 	return r.instance.Status(r.code).JSON(r.obj)
 }
 
+func (r *JsonResponse) Abort() error {
+	return r.Render()
+}
+
 type NoContentResponse struct {
 	code     int
 	instance *fiber.Ctx
@@ -82,6 +90,10 @@ func (r *NoContentResponse) Render() error {
 	}
 
 	return r.instance.Status(r.code).Send(nil)
+}
+
+func (r *NoContentResponse) Abort() error {
+	return r.Render()
 }
 
 type RedirectResponse struct {
@@ -96,6 +108,10 @@ func (r *RedirectResponse) Render() error {
 	}
 
 	return r.instance.Redirect(r.location, r.code)
+}
+
+func (r *RedirectResponse) Abort() error {
+	return r.Render()
 }
 
 type StringResponse struct {
@@ -116,6 +132,10 @@ func (r *StringResponse) Render() error {
 
 	r.instance.Response().Header.SetContentType(r.format)
 	return r.instance.Status(r.code).SendString(r.values[0].(string))
+}
+
+func (r *StringResponse) Abort() error {
+	return r.Render()
 }
 
 type HtmlResponse struct {
