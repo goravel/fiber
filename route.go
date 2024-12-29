@@ -138,7 +138,11 @@ func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
 		func(ctx httpcontract.Context) {
 			defer func() {
 				if err := recover(); err != nil {
-					callback(ctx, err)
+					if callback != nil {
+						callback(ctx, err)
+					} else {
+						ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Server Error"})
+					}
 				}
 			}()
 			ctx.Request().Next()
@@ -146,7 +150,6 @@ func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
 	})
 	r.setMiddlewares(middleware)
 }
-
 // Listen listen server
 // Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
