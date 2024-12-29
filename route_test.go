@@ -22,10 +22,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRecoverWithDefaultCallback(t *testing.T) {
+	mockConfig := configmocks.NewConfig(t)
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+	route.Recover(globalRecoverCallback)
+	route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
+		panic(1)
+	})
+
+	req := httptest.NewRequest("GET", "/recover", nil)
+	resp, err := route.Test(req)
+	assert.Nil(t, err)
+
+	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "{\"error\":\"Internal Server Error\"}", string(body))
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+
+	mockConfig.AssertExpectations(t)
+}
+
 func TestRecoverWithCustomCallback(t *testing.T) {
 	mockConfig := configmocks.NewConfig(t)
 
-	// Настройка моков для GetBool и GetInt
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -50,31 +74,6 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, "{\"error\":\"Internal Panic\"}", string(body))
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-
-	mockConfig.AssertExpectations(t)
-}
-
-func TestRecoverWithDefaultCallback(t *testing.T) {
-	mockConfig := configmocks.NewConfig(t)
-	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-
-	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
-	route.Recover(globalRecoverCallback)
-	route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
-		panic(1)
-	})
-
-	req := httptest.NewRequest("GET", "/recover", nil)
-	resp, err := route.Test(req)
-	assert.Nil(t, err)
-
-	body, err := io.ReadAll(resp.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "{\"error\":\"Internal Server Error\"}", string(body))
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
 	mockConfig.AssertExpectations(t)
