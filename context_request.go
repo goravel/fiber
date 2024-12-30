@@ -56,7 +56,7 @@ func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.V
 }
 
 func (r *ContextRequest) Abort(code ...int) {
-	realCode := http.StatusBadRequest
+	realCode := contractshttp.DefaultAbortStatus
 	if len(code) > 0 {
 		realCode = code[0]
 	}

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	mockslog "github.com/goravel/framework/mocks/log"
@@ -45,11 +44,11 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, http.StatusRequestTimeout, resp.StatusCode)
+		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
 
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
-		assert.JSONEq(t, `{"error":"Request Timeout"}`, string(body))
+		assert.Equal(t, "Request Timeout", string(body))
 	})
 
 	t.Run("normal", func(t *testing.T) {
@@ -88,7 +87,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 	t.Run("panic with custom recover", func(t *testing.T) {
 		globalRecover := func(ctx contractshttp.Context, err any) {
-			ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
+			ctx.Request().Abort(http.StatusInternalServerError)
 		}
 		route.Recover(globalRecover)
 
@@ -102,6 +101,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"error":"Internal Panic"}`, string(body))
+		assert.Equal(t, "Internal Server Error", string(body))
 	})
 }

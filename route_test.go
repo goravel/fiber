@@ -33,7 +33,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 	assert.Nil(t, err)
 
 	globalRecoverCallback := func(ctx contractshttp.Context, err any) {
-		ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
+		ctx.Request().Abort(http.StatusInternalServerError)
 	}
 
 	route.Recover(globalRecoverCallback)
@@ -48,7 +48,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	assert.Nil(t, err)
-	assert.Equal(t, "{\"error\":\"Internal Panic\"}", string(body))
+	assert.Equal(t, "Internal Server Error", string(body))
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 

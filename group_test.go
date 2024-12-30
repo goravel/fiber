@@ -527,7 +527,7 @@ func TestGroup(t *testing.T) {
 
 func abortMiddleware() contractshttp.Middleware {
 	return func(ctx contractshttp.Context) {
-		ctx.Request().AbortWithStatus(http.StatusNonAuthoritativeInfo)
+		ctx.Request().Abort(http.StatusNonAuthoritativeInfo)
 	}
 }
 

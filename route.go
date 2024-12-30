@@ -17,7 +17,7 @@ import (
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/goravel/framework/contracts/config"
-	httpcontract "github.com/goravel/framework/contracts/http"
+	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
@@ -26,9 +26,9 @@ import (
 	"github.com/savioxavier/termlink"
 )
 
-var globalRecoverCallback func(ctx httpcontract.Context, err any) = func(ctx httpcontract.Context, err any) {
+var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
-	ctx.Request().AbortWithStatus(http.StatusInternalServerError)
+	ctx.Request().Abort(contractshttp.StatusInternalServerError)
 }
 
 // Route fiber route
@@ -88,8 +88,8 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 			config,
 			app,
 			"",
-			[]httpcontract.Middleware{},
-			[]httpcontract.Middleware{},
+			[]contractshttp.Middleware{},
+			[]contractshttp.Middleware{},
 		),
 		config:   config,
 		instance: app,
@@ -98,7 +98,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
-func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
+func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 	r.instance.Use(func(ctx *fiber.Ctx) error {
 		if response := handler(NewContext(ctx)); response != nil {
 			return response.Render()
@@ -110,7 +110,7 @@ func (r *Route) Fallback(handler httpcontract.HandlerFunc) {
 
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
-func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
+func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
 	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
 	fiberHandlers := []fiber.Handler{
@@ -127,7 +127,7 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 		}))
 	}
 
-	globalMiddlewares := append([]httpcontract.Middleware{
+	globalMiddlewares := append([]contractshttp.Middleware{
 		Cors(), Timeout(timeout),
 	}, middlewares...)
 	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
@@ -135,10 +135,10 @@ func (r *Route) GlobalMiddleware(middlewares ...httpcontract.Middleware) {
 	r.setMiddlewares(fiberHandlers)
 }
 
-func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
+func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	globalRecoverCallback = callback
-	middleware := middlewaresToFiberHandlers([]httpcontract.Middleware{
-		func(ctx httpcontract.Context) {
+	middleware := middlewaresToFiberHandlers([]contractshttp.Middleware{
+		func(ctx contractshttp.Context) {
 			defer func() {
 				if err := recover(); err != nil {
 					callback(ctx, err)
