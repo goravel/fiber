@@ -55,12 +55,25 @@ func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.V
 	return request
 }
 
+func (r *ContextRequest) Abort(code ...int) {
+	realCode := http.StatusBadRequest
+	if len(code) > 0 {
+		realCode = code[0]
+	}
+
+	if err := r.instance.SendStatus(realCode); err != nil {
+		panic(err)
+	}
+}
+
+// DEPRECATED: Use Abort instead
 func (r *ContextRequest) AbortWithStatus(code int) {
 	if err := r.instance.SendStatus(code); err != nil {
 		panic(err)
 	}
 }
 
+// DEPRECATED: Use Response().Json().Abort() instead
 func (r *ContextRequest) AbortWithStatusJson(code int, jsonObj any) {
 	if err := r.instance.Status(code).JSON(jsonObj); err != nil {
 		panic(err)
