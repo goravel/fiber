@@ -45,7 +45,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
+		assert.Equal(t, http.StatusRequestTimeout, resp.StatusCode)
 
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)

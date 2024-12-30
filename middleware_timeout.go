@@ -37,7 +37,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		case <-done:
 		case <-timeoutCtx.Done():
 			if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
-				ctx.Request().AbortWithStatusJson(http.StatusGatewayTimeout, fiber.Map{"error": "Request Timeout"})
+				ctx.Request().AbortWithStatusJson(http.StatusRequestTimeout, fiber.Map{"error": "Request Timeout"})
 			}
 		}
 	}
