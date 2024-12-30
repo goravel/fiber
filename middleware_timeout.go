@@ -25,12 +25,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					if globalRecoverCallback != nil {
-						globalRecoverCallback(ctx, err)
-					} else {
-						LogFacade.Error(err)
-						ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Server Error"})
-					}
+					globalRecoverCallback(ctx, err)
 				}
 
 				close(done)
