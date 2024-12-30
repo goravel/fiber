@@ -26,7 +26,10 @@ import (
 	"github.com/savioxavier/termlink"
 )
 
-var globalRecoverCallback func(ctx httpcontract.Context, err any)
+var globalRecoverCallback func(ctx httpcontract.Context, err any) = func(ctx httpcontract.Context, err any) {
+	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
+	ctx.Request().AbortWithStatus(http.StatusInternalServerError)
+}
 
 // Route fiber route
 // Route fiber 路由
@@ -138,9 +141,7 @@ func (r *Route) Recover(callback func(ctx httpcontract.Context, err any)) {
 		func(ctx httpcontract.Context) {
 			defer func() {
 				if err := recover(); err != nil {
-					if callback != nil {
-						callback(ctx, err)
-					}
+					callback(ctx, err)
 				}
 			}()
 			ctx.Request().Next()
