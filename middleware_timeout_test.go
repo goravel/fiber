@@ -9,7 +9,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	mocksconfig "github.com/goravel/framework/mocks/config"
+	mockslog "github.com/goravel/framework/mocks/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,11 +36,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 	route.Middleware(Timeout(5*time.Second)).Get("/panic", func(ctx contractshttp.Context) contractshttp.Response {
 		panic("test panic")
 	})
-
-	globalRecover := func(ctx contractshttp.Context, err any) {
-		ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
-	}
-	route.Recover(globalRecover)
 
 	t.Run("timeout", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
@@ -69,7 +66,32 @@ func TestTimeoutMiddleware(t *testing.T) {
 		assert.Equal(t, "normal", string(body))
 	})
 
-	t.Run("panic", func(t *testing.T) {
+	t.Run("panic with default recover", func(t *testing.T) {
+		mockLog := mockslog.NewLog(t)
+		mockLog.On("WithContext", mock.Anything).Return(mockLog).Once()
+		mockLog.On("Request", mock.Anything).Return(mockLog).Once()
+		mockLog.On("Error", "test panic").Once()
+		LogFacade = mockLog
+
+		req, err := http.NewRequest("GET", "/panic", nil)
+		require.NoError(t, err)
+
+		resp, err := route.instance.Test(req, -1)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, "Internal Server Error", string(body))
+	})
+
+	t.Run("panic with custom recover", func(t *testing.T) {
+		globalRecover := func(ctx contractshttp.Context, err any) {
+			ctx.Request().AbortWithStatusJson(http.StatusInternalServerError, fiber.Map{"error": "Internal Panic"})
+		}
+		route.Recover(globalRecover)
+
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
 
