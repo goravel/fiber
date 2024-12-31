@@ -357,8 +357,8 @@ github.com/gookit/validate v1.5.4 h1:nwBo6vULnVUeNFCOde6RKFRbOCKJXVMnWR0ghedacLg
 github.com/gookit/validate v1.5.4/go.mod h1:p9sRPfpvYB4vXICBpEPzv8FoAky+XhUOhWQghgmmat4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2 h1:g68AzbePXcm0V2CpUMc9j4qVzcDn7+7aoWSjZ51C0m4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2/go.mod h1:23VuSW8cBS4ax5cmbV+5AaiLpq25b8UJ96IhbAkdo8I=
-github.com/goravel/framework v1.15.1 h1:9K5Vf51+0YIQbLMd1+hk0L7LDBMaAmeLlQnoHJu6wow=
-github.com/goravel/framework v1.15.1/go.mod h1:Qo5Xlf+slrosyMxBKbNoxpEmzB6y2C5FI4BHNdVOSyI=
+github.com/goravel/framework v1.15.2 h1:wC76iwXWpYz3Oj+WQKw/kC4yGluDIeRdmPFKQW3t47M=
+github.com/goravel/framework v1.15.2/go.mod h1:Qo5Xlf+slrosyMxBKbNoxpEmzB6y2C5FI4BHNdVOSyI=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
