@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/template/html/v2 v2.1.2
 	github.com/gookit/validate v1.5.4
-	github.com/goravel/framework v1.14.1-0.20241230100036-08fead3c5311
+	github.com/goravel/framework v1.15.0
 	github.com/savioxavier/termlink v1.4.1
 	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0
