@@ -186,7 +186,8 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(l.Addr().String()).Start("https://").String())
 
 	r.instance.SetTLSHandler(tlsHandler)
-	return r.Listen(tls.NewListener(l, tlsConfig))
+
+	return r.instance.Listener(tls.NewListener(l, tlsConfig))
 }
 
 // Run run server

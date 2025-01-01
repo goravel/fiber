@@ -18,12 +18,12 @@ import (
 	"github.com/gofiber/template/html/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/validation"
-	configmocks "github.com/goravel/framework/mocks/config"
+	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRecoverWithCustomCallback(t *testing.T) {
-	mockConfig := configmocks.NewConfig(t)
+	mockConfig := mocksconfig.NewConfig(t)
 
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
@@ -53,7 +53,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 }
 
 func TestFallback(t *testing.T) {
-	mockConfig := configmocks.NewConfig(t)
+	mockConfig := mocksconfig.NewConfig(t)
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -80,7 +80,7 @@ func TestFallback(t *testing.T) {
 func TestListen(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -109,7 +109,8 @@ func TestListen(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
+			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -142,7 +143,7 @@ func TestListen(t *testing.T) {
 func TestListenTLS(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -169,7 +170,8 @@ func TestListenTLS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
+			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -205,7 +207,7 @@ func TestListenTLS(t *testing.T) {
 func TestListenTLSWithCert(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -232,7 +234,8 @@ func TestListenTLSWithCert(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
+			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -266,7 +269,7 @@ func TestListenTLSWithCert(t *testing.T) {
 func TestRun(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -327,7 +330,7 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -362,7 +365,7 @@ func TestRun(t *testing.T) {
 func TestRunTLS(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -425,7 +428,7 @@ func TestRunTLS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -457,7 +460,6 @@ func TestRunTLS(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
-
 		})
 	}
 }
@@ -465,7 +467,7 @@ func TestRunTLS(t *testing.T) {
 func TestRunTLSWithCert(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 	)
 
@@ -516,7 +518,7 @@ func TestRunTLSWithCert(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
@@ -550,7 +552,7 @@ func TestRunTLSWithCert(t *testing.T) {
 }
 
 func TestNewRoute(t *testing.T) {
-	var mockConfig *configmocks.Config
+	var mockConfig *mocksconfig.Config
 	template := html.New("./resources/views", ".tmpl")
 
 	tests := []struct {
@@ -607,7 +609,7 @@ func TestNewRoute(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
 			test.setup()
 			route, err := NewRoute(mockConfig, test.parameters)
 			assert.Equal(t, test.expectError, err)
@@ -622,7 +624,7 @@ func TestNewRoute(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	var (
 		err        error
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		route      *Route
 		count      atomic.Int64
 		host       = "127.0.0.1"
@@ -681,7 +683,7 @@ func TestShutdown(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockConfig = configmocks.NewConfig(t)
+			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("app.debug").Return(true)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
