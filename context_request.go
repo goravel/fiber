@@ -482,6 +482,7 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 		options = append(options, validation.Attributes(requestWithAttributes.Attributes(r.ctx)))
 	}
 	if prepareForValidation, ok := request.(contractshttp.FormRequestWithPrepareForValidation); ok {
+		options = append(options, func(options map[string]any) { options["ctx"] = r.ctx })
 		options = append(options, validation.PrepareForValidation(prepareForValidation.PrepareForValidation))
 	}
 
