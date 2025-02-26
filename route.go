@@ -16,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
+
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -270,7 +271,7 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes output all routes
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
-	if r.config.GetBool("app.debug") && support.Env != support.EnvArtisan {
+	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
 		for _, item := range r.instance.GetRoutes() {
 			for _, handler := range item.Handlers {
 				if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
