@@ -19,6 +19,7 @@ import (
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/validation"
 	mocksconfig "github.com/goravel/framework/mocks/config"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -750,8 +751,9 @@ func (r *CreateUser) Attributes(ctx contractshttp.Context) map[string]string {
 }
 
 func (r *CreateUser) PrepareForValidation(ctx contractshttp.Context, data validation.Data) error {
+	test := cast.ToString(ctx.Value("test"))
 	if name, exist := data.Get("name"); exist {
-		return data.Set("name", name.(string)+"1")
+		return data.Set("name", name.(string)+"1"+test)
 	}
 
 	return nil
