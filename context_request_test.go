@@ -1403,6 +1403,34 @@ func (s *ContextRequestSuite) TestValidate_PostFail() {
 	s.Equal(http.StatusBadRequest, code)
 }
 
+func (s *ContextRequestSuite) TestValidateRequest_PrepareForValidationWithContext() {
+	s.route.Get("/validate-request/prepare-for-validation-with-context", func(ctx contractshttp.Context) contractshttp.Response {
+		// nolint:all
+		ctx.WithValue("test", "-ctx")
+
+		var createUser CreateUser
+		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
+		if err != nil {
+			return ctx.Response().String(http.StatusBadRequest, "Validate error: "+err.Error())
+		}
+		if validateErrors != nil {
+			return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validateErrors.All()))
+		}
+
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"name": createUser.Name,
+		})
+	})
+
+	req, err := http.NewRequest("GET", "/validate-request/prepare-for-validation-with-context?name=Goravel", nil)
+	s.Require().Nil(err)
+
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"name\":\"Goravel1-ctx\"}", body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestValidateRequest_GetSuccess() {
 	s.route.Get("/validate-request/get-success", func(ctx contractshttp.Context) contractshttp.Response {
 		var createUser CreateUser
