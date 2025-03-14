@@ -37,6 +37,7 @@ type Route struct {
 	route.Router
 	config   config.Config
 	instance *fiber.App
+	fallback contractshttp.HandlerFunc
 }
 
 // NewRoute create new fiber route instance
@@ -99,13 +100,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
-	r.instance.Use(func(ctx *fiber.Ctx) error {
-		if response := handler(NewContext(ctx)); response != nil {
-			return response.Render()
-		}
-
-		return nil
-	})
+	r.fallback = handler
 }
 
 // GlobalMiddleware set global middleware
@@ -153,6 +148,7 @@ func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 // Listen listen server
 // Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(l.Addr().String()).Start("http://").String())
 
@@ -182,6 +178,7 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 		GetCertificate: tlsHandler.GetClientInfo,
 	}
 
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(l.Addr().String()).Start("https://").String())
 
@@ -203,6 +200,7 @@ func (r *Route) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(host[0]).Start("http://").String())
 
@@ -238,6 +236,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(host).Start("https://").String())
 
@@ -280,6 +279,19 @@ func (r *Route) outputRoutes() {
 			}
 		}
 	}
+}
+
+func (r *Route) registerFallback() {
+	if r.fallback == nil {
+		return
+	}
+
+	r.instance.Use(func(ctx *fiber.Ctx) error {
+		if response := r.fallback(NewContext(ctx)); response != nil {
+			return response.Render()
+		}
+		return nil
+	})
 }
 
 func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
