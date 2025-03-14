@@ -27,6 +27,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
 
 	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 
@@ -56,6 +57,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 func TestFallback(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 	ConfigFacade = mockConfig
@@ -113,6 +115,7 @@ func TestListen(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 
@@ -174,6 +177,7 @@ func TestListenTLS(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
@@ -238,6 +242,7 @@ func TestListenTLSWithCert(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
@@ -333,6 +338,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
@@ -431,6 +437,7 @@ func TestRunTLS(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
@@ -521,6 +528,7 @@ func TestRunTLSWithCert(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			ConfigFacade = mockConfig
@@ -567,6 +575,7 @@ func TestNewRoute(t *testing.T) {
 			name: "parameters is nil",
 			setup: func() {
 				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			},
@@ -577,6 +586,7 @@ func TestNewRoute(t *testing.T) {
 			parameters: map[string]any{"driver": "fiber"},
 			setup: func() {
 				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(template).Once()
@@ -588,6 +598,7 @@ func TestNewRoute(t *testing.T) {
 			parameters: map[string]any{"driver": "fiber"},
 			setup: func() {
 				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(func() (fiber.Views, error) {
@@ -687,6 +698,7 @@ func TestShutdown(t *testing.T) {
 			mockConfig = mocksconfig.NewConfig(t)
 			mockConfig.EXPECT().GetBool("app.debug").Return(true)
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetString("http.host").Return(host).Once()

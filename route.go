@@ -65,6 +65,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		views = html.New("./resources/views", ".tmpl")
 	}
 
+	immutable := config.GetBool("http.drivers.fiber.immutable", true)
 	network := fiber.NetworkTCP
 	prefork := config.GetBool("http.drivers.fiber.prefork", false)
 	// Fiber not support prefork on dual stack
@@ -74,6 +75,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 	}
 
 	app := fiber.New(fiber.Config{
+		Immutable:             immutable,
 		Prefork:               prefork,
 		BodyLimit:             config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
 		ReadBufferSize:        config.GetInt("http.drivers.fiber.header_limit", 4096),

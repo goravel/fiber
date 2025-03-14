@@ -34,6 +34,7 @@ func TestView_Make(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
@@ -258,6 +259,7 @@ func TestView_First(t *testing.T) {
 	beforeEach := func() {
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 		ConfigFacade = mockConfig
