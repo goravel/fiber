@@ -39,6 +39,7 @@ func TestContextRequestSuite(t *testing.T) {
 func (s *ContextRequestSuite) SetupTest() {
 	s.mockConfig = &mocksconfig.Config{}
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 	ValidationFacade = validation.NewValidation()

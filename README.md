@@ -52,6 +52,9 @@ import (
 
 "drivers": map[string]any{
     "fiber": map[string]any{
+        // immutable mode, see https://docs.gofiber.io/#zero-allocation
+        // WARNING: This option is dangerous. Only change it if you fully understand the potential consequences.
+        "immutable": true,
         // prefork mode, see https://docs.gofiber.io/api/fiber/#config
         "prefork": false,
         // Optional, default is 4096 KB
