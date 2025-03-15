@@ -263,7 +263,9 @@ func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 // Test for unit test
 // Test 用于单元测试
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
-	return r.instance.Test(request)
+	r.registerFallback()
+
+	return r.instance.Test(request, -1)
 }
 
 // outputRoutes output all routes
