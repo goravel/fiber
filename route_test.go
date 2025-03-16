@@ -64,7 +64,10 @@ func TestFallback(t *testing.T) {
 	assert.Nil(t, err)
 
 	route.Fallback(func(ctx contractshttp.Context) contractshttp.Response {
-		return ctx.Response().String(404, "not found")
+		return ctx.Response().String(http.StatusNotFound, "not found")
+	})
+	route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(http.StatusOK, "test")
 	})
 
 	req, err := http.NewRequest("GET", "/test", nil)
@@ -73,11 +76,23 @@ func TestFallback(t *testing.T) {
 	resp, err := route.Test(req)
 	assert.Nil(t, err)
 
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "test", string(body))
+
+	req, err = http.NewRequest("GET", "/not-found", nil)
+	assert.Nil(t, err)
+
+	resp, err = route.Test(req)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	body, err = io.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, "not found", string(body))
 }
+
 func TestListen(t *testing.T) {
 	var (
 		err        error
