@@ -374,16 +374,20 @@ func (r *ContextRequest) InputMapArray(key string, defaultValue ...[]map[string]
 	if valueFromHttpBody := r.getValueFromHttpBody(key); valueFromHttpBody != nil {
 		var result = make([]map[string]any, 0)
 		for _, item := range cast.ToSlice(valueFromHttpBody) {
-			if res, err := cast.ToStringMapE(item); err == nil {
-				result = append(result, res)
+			res, err := cast.ToStringMapE(item)
+			if err != nil {
+				return []map[string]any{}
 			}
+			result = append(result, res)
 		}
 
 		if len(result) == 0 {
 			for _, item := range cast.ToStringSlice(valueFromHttpBody) {
-				if res, err := cast.ToStringMapE(item); err == nil {
-					result = append(result, res)
+				res, err := cast.ToStringMapE(item)
+				if err != nil {
+					return []map[string]any{}
 				}
+				result = append(result, res)
 			}
 		}
 
