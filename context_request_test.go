@@ -913,7 +913,7 @@ func (s *ContextRequestSuite) TestInputArray_Url() {
 func (s *ContextRequestSuite) TestInputMap_Default() {
 	s.route.Post("/input-map/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": ctx.Request().InputMap("name", map[string]string{"a": "b"}),
+			"name": ctx.Request().InputMap("name", map[string]any{"a": "b"}),
 		})
 	})
 
@@ -933,7 +933,7 @@ func (s *ContextRequestSuite) TestInputMap_Default() {
 func (s *ContextRequestSuite) TestInputMap_KeyInBodyIsEmpty() {
 	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": ctx.Request().InputMap("name", map[string]string{
+			"name": ctx.Request().InputMap("name", map[string]any{
 				"a": "b",
 			}),
 		})
@@ -955,7 +955,7 @@ func (s *ContextRequestSuite) TestInputMap_KeyInBodyIsEmpty() {
 func (s *ContextRequestSuite) TestInputMap_KeyInQueryIsEmpty() {
 	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": ctx.Request().InputMap("name", map[string]string{
+			"name": ctx.Request().InputMap("name", map[string]any{
 				"a": "b",
 			}),
 		})
@@ -1033,6 +1033,89 @@ func (s *ContextRequestSuite) TestInputMap_Url() {
 	code, body, _, _ := s.request(req)
 
 	s.Equal("{\"id\":{\"a\":\"3\",\"b\":\"4\"}}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputMapArray_Default() {
+	s.route.Post("/input-map-array/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"names": ctx.Request().InputMapArray("names", []map[string]any{{"a": "b"}}),
+		})
+	})
+
+	payload := strings.NewReader(`{}`)
+	req, err := http.NewRequest("POST", "/input-map-array/default/1?id=2", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"names\":[{\"a\":\"b\"}]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputMapArray_KeyInBodyIsEmpty() {
+	s.route.Post("/input-map-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"names": ctx.Request().InputMapArray("names", []map[string]any{
+				{"a": "b"},
+			}),
+		})
+	})
+
+	payload := strings.NewReader(`{
+		"names": []
+	}`)
+	req, err := http.NewRequest("POST", "/input-map-array/empty/1", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"names\":[]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputMapArray_Json() {
+	s.route.Post("/input-map-array/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"ids": ctx.Request().InputMapArray("ids"),
+		})
+	})
+
+	payload := strings.NewReader(`{
+		"ids": [{"a": "3"},{"b": "4"}]
+	}`)
+	req, err := http.NewRequest("POST", "/input-map-array/json/1?id=2", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"ids\":[{\"a\":\"3\"},{\"b\":\"4\"}]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputMapArray_Form() {
+	s.route.Post("/input-map-array/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"ids": ctx.Request().InputMapArray("ids"),
+		})
+	})
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	s.Require().Nil(writer.WriteField("ids", `{"a":"3"}`))
+	s.Require().Nil(writer.WriteField("ids", `{"b":"4"}`))
+	s.Require().Nil(writer.Close())
+
+	req, err := http.NewRequest("POST", "/input-map-array/form/1?id=2", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"ids\":[{\"a\":\"3\"},{\"b\":\"4\"}]}", body)
 	s.Equal(http.StatusOK, code)
 }
 
