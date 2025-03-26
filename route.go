@@ -110,7 +110,6 @@ func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
-	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
 	fiberHandlers := []fiber.Handler{
 		fiberrecover.New(fiberrecover.Config{
 			EnableStackTrace: debug,
@@ -125,9 +124,12 @@ func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
 		}))
 	}
 
-	globalMiddlewares := append([]contractshttp.Middleware{
-		Cors(), Timeout(timeout),
-	}, middlewares...)
+	globalMiddlewares := []contractshttp.Middleware{Cors()}
+	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
+	if timeout > 0 {
+		globalMiddlewares = append(globalMiddlewares, Timeout(timeout))
+	}
+	globalMiddlewares = append(globalMiddlewares, middlewares...)
 	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
 
 	r.setMiddlewares(fiberHandlers)
