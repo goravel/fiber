@@ -507,6 +507,101 @@ func (s *ContextRequestSuite) TestFile() {
 	s.Equal(http.StatusOK, code)
 }
 
+func (s *ContextRequestSuite) TestFiles() {
+	s.route.Post("/files", func(ctx contractshttp.Context) contractshttp.Response {
+		s.mockConfig.On("GetString", "app.name").Return("goravel").Twice()
+		s.mockConfig.On("GetString", "filesystems.default").Return("local").Twice()
+		frameworkfilesystem.ConfigFacade = s.mockConfig
+
+		mockStorage := &mocksfilesystem.Storage{}
+		mockDriver := &mocksfilesystem.Driver{}
+		mockStorage.On("Disk", "local").Return(mockDriver).Twice()
+		frameworkfilesystem.StorageFacade = mockStorage
+
+		filesInfo, err := ctx.Request().Files("files")
+		if err != nil {
+			return ctx.Response().Success().String("get files error")
+		}
+
+		response := contractshttp.Json{
+			"file_count": len(filesInfo),
+		}
+		for _, fileInfo := range filesInfo {
+
+			fp := filepath.Join("test", fileInfo.GetClientOriginalName())
+			mockDriver.On("PutFile", "test", fileInfo).Return(fp, nil).Once()
+			mockStorage.On("Exists", fp).Return(true).Once()
+
+			filePath, err := fileInfo.Store("test")
+			if err != nil {
+				return ctx.Response().Success().String("store file error: " + err.Error())
+			}
+
+			extension, err := fileInfo.Extension()
+			if err != nil {
+				return ctx.Response().Success().String("get file extension error: " + err.Error())
+			}
+
+			response[fileInfo.GetClientOriginalName()] = contractshttp.Json{
+				"exist":             mockStorage.Exists(filePath),
+				"hash_name_length":  len(fileInfo.HashName()),
+				"hash_name_length1": len(fileInfo.HashName("test")),
+				"file_path_length":  len(filePath),
+				"extension":         extension,
+			}
+		}
+		return ctx.Response().Success().Json(response)
+	})
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	readme, err := os.Open("./README.md")
+	s.Require().Nil(err)
+	defer readme.Close()
+
+	route, err := os.Open("./route.go")
+	s.Require().Nil(err)
+	defer route.Close()
+
+	part1, err := writer.CreateFormFile("files", filepath.Base("./README.md"))
+	s.Require().Nil(err)
+	_, err = io.Copy(part1, readme)
+	s.Require().Nil(err)
+
+	part2, err := writer.CreateFormFile("files", filepath.Base("./route.go"))
+	s.Require().Nil(err)
+	_, err = io.Copy(part2, route)
+	s.Require().Nil(err)
+
+	err = writer.Close()
+	s.Require().Nil(err)
+
+	req, err := http.NewRequest("POST", "/files", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	code, body, _, _ := s.request(req)
+
+	s.JSONEq(`{
+     "file_count": 2,
+	"README.md": {
+        "exist": true,
+        "extension": "txt",
+        "file_path_length": 14,
+        "hash_name_length": 44,
+        "hash_name_length1": 49
+    },
+    "route.go": {
+        "exist": true,
+        "extension": "txt",
+        "file_path_length": 13,
+        "hash_name_length": 44,
+        "hash_name_length1": 49
+    }
+}`, body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestHeaders() {
 	s.route.Get("/headers", func(ctx contractshttp.Context) contractshttp.Response {
 		str, _ := json.Marshal(ctx.Request().Headers())
