@@ -9,6 +9,7 @@ import (
 	configmocks "github.com/goravel/framework/mocks/config"
 	httpmocks "github.com/goravel/framework/mocks/http"
 	"github.com/goravel/framework/support/file"
+	"github.com/goravel/framework/support/path"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,11 +22,11 @@ func TestView_Make(t *testing.T) {
 		mockView   *httpmocks.View
 	)
 
-	assert.Nil(t, file.Create("resources/views/empty.tmpl", `{{ define "empty.tmpl" }}
+	assert.Nil(t, file.PutContent(path.Resource("views", "empty.tmpl"), `{{ define "empty.tmpl" }}
 1
 {{ end }}
 `))
-	assert.Nil(t, file.Create("resources/views/data.tmpl", `{{ define "data.tmpl" }}
+	assert.Nil(t, file.PutContent(path.Resource("views", "data.tmpl"), `{{ define "data.tmpl" }}
 {{ .Name }}
 {{ .Age }}
 {{ end }}
@@ -246,11 +247,11 @@ func TestView_First(t *testing.T) {
 		mockView   *httpmocks.View
 	)
 
-	assert.Nil(t, file.Create("resources/views/empty.tmpl", `{{ define "empty.tmpl" }}
+	assert.Nil(t, file.PutContent(path.Resource("views", "empty.tmpl"), `{{ define "empty.tmpl" }}
 1
 {{ end }}
 `))
-	assert.Nil(t, file.Create("resources/views/data.tmpl", `{{ define "data.tmpl" }}
+	assert.Nil(t, file.PutContent(path.Resource("views", "data.tmpl"), `{{ define "data.tmpl" }}
 {{ .Name }}
 {{ .Age }}
 {{ end }}
