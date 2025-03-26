@@ -24,6 +24,7 @@ import (
 	"github.com/goravel/framework/support/color"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
+	"github.com/goravel/framework/support/path"
 	"github.com/goravel/framework/support/str"
 )
 
@@ -62,8 +63,9 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		}
 	}
 
-	if views == nil && file.Exists("./resources/views") {
-		views = html.New("./resources/views", ".tmpl")
+	dir := path.Resource("views")
+	if views == nil && file.Exists(dir) {
+		views = html.New(dir, ".tmpl")
 	}
 
 	immutable := config.GetBool("http.drivers.fiber.immutable", true)
