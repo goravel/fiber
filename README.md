@@ -44,6 +44,7 @@ import "github.com/goravel/fiber"
 // config/http.go
 import (
     fiberfacades "github.com/goravel/fiber/facades"
+    "github.com/goravel/framework/support/path"
     "github.com/gofiber/template/html/v2"
     "github.com/gofiber/fiber/v2"
 )
@@ -65,7 +66,7 @@ import (
         },
         // Optional, default is "html/template"
         "template": func() (fiber.Views, error) {
-            return html.New("./resources/views", ".tmpl"), nil
+            return html.New(path.Resource("views"), ".tmpl"), nil
         },
     },
 },

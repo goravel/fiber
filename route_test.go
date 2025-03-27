@@ -19,6 +19,7 @@ import (
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/validation"
 	mocksconfig "github.com/goravel/framework/mocks/config"
+	"github.com/goravel/framework/support/path"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 )
@@ -600,7 +601,7 @@ func TestRunTLSWithCert(t *testing.T) {
 
 func TestNewRoute(t *testing.T) {
 	var mockConfig *mocksconfig.Config
-	template := html.New("./resources/views", ".tmpl")
+	template := html.New(path.Resource("views"), ".tmpl")
 
 	tests := []struct {
 		name           string
