@@ -125,6 +125,29 @@ func (r *ContextRequest) File(name string) (contractsfilesystem.File, error) {
 	return filesystem.NewFileFromRequest(file)
 }
 
+func (r *ContextRequest) Files(name string) ([]contractsfilesystem.File, error) {
+	form, err := r.instance.MultipartForm()
+	if err != nil {
+		return nil, err
+	}
+
+	if files, ok := form.File[name]; ok && len(files) > 0 {
+		var result []contractsfilesystem.File
+		for i := range files {
+			var file contractsfilesystem.File
+			file, err = filesystem.NewFileFromRequest(files[i])
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, file)
+		}
+
+		return result, nil
+	}
+
+	return nil, http.ErrMissingFile
+}
+
 func (r *ContextRequest) FullUrl() string {
 	prefix := "https://"
 	if !r.instance.Secure() {

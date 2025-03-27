@@ -105,6 +105,8 @@ github.com/goravel/framework v1.15.2-0.20250228033533-2e950fffd7d9 h1:VMYwFpoP5y
 github.com/goravel/framework v1.15.2-0.20250228033533-2e950fffd7d9/go.mod h1:SEHIPSeV1FJGLSjAElqdstVnHWQSZF/NFZWANCsOAiE=
 github.com/goravel/framework v1.15.2-0.20250325082841-1b9ab33c66f0 h1:7F/j5pLVJpc2XWizWdIRyudCk9ABpA7wFCU6A4PCv6A=
 github.com/goravel/framework v1.15.2-0.20250325082841-1b9ab33c66f0/go.mod h1:v0fLyHvVaq45cu6FCeH5EyhWvXk/sMALG34pwyic3uw=
+github.com/goravel/framework v1.15.2-0.20250327025920-aec2bbbe3f33 h1:OuK10Ty6iiZ9aiBmPSZHtArg85BRr8dqebKfpes+Qxc=
+github.com/goravel/framework v1.15.2-0.20250327025920-aec2bbbe3f33/go.mod h1:v0fLyHvVaq45cu6FCeH5EyhWvXk/sMALG34pwyic3uw=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/huandu/xstrings v1.4.0 h1:D17IlohoQq4UcpqD7fDk80P7l+lwAmlFaBHgOipl2FU=
