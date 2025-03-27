@@ -131,21 +131,21 @@ func (r *ContextRequest) Files(name string) ([]contractsfilesystem.File, error) 
 		return nil, err
 	}
 
-	if f, ok := form.File[name]; !ok || len(f) == 0 {
-		return nil, http.ErrMissingFile
-	}
-
-	var files []contractsfilesystem.File
-	for i := range form.File[name] {
-		var file contractsfilesystem.File
-		file, err = filesystem.NewFileFromRequest(form.File[name][i])
-		if err != nil {
-			return nil, err
+	if files, ok := form.File[name]; ok && len(files) > 0 {
+		var result []contractsfilesystem.File
+		for i := range files {
+			var file contractsfilesystem.File
+			file, err = filesystem.NewFileFromRequest(files[i])
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, file)
 		}
-		files = append(files, file)
+
+		return result, nil
 	}
 
-	return files, nil
+	return nil, http.ErrMissingFile
 }
 
 func (r *ContextRequest) FullUrl() string {
