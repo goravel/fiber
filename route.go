@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
-	"runtime"
 	"strings"
 	"time"
 
@@ -22,6 +20,7 @@ import (
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
+	"github.com/goravel/framework/support/debug"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/path"
@@ -194,6 +193,25 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 	return r.instance.Listener(tls.NewListener(l, tlsConfig))
 }
 
+// Routes get all routes
+// Routes 获取所有路由
+func (r *Route) Routes() []route.Info {
+	var routes []route.Info
+	for _, item := range r.instance.GetRoutes() {
+		for _, handler := range item.Handlers {
+			if strings.Contains(debug.FunctionName(handler), "handlerToFiberHandler") {
+				routes = append(routes, route.Info{
+					Method:  item.Method,
+					Path:    colonToBracket(item.Path),
+					Handler: debug.FunctionName(handler),
+				})
+				break
+			}
+		}
+	}
+	return routes
+}
+
 // Run run server
 // Run 运行服务器
 func (r *Route) Run(host ...string) error {
@@ -279,13 +297,8 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
-		for _, item := range r.instance.GetRoutes() {
-			for _, handler := range item.Handlers {
-				if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
-					fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
-					break
-				}
-			}
+		for _, item := range r.Routes() {
+			fmt.Printf("%-10s %s\n", item.Method, item.Path)
 		}
 	}
 }
