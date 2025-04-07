@@ -861,7 +861,7 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name:         "Serve Not Found request",
+			name:         "serve_Not_Found_request",
 			method:       "GET",
 			path:         "/not-found",
 			expectedCode: http.StatusNotFound,
