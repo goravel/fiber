@@ -221,17 +221,6 @@ func (r *Status) Stream(step func(w contractshttp.StreamWriter) error) contracts
 	return &StreamResponse{r.status, r.instance, step}
 }
 
-func ResponseMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		switch ctx := ctx.(type) {
-		case *Context:
-			ctx.Instance().Response().ResetBody()
-		}
-
-		ctx.Request().Next()
-	}
-}
-
 type ResponseOrigin struct {
 	*fiber.Ctx
 }

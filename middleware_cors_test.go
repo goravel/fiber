@@ -1,10 +1,9 @@
 package fiber
 
 import (
+	"github.com/goravel/framework/support/debug"
 	"net/http"
 	"testing"
-
-	"github.com/gofiber/fiber/v2"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
@@ -220,10 +219,11 @@ func TestCors(t *testing.T) {
 
 			route, err := NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			route.setMiddlewares([]fiber.Handler{
-				middlewareToFiberHandler(Cors()),
+			route.setMiddlewares([]contractshttp.Middleware{
+				Cors(),
 			})
 			route.Post("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+				debug.Dump("controller")
 				return ctx.Response().Success().Json(contractshttp.Json{
 					"id": ctx.Request().Input("id"),
 				})

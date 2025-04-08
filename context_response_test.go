@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
@@ -23,6 +22,7 @@ func TestResponse(t *testing.T) {
 		mockConfig *configmocks.Config
 	)
 	beforeEach := func() {
+		globalMiddlewares = []contractshttp.Middleware{}
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
@@ -266,16 +266,24 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/origin",
 			setup: func(method, url string) error {
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.Response().Header("global", "goravel")
-						ctx.Request().Next()
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandlerFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.Response().Header("global", "goravel")
 
-						assert.Equal(t, "Goravel", ctx.Response().Origin().Body().String())
-						assert.Equal(t, "goravel", ctx.Response().Origin().Header().Get("global"))
-						assert.Equal(t, 7, ctx.Response().Origin().Size())
-						assert.Equal(t, 200, ctx.Response().Origin().Status())
-					}),
+							resp := next.ServeHTTP(ctx)
+
+							// TODO need Render to call next handler
+							assert.Nil(t, resp.Render())
+
+							assert.Equal(t, "Goravel", ctx.Response().Origin().Body().String())
+							assert.Equal(t, "goravel", ctx.Response().Origin().Header().Get("global"))
+							assert.Equal(t, 7, ctx.Response().Origin().Size())
+							assert.Equal(t, 200, ctx.Response().Origin().Status())
+
+							return resp
+						})
+					},
 				})
 				route.Get("/origin", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().String(http.StatusOK, "Goravel")

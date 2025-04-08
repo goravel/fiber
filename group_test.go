@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	contractsroute "github.com/goravel/framework/contracts/route"
 	configmocks "github.com/goravel/framework/mocks/config"
@@ -21,6 +20,7 @@ func TestGroup(t *testing.T) {
 		mockConfig *configmocks.Config
 	)
 	beforeEach := func() {
+		globalMiddlewares = []contractshttp.Middleware{}
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
@@ -192,11 +192,13 @@ func TestGroup(t *testing.T) {
 		{
 			name: "Resource Index",
 			setup: func(req *http.Request) {
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "index")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "index")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resourceController{})
 			},
@@ -209,11 +211,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Show",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "show")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "show")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resource)
 			},
@@ -226,11 +230,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Store",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "store")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "store")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resource)
 			},
@@ -243,11 +249,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Update (PUT)",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "update")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "update")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resource)
 			},
@@ -260,11 +268,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Update (PATCH)",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "update")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "update")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resource)
 			},
@@ -277,11 +287,13 @@ func TestGroup(t *testing.T) {
 			name: "Resource Destroy",
 			setup: func(req *http.Request) {
 				resource := resourceController{}
-				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.WithValue("action", "destroy")
-						ctx.Request().Next()
-					}),
+				route.setMiddlewares([]contractshttp.Middleware{
+					func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+							ctx.WithValue("action", "destroy")
+							return next.ServeHTTP(ctx)
+						})
+					},
 				})
 				route.Resource("/resource", resource)
 			},
@@ -449,9 +461,14 @@ func TestGroup(t *testing.T) {
 				mockConfig.On("GetBool", "cors.supports_credentials").Return(false).Once()
 				mockConfig.On("GetInt", "http.request_timeout", 3).Return(1).Once()
 
-				route.GlobalMiddleware(func(ctx contractshttp.Context) {
-					ctx.WithValue("global", "goravel")
-					ctx.Request().Next()
+				route.GlobalMiddleware(func(next contractshttp.Handler) contractshttp.Handler {
+					return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+						ctx.WithValue("global", "goravel")
+						resp := next.ServeHTTP(ctx)
+						// TODO need Render to call next handler
+						_ = resp.Render()
+						return resp
+					})
 				})
 				route.Get("/global-middleware", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
@@ -527,32 +544,38 @@ func TestGroup(t *testing.T) {
 }
 
 func abortMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.Request().Abort(http.StatusNonAuthoritativeInfo)
+	return func(next contractshttp.Handler) contractshttp.Handler {
+		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+			ctx.Request().Abort(http.StatusNonAuthoritativeInfo)
+			return nil
+		})
 	}
 }
 
 func contextMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx", "Goravel")
-
-		ctx.Request().Next()
+	return func(next contractshttp.Handler) contractshttp.Handler {
+		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+			ctx.WithValue("ctx", "Goravel")
+			return next.ServeHTTP(ctx)
+		})
 	}
 }
 
 func contextMiddleware1() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx1", "Hello")
-
-		ctx.Request().Next()
+	return func(next contractshttp.Handler) contractshttp.Handler {
+		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+			ctx.WithValue("ctx1", "Hello")
+			return next.ServeHTTP(ctx)
+		})
 	}
 }
 
 func contextMiddleware2() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx2", "World")
-
-		ctx.Request().Next()
+	return func(next contractshttp.Handler) contractshttp.Handler {
+		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+			ctx.WithValue("ctx2", "World")
+			return next.ServeHTTP(ctx)
+		})
 	}
 }
 

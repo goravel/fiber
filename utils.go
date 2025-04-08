@@ -1,6 +1,8 @@
 package fiber
 
 import (
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/goravel/framework/http"
 	"regexp"
 	"strings"
 
@@ -21,25 +23,11 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 	return fiberHandlers
 }
 
-func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		context := NewContext(c)
-		defer func() {
-			contextRequestPool.Put(context.request)
-			contextResponsePool.Put(context.response)
-			context.request = nil
-			context.response = nil
-			contextPool.Put(context)
-		}()
-
-		if response := handler(context); response != nil {
-			return response.Render()
-		}
-		return nil
-	}
+func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
+	return adaptor.HTTPMiddleware(http.HTTPMiddlewareToMiddleware)
 }
 
-func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
+func toFiberHandler(middlewares []httpcontract.Middleware, handler httpcontract.Handler) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		context := NewContext(c)
 		defer func() {
@@ -50,7 +38,12 @@ func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler 
 			contextPool.Put(context)
 		}()
 
-		middleware(context)
+		h := http.Chain(middlewares...).Handler(handler)
+
+		if response := h.ServeHTTP(context); response != nil {
+			return response.Render()
+		}
+
 		return nil
 	}
 }

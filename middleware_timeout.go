@@ -12,31 +12,36 @@ import (
 // NOTICE: It does not cancel long running executions. Underlying executions must handle timeout by using context.Context parameter.
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		timeoutCtx, cancel := context.WithTimeout(ctx.Context(), timeout)
-		defer cancel()
+	return func(next contractshttp.Handler) contractshttp.Handler {
+		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+			timeoutCtx, cancel := context.WithTimeout(ctx.Context(), timeout)
+			defer cancel()
 
-		ctx.WithContext(timeoutCtx)
+			ctx.WithContext(timeoutCtx)
 
-		done := make(chan struct{})
+			done := make(chan struct{})
+			var resp contractshttp.Response
 
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					globalRecoverCallback(ctx, err)
+			go func(resp contractshttp.Response) {
+				defer func() {
+					if err := recover(); err != nil {
+						globalRecoverCallback(ctx, err)
+					}
+
+					close(done)
+				}()
+				resp = next.ServeHTTP(ctx)
+			}(resp)
+
+			select {
+			case <-done:
+			case <-timeoutCtx.Done():
+				if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
+					ctx.Request().Abort(contractshttp.StatusRequestTimeout)
 				}
-
-				close(done)
-			}()
-			ctx.Request().Next()
-		}()
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-			if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
-				ctx.Request().Abort(contractshttp.StatusRequestTimeout)
 			}
-		}
+
+			return resp
+		})
 	}
 }
