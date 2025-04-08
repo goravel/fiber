@@ -827,7 +827,7 @@ func TestServeHTTP(t *testing.T) {
 		expectedBody string
 	}{
 		{
-			name:         "serve_HTTP_GET_request",
+			name:         "serve HTTP GET request",
 			method:       "GET",
 			path:         "/test-serve-http",
 			expectedCode: http.StatusOK,
@@ -842,7 +842,7 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name:         "serve_HTTP_POST_request",
+			name:         "serve HTTP POST request",
 			method:       "POST",
 			path:         "/api/users",
 			body:         `{"name":"John Doe"}`,
@@ -861,7 +861,7 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name:         "serve_Not_Found_request",
+			name:         "serve Not Found request",
 			method:       "GET",
 			path:         "/not-found",
 			expectedCode: http.StatusNotFound,
