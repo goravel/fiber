@@ -9,6 +9,12 @@ import (
 	"github.com/goravel/framework/route"
 )
 
+// nilHandler is a nil handler for global middleware to build chain.
+var nilHandler contractshttp.HandlerFunc = func(ctx contractshttp.Context) error {
+	fiberCtx := ctx.(*Context)
+	return fiberCtx.Instance().Next()
+}
+
 // invalidFiber instance.Context() will be nil when the request is timeout,
 // the request will panic if ctx.Response() is called in this situation.
 func invalidFiber(instance *fiber.Ctx) bool {
@@ -39,7 +45,7 @@ func middlewareToFiberHandler(middleware contractshttp.Middleware) fiber.Handler
 			contextPool.Put(context)
 		}()
 
-		return middleware(fallbackHandler).ServeHTTP(context)
+		return middleware(nilHandler).ServeHTTP(context)
 	}
 }
 

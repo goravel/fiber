@@ -55,17 +55,6 @@ func NewContextRequest(ctx *Context, log log.Log, validation contractsvalidate.V
 	return request
 }
 
-func (r *ContextRequest) Abort(code ...int) {
-	realCode := contractshttp.DefaultAbortStatus
-	if len(code) > 0 {
-		realCode = code[0]
-	}
-
-	if err := r.instance.SendStatus(realCode); err != nil {
-		panic(err)
-	}
-}
-
 func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 

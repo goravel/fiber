@@ -360,7 +360,7 @@ func (s *ContextRequestSuite) TestBindQueryToStruct() {
 			Persons []Person `form:"persons"`
 		}
 		var test Test
-		_ = ctx.Request().BindQuery(&test)
+		err = ctx.Request().BindQuery(&test)
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":      test.ID,
 			"persons": test.Persons,

@@ -21,7 +21,6 @@ import (
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
-	"github.com/goravel/framework/support/debug"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/path"
@@ -30,11 +29,7 @@ import (
 
 var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
-	ctx.Request().Abort(contractshttp.StatusInternalServerError)
-}
-
-var fallbackHandler contractshttp.HandlerFunc = func(ctx contractshttp.Context) error {
-	return ctx.Response().String(http.StatusNotFound, "404 page not found")
+	_ = ctx.Response().NoContent(contractshttp.StatusInternalServerError)
 }
 
 // Route fiber route
@@ -43,6 +38,7 @@ type Route struct {
 	route.Router
 	config   config.Config
 	instance *fiber.App
+	fallback contractshttp.HandlerFunc
 }
 
 // NewRoute create new fiber route instance
@@ -108,7 +104,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
 func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
-	fallbackHandler = handler
+	r.fallback = handler
 }
 
 func (r *Route) NotAllowed(handler contractshttp.HandlerFunc) {
@@ -162,7 +158,7 @@ func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 // Listen listen server
 // Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
-	//r.registerFallback()
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(l.Addr().String()).Start("http://").String())
 
@@ -192,7 +188,7 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 		GetCertificate: tlsHandler.GetClientInfo,
 	}
 
-	//r.registerFallback()
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(l.Addr().String()).Start("https://").String())
 
@@ -214,7 +210,7 @@ func (r *Route) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
-	//r.registerFallback()
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(host[0]).Start("http://").String())
 
@@ -250,7 +246,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
-	//r.registerFallback()
+	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(host).Start("https://").String())
 
@@ -278,7 +274,6 @@ func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 // Test 用于单元测试
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	r.registerFallback()
-	debug.Dump(r.instance.GetRoutes(true))
 
 	return r.instance.Test(request, -1)
 }
@@ -299,7 +294,7 @@ func (r *Route) outputRoutes() {
 }
 
 func (r *Route) registerFallback() {
-	if fallbackHandler == nil {
+	if r.fallback == nil {
 		return
 	}
 
@@ -312,7 +307,7 @@ func (r *Route) registerFallback() {
 			ctx.response = nil
 			contextPool.Put(ctx)
 		}()
-		return fallbackHandler(ctx)
+		return r.fallback(ctx)
 	})
 }
 

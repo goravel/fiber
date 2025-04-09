@@ -88,7 +88,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 	t.Run("panic with custom recover", func(t *testing.T) {
 		globalRecover := func(ctx contractshttp.Context, err any) {
-			ctx.Request().Abort(http.StatusInternalServerError)
+			_ = ctx.Response().NoContent(contractshttp.StatusInternalServerError)
 		}
 		route.Recover(globalRecover)
 
