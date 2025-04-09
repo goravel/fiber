@@ -11,6 +11,14 @@ import (
 
 // nilHandler is a nil handler for global middleware to build chain.
 var nilHandler contractshttp.HandlerFunc = func(ctx contractshttp.Context) error {
+	// TODO if use a fiber middleware as global middleware by type assert, they already call ctx.Next(),
+	// if duplicate call ctx.Next() will cause a error. Need to find a better way to handle this.
+	if ctx.Value("no_next") != nil {
+		// reset no_next flag for next global middleware
+		ctx.WithValue("no_next", nil)
+		return nil
+	}
+
 	fiberCtx := ctx.(*Context)
 	return fiberCtx.Instance().Next()
 }

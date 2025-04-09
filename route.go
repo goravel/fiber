@@ -29,7 +29,7 @@ import (
 
 var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
-	_ = ctx.Response().NoContent(contractshttp.StatusInternalServerError)
+	_ = ctx.Response().Status(contractshttp.StatusInternalServerError).String(contractshttp.StatusText(contractshttp.StatusInternalServerError))
 }
 
 // Route fiber route

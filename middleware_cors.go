@@ -38,6 +38,9 @@ func Cors() http.Middleware {
 				return next.ServeHTTP(ctx)
 			}
 
+			// TODO fiber cors middleware will call ctx.Next() in the middleware, so we need to set a flag to avoid calling it again
+			ctx.WithValue("no_next", true)
+
 			fiberCtx := ctx.(*Context)
 			if err := cors.New(cors.Config{
 				AllowMethods:     allowedMethods(),

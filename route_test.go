@@ -36,7 +36,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 	assert.Nil(t, err)
 
 	globalRecoverCallback := func(ctx contractshttp.Context, err any) {
-		_ = ctx.Response().Status(contractshttp.StatusInternalServerError).String(http.StatusText(http.StatusInternalServerError))
+		_ = ctx.Response().Status(contractshttp.StatusInternalServerError).String(contractshttp.StatusText(http.StatusInternalServerError))
 	}
 
 	route.Recover(globalRecoverCallback)
@@ -51,7 +51,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusText(http.StatusInternalServerError), string(body))
+	assert.Equal(t, contractshttp.StatusText(http.StatusInternalServerError), string(body))
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 

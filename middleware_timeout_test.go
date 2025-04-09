@@ -49,7 +49,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
-		assert.Equal(t, "Request Timeout", string(body))
+		assert.Equal(t, contractshttp.StatusText(contractshttp.StatusRequestTimeout), string(body))
 	})
 
 	t.Run("normal", func(t *testing.T) {
@@ -83,12 +83,12 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
-		assert.Equal(t, "Internal Server Error", string(body))
+		assert.Equal(t, contractshttp.StatusText(contractshttp.StatusInternalServerError), string(body))
 	})
 
 	t.Run("panic with custom recover", func(t *testing.T) {
 		globalRecover := func(ctx contractshttp.Context, err any) {
-			_ = ctx.Response().NoContent(contractshttp.StatusInternalServerError)
+			_ = ctx.Response().Status(contractshttp.StatusInternalServerError).String(contractshttp.StatusText(contractshttp.StatusInternalServerError))
 		}
 		route.Recover(globalRecover)
 
@@ -102,6 +102,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
-		assert.Equal(t, "Internal Server Error", string(body))
+		assert.Equal(t, contractshttp.StatusText(contractshttp.StatusInternalServerError), string(body))
 	})
 }
