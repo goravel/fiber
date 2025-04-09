@@ -97,11 +97,11 @@ func TestFallback(t *testing.T) {
 
 func TestGlobalMiddleware(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("app.debug", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(false).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Twice()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Twice()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Twice()
 
 	// has timeout middleware
 	mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
@@ -109,6 +109,13 @@ func TestGlobalMiddleware(t *testing.T) {
 	assert.Nil(t, err)
 	route.GlobalMiddleware()
 	assert.Equal(t, route.instance.HandlersCount(), uint32(3))
+
+	// no timeout middleware
+	mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(0).Once()
+	route, err = NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+	route.GlobalMiddleware()
+	assert.Equal(t, route.instance.HandlersCount(), uint32(2))
 }
 
 func TestListen(t *testing.T) {
