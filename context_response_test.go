@@ -281,7 +281,7 @@ func TestResponse(t *testing.T) {
 						})
 					}),
 				})
-				route.Get("/origin", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/origin", func(ctx contractshttp.Context) error {
 					return ctx.Response().String(http.StatusOK, "Goravel")
 				})
 

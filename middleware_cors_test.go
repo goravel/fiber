@@ -222,7 +222,7 @@ func TestCors(t *testing.T) {
 			route.setMiddlewares([]fiber.Handler{
 				middlewareToFiberHandler(Cors()),
 			})
-			route.Post("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Post("/any/{id}", func(ctx contractshttp.Context) error {
 				return ctx.Response().Success().Json(contractshttp.Json{
 					"id": ctx.Request().Input("id"),
 				})

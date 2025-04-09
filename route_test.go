@@ -623,7 +623,7 @@ func TestServeHTTP(t *testing.T) {
 			expectedCode: http.StatusOK,
 			expectedBody: `{"message":"Hello from GET"}`,
 			setup: func() error {
-				route.Get("/test-serve-http", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/test-serve-http", func(ctx contractshttp.Context) error {
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 						"message": "Hello from GET",
 					})
@@ -640,7 +640,7 @@ func TestServeHTTP(t *testing.T) {
 			expectedCode: http.StatusOK,
 			expectedBody: `{"name":"John Doe","status":"success"}`,
 			setup: func() error {
-				route.Post("/api/users", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Post("/api/users", func(ctx contractshttp.Context) error {
 					name := ctx.Request().Input("name", "")
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 						"status": "success",

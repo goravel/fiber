@@ -20,9 +20,9 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 			ctx.WithContext(timeoutCtx)
 
 			done := make(chan struct{})
-			var resp contractshttp.Response
+			var err error
 
-			go func(resp contractshttp.Response) {
+			go func() {
 				defer func() {
 					if err := recover(); err != nil {
 						globalRecoverCallback(ctx, err)
@@ -30,8 +30,8 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 
 					close(done)
 				}()
-				resp = next.ServeHTTP(ctx)
-			}(resp)
+				err = next.ServeHTTP(ctx)
+			}()
 
 			select {
 			case <-done:
@@ -41,7 +41,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 				}
 			}
 
-			return resp
+			return err
 		})
 	}
 }
