@@ -11,9 +11,7 @@ import (
 )
 
 type contextKeyType struct{}
-
 type sessionKeyType struct{}
-
 type userContextKeyType struct{}
 
 var (
