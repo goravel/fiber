@@ -1,20 +1,25 @@
 package fiber
 
 import (
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
-	"github.com/goravel/framework/http"
 	"regexp"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	httpcontract "github.com/goravel/framework/contracts/http"
+	contractshttp "github.com/goravel/framework/contracts/http"
+	"github.com/goravel/framework/route"
 )
+
+// invalidFiber instance.Context() will be nil when the request is timeout,
+// the request will panic if ctx.Response() is called in this situation.
+func invalidFiber(instance *fiber.Ctx) bool {
+	return instance.Context() == nil
+}
 
 func pathToFiberPath(relativePath string) string {
 	return bracketToColon(mergeSlashForPath(relativePath))
 }
 
-func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.Handler {
+func middlewaresToFiberHandlers(middlewares []contractshttp.Middleware) []fiber.Handler {
 	var fiberHandlers []fiber.Handler
 	for _, item := range middlewares {
 		fiberHandlers = append(fiberHandlers, middlewareToFiberHandler(item))
@@ -23,11 +28,7 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 	return fiberHandlers
 }
 
-func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
-	return adaptor.HTTPMiddleware(http.HTTPMiddlewareToMiddleware)
-}
-
-func toFiberHandler(middlewares []httpcontract.Middleware, handler httpcontract.Handler) fiber.Handler {
+func middlewareToFiberHandler(middleware contractshttp.Middleware) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		context := NewContext(c)
 		defer func() {
@@ -38,13 +39,25 @@ func toFiberHandler(middlewares []httpcontract.Middleware, handler httpcontract.
 			contextPool.Put(context)
 		}()
 
-		h := http.Chain(middlewares...).Handler(handler)
+		return middleware(fallbackHandler).ServeHTTP(context)
+	}
+}
 
-		if response := h.ServeHTTP(context); response != nil {
-			return response.Render()
-		}
+func handlerToFiberHandler(middlewares []contractshttp.Middleware, handler contractshttp.Handler) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		context := NewContext(c)
+		defer func() {
+			contextRequestPool.Put(context.request)
+			contextResponsePool.Put(context.response)
+			context.request = nil
+			context.response = nil
+			contextPool.Put(context)
+		}()
 
-		return nil
+		// build handler chain
+		h := route.Chain(middlewares...).Handler(handler)
+
+		return h.ServeHTTP(context)
 	}
 }
 

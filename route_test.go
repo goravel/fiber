@@ -41,7 +41,7 @@ func TestRecoverWithCustomCallback(t *testing.T) {
 
 	route.Recover(globalRecoverCallback)
 
-	route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Get("/recover", func(ctx contractshttp.Context) error {
 		panic(1)
 	})
 
@@ -66,10 +66,10 @@ func TestFallback(t *testing.T) {
 	route, err := NewRoute(mockConfig, nil)
 	assert.Nil(t, err)
 
-	route.Fallback(func(ctx contractshttp.Context) contractshttp.Response {
+	route.Fallback(func(ctx contractshttp.Context) error {
 		return ctx.Response().String(http.StatusNotFound, "not found")
 	})
-	route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Get("/test", func(ctx contractshttp.Context) error {
 		return ctx.Response().String(http.StatusOK, "test")
 	})
 
@@ -160,7 +160,7 @@ func TestListen(t *testing.T) {
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -225,7 +225,7 @@ func TestListenTLS(t *testing.T) {
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -288,7 +288,7 @@ func TestListenTLSWithCert(t *testing.T) {
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -385,7 +385,7 @@ func TestRun(t *testing.T) {
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -484,7 +484,7 @@ func TestRunTLS(t *testing.T) {
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -575,7 +575,7 @@ func TestRunTLSWithCert(t *testing.T) {
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				return ctx.Response().Json(200, contractshttp.Json{
 					"Hello": "Goravel",
 				})
@@ -744,7 +744,7 @@ func TestShutdown(t *testing.T) {
 			mockConfig.EXPECT().GetString("http.port").Return(port).Once()
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			route.Get("/", func(ctx contractshttp.Context) error {
 				time.Sleep(time.Second)
 				defer count.Add(1)
 				return ctx.Response().Success().String("Goravel")

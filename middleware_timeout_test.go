@@ -24,16 +24,16 @@ func TestTimeoutMiddleware(t *testing.T) {
 	route, err := NewRoute(mockConfig, nil)
 	require.NoError(t, err)
 
-	route.Middleware(Timeout(1*time.Second)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Middleware(Timeout(1*time.Second)).Get("/timeout", func(ctx contractshttp.Context) error {
 		time.Sleep(2 * time.Second)
 		return nil
 	})
 
-	route.Middleware(Timeout(1*time.Second)).Get("/normal", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Middleware(Timeout(1*time.Second)).Get("/normal", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().String("normal")
 	})
 
-	route.Middleware(Timeout(5*time.Second)).Get("/panic", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Middleware(Timeout(5*time.Second)).Get("/panic", func(ctx contractshttp.Context) error {
 		panic("test panic")
 	})
 

@@ -66,20 +66,6 @@ func (r *ContextRequest) Abort(code ...int) {
 	}
 }
 
-// DEPRECATED: Use Abort instead
-func (r *ContextRequest) AbortWithStatus(code int) {
-	if err := r.instance.SendStatus(code); err != nil {
-		panic(err)
-	}
-}
-
-// DEPRECATED: Use Response().Json().Abort() instead
-func (r *ContextRequest) AbortWithStatusJson(code int, jsonObj any) {
-	if err := r.instance.Status(code).JSON(jsonObj); err != nil {
-		panic(err)
-	}
-}
-
 func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 

@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/gofiber/fiber/v2"
-	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 type View struct {
@@ -16,10 +15,14 @@ func NewView(instance *fiber.Ctx) *View {
 	return &View{instance: instance}
 }
 
-func (receive *View) Make(view string, data ...any) contractshttp.Response {
+func (r *View) Make(view string, data ...any) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
 	shared := ViewFacade.GetShared()
 	if len(data) == 0 {
-		return &HtmlResponse{shared, receive.instance, view}
+		return r.instance.Render(view, shared)
 	} else {
 		dataType := reflect.TypeOf(data[0])
 		switch dataType.Kind() {
@@ -29,21 +32,20 @@ func (receive *View) Make(view string, data ...any) contractshttp.Response {
 				shared[key] = value
 			}
 
-			return &HtmlResponse{shared, receive.instance, view}
+			return r.instance.Render(view, shared)
 		case reflect.Map:
 			fillShared(data[0], shared)
-
-			return &HtmlResponse{data[0], receive.instance, view}
+			return r.instance.Render(view, data[0])
 		default:
 			panic(fmt.Sprintf("make %s view failed, data must be map or struct", view))
 		}
 	}
 }
 
-func (receive *View) First(views []string, data ...any) contractshttp.Response {
+func (r *View) First(views []string, data ...any) error {
 	for _, view := range views {
 		if ViewFacade.Exists(view) {
-			return receive.Make(view, data...)
+			return r.Make(view, data...)
 		}
 	}
 

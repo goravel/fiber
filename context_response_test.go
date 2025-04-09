@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	configmocks "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
@@ -22,7 +23,6 @@ func TestResponse(t *testing.T) {
 		mockConfig *configmocks.Config
 	)
 	beforeEach := func() {
-		globalMiddlewares = []contractshttp.Middleware{}
 		mockConfig = &configmocks.Config{}
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
@@ -47,7 +47,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/data",
 			setup: func(method, url string) error {
-				route.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().Data(http.StatusOK, "text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -67,7 +67,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/success/data",
 			setup: func(method, url string) error {
-				route.Get("/success/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/success/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().Data("text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -87,7 +87,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/json",
 			setup: func(method, url string) error {
-				route.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/json", func(ctx contractshttp.Context) error {
 					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 						"id": "1",
 					})
@@ -109,7 +109,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/string",
 			setup: func(method, url string) error {
-				route.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/string", func(ctx contractshttp.Context) error {
 					return ctx.Response().String(http.StatusCreated, "Goravel")
 				})
 
@@ -129,7 +129,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/success/json",
 			setup: func(method, url string) error {
-				route.Get("/success/json", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/success/json", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": "1",
 					})
@@ -151,7 +151,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/success/string",
 			setup: func(method, url string) error {
-				route.Get("/success/string", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/success/string", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().String("Goravel")
 				})
 
@@ -171,7 +171,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/file",
 			setup: func(method, url string) error {
-				route.Get("/file", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/file", func(ctx contractshttp.Context) error {
 					return ctx.Response().File("./README.md")
 				})
 
@@ -190,7 +190,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/download",
 			setup: func(method, url string) error {
-				route.Get("/download", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/download", func(ctx contractshttp.Context) error {
 					return ctx.Response().Download("./README.md", "README.md")
 				})
 
@@ -209,7 +209,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/header",
 			setup: func(method, url string) error {
-				route.Get("/header", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/header", func(ctx contractshttp.Context) error {
 					return ctx.Response().Header("Hello", "goravel").String(http.StatusOK, "Goravel")
 				})
 
@@ -230,7 +230,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/no/content",
 			setup: func(method, url string) error {
-				route.Get("/no/content", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/no/content", func(ctx contractshttp.Context) error {
 					return ctx.Response().NoContent()
 				})
 
@@ -248,7 +248,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/no/content/with/code",
 			setup: func(method, url string) error {
-				route.Get("/no/content/with/code", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/no/content/with/code", func(ctx contractshttp.Context) error {
 					return ctx.Response().NoContent(http.StatusCreated)
 				})
 
@@ -266,24 +266,20 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/origin",
 			setup: func(method, url string) error {
-				route.setMiddlewares([]contractshttp.Middleware{
-					func(next contractshttp.Handler) contractshttp.Handler {
-						return contractshttp.HandlerFunc(func(ctx contractshttp.Context) contractshttp.Response {
+				route.setMiddlewares([]fiber.Handler{
+					middlewareToFiberHandler(func(next contractshttp.Handler) contractshttp.Handler {
+						return contractshttp.HandlerFunc(func(ctx contractshttp.Context) error {
 							ctx.Response().Header("global", "goravel")
+							err = next.ServeHTTP(ctx)
 
-							resp := next.ServeHTTP(ctx)
-
-							// TODO need Render to call next handler
-							assert.Nil(t, resp.Render())
-
+							assert.Nil(t, err)
 							assert.Equal(t, "Goravel", ctx.Response().Origin().Body().String())
 							assert.Equal(t, "goravel", ctx.Response().Origin().Header().Get("global"))
 							assert.Equal(t, 7, ctx.Response().Origin().Size())
 							assert.Equal(t, 200, ctx.Response().Origin().Status())
-
-							return resp
+							return err
 						})
-					},
+					}),
 				})
 				route.Get("/origin", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().String(http.StatusOK, "Goravel")
@@ -305,7 +301,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/redirect",
 			setup: func(method, url string) error {
-				route.Get("/redirect", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/redirect", func(ctx contractshttp.Context) error {
 					return ctx.Response().Redirect(http.StatusMovedPermanently, "https://goravel.dev")
 				})
 
@@ -324,7 +320,7 @@ func TestResponse(t *testing.T) {
 			method: "GET",
 			url:    "/writer",
 			setup: func(method, url string) error {
-				route.Get("/writer", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/writer", func(ctx contractshttp.Context) error {
 					_, err = fmt.Fprintf(ctx.Response().Writer(), "Goravel")
 					return nil
 				})
@@ -346,7 +342,7 @@ func TestResponse(t *testing.T) {
 			url:        "/without/cookie",
 			cookieName: "goravel",
 			setup: func(method, url string) error {
-				route.Get("/without/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/without/cookie", func(ctx contractshttp.Context) error {
 					return ctx.Response().WithoutCookie("goravel").String(http.StatusOK, "Goravel")
 				})
 
@@ -372,7 +368,7 @@ func TestResponse(t *testing.T) {
 			url:        "/cookie",
 			cookieName: "goravel",
 			setup: func(method, url string) error {
-				route.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/cookie", func(ctx contractshttp.Context) error {
 					return ctx.Response().Cookie(contractshttp.Cookie{
 						Name:  "goravel",
 						Value: "goravel",
@@ -476,7 +472,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/data",
 			setup: func(method, url string) error {
-				fiber.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().Data("text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -496,7 +492,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/json",
 			setup: func(method, url string) error {
-				fiber.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/json", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": "1",
 					})
@@ -518,7 +514,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/string",
 			setup: func(method, url string) error {
-				fiber.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/string", func(ctx contractshttp.Context) error {
 					return ctx.Response().Success().String("Goravel")
 				})
 
@@ -606,7 +602,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/data",
 			setup: func(method, url string) error {
-				fiber.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().Status(http.StatusCreated).Data("text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -626,7 +622,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/json",
 			setup: func(method, url string) error {
-				fiber.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/json", func(ctx contractshttp.Context) error {
 					return ctx.Response().Status(http.StatusCreated).Json(contractshttp.Json{
 						"id": "1",
 					})
@@ -648,7 +644,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/string",
 			setup: func(method, url string) error {
-				fiber.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/string", func(ctx contractshttp.Context) error {
 					return ctx.Response().Status(http.StatusCreated).String("Goravel")
 				})
 
@@ -716,7 +712,7 @@ func TestResponse_Stream(t *testing.T) {
 	fiber, err := NewRoute(mockConfig, nil)
 	assert.Nil(t, err)
 
-	fiber.Get("/stream", func(ctx contractshttp.Context) contractshttp.Response {
+	fiber.Get("/stream", func(ctx contractshttp.Context) error {
 		return ctx.Response().Status(http.StatusCreated).Stream(func(w contractshttp.StreamWriter) error {
 			b := []string{"a", "b", "c"}
 			for _, a := range b {

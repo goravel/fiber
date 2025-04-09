@@ -59,7 +59,7 @@ func TestView_Make(t *testing.T) {
 			setup: func(method, url string) error {
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/make/empty", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/empty", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().Make("empty.tmpl")
 				})
 
@@ -84,7 +84,7 @@ func TestView_Make(t *testing.T) {
 					"Age":  18,
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().Make("data.tmpl")
 				})
 
@@ -108,7 +108,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().Make("data.tmpl", map[string]any{
 						"Age": 18,
 					})
@@ -134,7 +134,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().Make("data.tmpl", map[string]any{
 						"Name": "test1",
 						"Age":  18,
@@ -161,7 +161,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/data", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().Make("data.tmpl", struct {
 						Name string
 						Age  int
@@ -189,7 +189,7 @@ func TestView_Make(t *testing.T) {
 			setup: func(method, url string) error {
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/make/data", func(ctx contractshttp.Context) error {
 					assert.Panics(t, func() {
 						ctx.Response().View().Make("data.tmpl", []string{"test"})
 					})
@@ -285,7 +285,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "empty.tmpl").Return(true).Once()
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/first", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"})
 				})
 
@@ -309,7 +309,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "data.tmpl").Return(true).Once()
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/first", func(ctx contractshttp.Context) error {
 					return ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"}, map[string]any{
 						"Name": "test",
 						"Age":  18,
@@ -335,7 +335,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "empty.tmpl").Return(false).Once()
 				mockView.On("Exists", "data.tmpl").Return(false).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				fiber.Get("/first", func(ctx contractshttp.Context) error {
 					assert.Panics(t, func() {
 						ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"}, map[string]any{
 							"Name": "test",

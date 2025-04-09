@@ -16,12 +16,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
-
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
+	"github.com/goravel/framework/support/debug"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/path"
@@ -33,7 +33,9 @@ var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx co
 	ctx.Request().Abort(contractshttp.StatusInternalServerError)
 }
 
-var globalMiddlewares []contractshttp.Middleware
+var fallbackHandler contractshttp.HandlerFunc = func(ctx contractshttp.Context) error {
+	return ctx.Response().String(http.StatusNotFound, "404 page not found")
+}
 
 // Route fiber route
 // Route fiber 路由
@@ -41,7 +43,6 @@ type Route struct {
 	route.Router
 	config   config.Config
 	instance *fiber.App
-	fallback contractshttp.HandleFunc
 }
 
 // NewRoute create new fiber route instance
@@ -106,56 +107,62 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 
 // Fallback set fallback handler
 // Fallback 设置回退处理程序
-func (r *Route) Fallback(handler contractshttp.HandleFunc) {
-	r.fallback = handler
+func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
+	fallbackHandler = handler
+}
+
+func (r *Route) NotAllowed(handler contractshttp.HandlerFunc) {
+	panic("not support")
 }
 
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
-	r.instance.Use(fiberrecover.New(fiberrecover.Config{
-		EnableStackTrace: debug,
-	}))
+	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
+	fiberHandlers := []fiber.Handler{
+		fiberrecover.New(fiberrecover.Config{
+			EnableStackTrace: debug,
+		}),
+	}
 
 	if debug {
-		r.instance.Use(logger.New(logger.Config{
+		fiberHandlers = append(fiberHandlers, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
 			TimeFormat: "2006/01/02 - 15:04:05",
 		}))
 	}
 
-	globalMiddlewares = []contractshttp.Middleware{Cors()}
-	timeout := time.Duration(r.config.GetInt("http.request_timeout", 3)) * time.Second
-	if timeout > 0 {
-		globalMiddlewares = append(globalMiddlewares, Timeout(timeout))
-	}
-	globalMiddlewares = append(globalMiddlewares, middlewares...)
+	globalMiddlewares := append([]contractshttp.Middleware{
+		Cors(), Timeout(timeout),
+	}, middlewares...)
+	fiberHandlers = append(fiberHandlers, middlewaresToFiberHandlers(globalMiddlewares)...)
+
+	r.setMiddlewares(fiberHandlers)
 }
 
 func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	globalRecoverCallback = callback
-
-	fn := func(next contractshttp.Handler) contractshttp.Handler {
-		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
-			defer func() {
-				if err := recover(); err != nil {
-					callback(ctx, err)
-				}
-			}()
-
-			return next.ServeHTTP(ctx)
-		})
-	}
-
-	globalMiddlewares = append(globalMiddlewares, fn)
+	middleware := middlewaresToFiberHandlers([]contractshttp.Middleware{
+		func(next contractshttp.Handler) contractshttp.Handler {
+			return contractshttp.HandlerFunc(func(ctx contractshttp.Context) error {
+				defer func() {
+					if err := recover(); err != nil {
+						callback(ctx, err)
+					}
+				}()
+				return next.ServeHTTP(ctx)
+			})
+		},
+	})
+	r.setMiddlewares(middleware)
 }
 
 // Listen listen server
 // Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
-	r.registerFallback()
+	//r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(l.Addr().String()).Start("http://").String())
 
@@ -185,7 +192,7 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 		GetCertificate: tlsHandler.GetClientInfo,
 	}
 
-	r.registerFallback()
+	//r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(l.Addr().String()).Start("https://").String())
 
@@ -207,7 +214,7 @@ func (r *Route) Run(host ...string) error {
 		host = append(host, completeHost)
 	}
 
-	r.registerFallback()
+	//r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(host[0]).Start("http://").String())
 
@@ -243,7 +250,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 		return errors.New("certificate can't be empty")
 	}
 
-	r.registerFallback()
+	//r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(host).Start("https://").String())
 
@@ -271,6 +278,7 @@ func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 // Test 用于单元测试
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	r.registerFallback()
+	debug.Dump(r.instance.GetRoutes(true))
 
 	return r.instance.Test(request, -1)
 }
@@ -291,18 +299,30 @@ func (r *Route) outputRoutes() {
 }
 
 func (r *Route) registerFallback() {
-	if r.fallback == nil {
+	if fallbackHandler == nil {
 		return
 	}
 
-	r.instance.Use(func(ctx *fiber.Ctx) error {
-		if response := r.fallback(NewContext(ctx)); response != nil {
-			return response.Render()
-		}
-		return nil
+	r.instance.Use(func(c *fiber.Ctx) error {
+		ctx := NewContext(c)
+		defer func() {
+			contextRequestPool.Put(ctx.request)
+			contextResponsePool.Put(ctx.response)
+			ctx.request = nil
+			ctx.response = nil
+			contextPool.Put(ctx)
+		}()
+		return fallbackHandler(ctx)
 	})
 }
 
-func (r *Route) setMiddlewares(middlewares []contractshttp.Middleware) {
-	globalMiddlewares = middlewares
+func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
+	for _, middleware := range middlewares {
+		r.instance.Use(middleware)
+	}
 }
+
+// Interface guards
+var (
+	_ route.Route = (*Route)(nil)
+)

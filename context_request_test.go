@@ -54,7 +54,7 @@ func (s *ContextRequestSuite) TearDownTest() {
 }
 
 func (s *ContextRequestSuite) TestAll() {
-	s.route.Get("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -69,7 +69,7 @@ func (s *ContextRequestSuite) TestAll() {
 }
 
 func (s *ContextRequestSuite) TestAll_GetWithQuery() {
-	s.route.Get("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -84,7 +84,7 @@ func (s *ContextRequestSuite) TestAll_GetWithQuery() {
 }
 
 func (s *ContextRequestSuite) TestAll_PostWithQueryAndForm() {
-	s.route.Post("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -113,7 +113,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQueryAndForm() {
 }
 
 func (s *ContextRequestSuite) TestAll_PostWithQuery() {
-	s.route.Post("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -130,7 +130,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQuery() {
 }
 
 func (s *ContextRequestSuite) TestAll_PostWithJson() {
-	s.route.Post("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/all", func(ctx contractshttp.Context) error {
 		all := ctx.Request().All()
 		type Test struct {
 			Name string
@@ -165,7 +165,7 @@ func (s *ContextRequestSuite) TestAll_PostWithErrorJson() {
 	LogFacade = mockLog
 	mockLog.EXPECT().Error(mock.Anything).Twice()
 
-	s.route.Post("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/all", func(ctx contractshttp.Context) error {
 		all := ctx.Request().All()
 		type Test struct {
 			Name string
@@ -196,7 +196,7 @@ func (s *ContextRequestSuite) TestAll_PostWithErrorJson() {
 }
 
 func (s *ContextRequestSuite) TestAll_PostWithEmptyJson() {
-	s.route.Post("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -213,7 +213,7 @@ func (s *ContextRequestSuite) TestAll_PostWithEmptyJson() {
 }
 
 func (s *ContextRequestSuite) TestAll_PutWithJson() {
-	s.route.Put("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Put("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -234,7 +234,7 @@ func (s *ContextRequestSuite) TestAll_PutWithJson() {
 }
 
 func (s *ContextRequestSuite) TestAll_DeleteWithJson() {
-	s.route.Delete("/all", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Delete("/all", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -255,7 +255,7 @@ func (s *ContextRequestSuite) TestAll_DeleteWithJson() {
 }
 
 func (s *ContextRequestSuite) TestBind_Json() {
-	s.route.Post("/bind/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/bind/json/{id}", func(ctx contractshttp.Context) error {
 		id := ctx.Request().Input("id")
 		var data struct {
 			Name string `form:"name" json:"name"`
@@ -281,7 +281,7 @@ func (s *ContextRequestSuite) TestBind_Json() {
 }
 
 func (s *ContextRequestSuite) TestBind_Form() {
-	s.route.Post("/bind/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/bind/form/{id}", func(ctx contractshttp.Context) error {
 		id := ctx.Request().Input("id")
 		var data struct {
 			Name string `form:"name" json:"name"`
@@ -312,7 +312,7 @@ func (s *ContextRequestSuite) TestBind_Form() {
 }
 
 func (s *ContextRequestSuite) TestBind_Query() {
-	s.route.Post("/bind/query/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/bind/query/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
@@ -329,7 +329,7 @@ func (s *ContextRequestSuite) TestBind_Query() {
 }
 
 func (s *ContextRequestSuite) TestBindQueryToStruct() {
-	s.route.Get("/bind/query/struct", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/bind/query/struct", func(ctx contractshttp.Context) error {
 		type Test struct {
 			ID string `form:"id"`
 		}
@@ -350,7 +350,7 @@ func (s *ContextRequestSuite) TestBindQueryToStruct() {
 	s.Equal(http.StatusOK, code)
 
 	// complex struct
-	s.route.Get("/bind/query/struct/complex", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/bind/query/struct/complex", func(ctx contractshttp.Context) error {
 		type Person struct {
 			Name string `form:"name" json:"name"`
 			Age  int    `form:"age" json:"age"`
@@ -378,7 +378,7 @@ func (s *ContextRequestSuite) TestBindQueryToStruct() {
 }
 
 func (s *ContextRequestSuite) TestBind_ThenInput() {
-	s.route.Post("/bind/input", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/bind/input", func(ctx contractshttp.Context) error {
 		type Test struct {
 			Name string
 		}
@@ -404,7 +404,7 @@ func (s *ContextRequestSuite) TestBind_ThenInput() {
 }
 
 func (s *ContextRequestSuite) TestCookie() {
-	s.route.Get("/cookie", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/cookie", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"goravel": ctx.Request().Cookie("goravel"),
 		})
@@ -427,7 +427,7 @@ func (s *ContextRequestSuite) TestCookie() {
 }
 
 func (s *ContextRequestSuite) TestCookie_Default() {
-	s.route.Get("/cookie/default", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/cookie/default", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"goravel": ctx.Request().Cookie("goravel", "default value"),
 		})
@@ -443,7 +443,7 @@ func (s *ContextRequestSuite) TestCookie_Default() {
 }
 
 func (s *ContextRequestSuite) TestFile() {
-	s.route.Post("/file", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/file", func(ctx contractshttp.Context) error {
 		s.mockConfig.On("GetString", "app.name").Return("goravel").Once()
 		s.mockConfig.On("GetString", "filesystems.default").Return("local").Once()
 		frameworkfilesystem.ConfigFacade = s.mockConfig
@@ -508,7 +508,7 @@ func (s *ContextRequestSuite) TestFile() {
 }
 
 func (s *ContextRequestSuite) TestFiles() {
-	s.route.Post("/files", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/files", func(ctx contractshttp.Context) error {
 		s.mockConfig.On("GetString", "app.name").Return("goravel").Twice()
 		s.mockConfig.On("GetString", "filesystems.default").Return("local").Twice()
 		frameworkfilesystem.ConfigFacade = s.mockConfig
@@ -603,7 +603,7 @@ func (s *ContextRequestSuite) TestFiles() {
 }
 
 func (s *ContextRequestSuite) TestHeaders() {
-	s.route.Get("/headers", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/headers", func(ctx contractshttp.Context) error {
 		str, _ := json.Marshal(ctx.Request().Headers())
 		return ctx.Response().Success().String(string(str))
 	})
@@ -619,7 +619,7 @@ func (s *ContextRequestSuite) TestHeaders() {
 }
 
 func (s *ContextRequestSuite) TestMethods() {
-	s.route.Get("/methods/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/methods/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":       ctx.Request().Input("id"),
 			"name":     ctx.Request().Query("name", "Hello"),
@@ -643,7 +643,7 @@ func (s *ContextRequestSuite) TestMethods() {
 }
 
 func (s *ContextRequestSuite) TestInput_Json() {
-	s.route.Post("/input/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/json/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":     ctx.Request().Input("id"),
 			"int":    ctx.Request().Input("int"),
@@ -669,7 +669,7 @@ func (s *ContextRequestSuite) TestInput_Json() {
 }
 
 func (s *ContextRequestSuite) TestInput_Form() {
-	s.route.Post("/input/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/form/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":     ctx.Request().Input("id"),
 			"map":    ctx.Request().Input("map"),
@@ -705,7 +705,7 @@ func (s *ContextRequestSuite) TestInput_Form() {
 }
 
 func (s *ContextRequestSuite) TestInput_Url() {
-	s.route.Post("/input/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/url/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":     ctx.Request().Input("id"),
 			"map":    ctx.Request().Input("map"),
@@ -729,7 +729,7 @@ func (s *ContextRequestSuite) TestInput_Url() {
 }
 
 func (s *ContextRequestSuite) TestInput_Route() {
-	s.route.Post("/input/route/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/route/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
@@ -746,7 +746,7 @@ func (s *ContextRequestSuite) TestInput_Route() {
 }
 
 func (s *ContextRequestSuite) TestInput_KeyInBodyIsEmpty() {
-	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id1": ctx.Request().Input("id1", "a"),
 		})
@@ -766,7 +766,7 @@ func (s *ContextRequestSuite) TestInput_KeyInBodyIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInput_KeyInQueryIsEmpty() {
-	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id1": ctx.Request().Input("id1", "a"),
 		})
@@ -783,7 +783,7 @@ func (s *ContextRequestSuite) TestInput_KeyInQueryIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInput_Default() {
-	s.route.Post("/input/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/default/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id1": ctx.Request().Input("id1", "a"),
 		})
@@ -800,7 +800,7 @@ func (s *ContextRequestSuite) TestInput_Default() {
 }
 
 func (s *ContextRequestSuite) TestInput_NestedJson() {
-	s.route.Post("/input/nested/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/nested/json/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":      ctx.Request().Input("id.a"),
 			"string0": ctx.Request().Input("string.0"),
@@ -823,7 +823,7 @@ func (s *ContextRequestSuite) TestInput_NestedJson() {
 }
 
 func (s *ContextRequestSuite) TestInput_NestedForm() {
-	s.route.Post("/input/nested/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/nested/form/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name":    ctx.Request().Input("name"),
 			"string0": ctx.Request().Input("string.0"),
@@ -856,7 +856,7 @@ func (s *ContextRequestSuite) TestInput_NestedForm() {
 }
 
 func (s *ContextRequestSuite) TestInput_NestedUrl() {
-	s.route.Post("/input/nested/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input/nested/url/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id":      ctx.Request().Input("id"),
 			"string0": ctx.Request().Input("string.0"),
@@ -879,7 +879,7 @@ func (s *ContextRequestSuite) TestInput_NestedUrl() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_Default() {
-	s.route.Post("/input-array/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/default/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputArray("name", []string{"a", "b"}),
 		})
@@ -899,7 +899,7 @@ func (s *ContextRequestSuite) TestInputArray_Default() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_KeyInBodyIsEmpty() {
-	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputArray("name", []string{"a", "b"}),
 		})
@@ -919,7 +919,7 @@ func (s *ContextRequestSuite) TestInputArray_KeyInBodyIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_KeyInQueryIsEmpty() {
-	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputArray("name", []string{"a", "b"}),
 		})
@@ -936,7 +936,7 @@ func (s *ContextRequestSuite) TestInputArray_KeyInQueryIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_Json() {
-	s.route.Post("/input-array/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/json/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputArray("id"),
 		})
@@ -956,7 +956,7 @@ func (s *ContextRequestSuite) TestInputArray_Json() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_Form() {
-	s.route.Post("/input-array/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/form/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"InputArray":  ctx.Request().InputArray("arr[]"),
 			"InputArray1": ctx.Request().InputArray("arr"),
@@ -985,7 +985,7 @@ func (s *ContextRequestSuite) TestInputArray_Form() {
 }
 
 func (s *ContextRequestSuite) TestInputArray_Url() {
-	s.route.Post("/input-array/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-array/url/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"string":  ctx.Request().InputArray("string[]"),
 			"string1": ctx.Request().InputArray("string"),
@@ -1006,7 +1006,7 @@ func (s *ContextRequestSuite) TestInputArray_Url() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_Default() {
-	s.route.Post("/input-map/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/default/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputMap("name", map[string]any{"a": "b"}),
 		})
@@ -1026,7 +1026,7 @@ func (s *ContextRequestSuite) TestInputMap_Default() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_KeyInBodyIsEmpty() {
-	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputMap("name", map[string]any{
 				"a": "b",
@@ -1048,7 +1048,7 @@ func (s *ContextRequestSuite) TestInputMap_KeyInBodyIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_KeyInQueryIsEmpty() {
-	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().InputMap("name", map[string]any{
 				"a": "b",
@@ -1067,7 +1067,7 @@ func (s *ContextRequestSuite) TestInputMap_KeyInQueryIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_Json() {
-	s.route.Post("/input-map/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/json/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputMap("id"),
 		})
@@ -1087,7 +1087,7 @@ func (s *ContextRequestSuite) TestInputMap_Json() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_Form() {
-	s.route.Post("/input-map/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/form/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputMap("id"),
 		})
@@ -1112,7 +1112,7 @@ func (s *ContextRequestSuite) TestInputMap_Form() {
 }
 
 func (s *ContextRequestSuite) TestInputMap_Url() {
-	s.route.Post("/input-map/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map/url/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputMap("id"),
 		})
@@ -1132,7 +1132,7 @@ func (s *ContextRequestSuite) TestInputMap_Url() {
 }
 
 func (s *ContextRequestSuite) TestInputMapArray_Default() {
-	s.route.Post("/input-map-array/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map-array/default/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"names": ctx.Request().InputMapArray("names", []map[string]any{{"a": "b"}}),
 		})
@@ -1150,7 +1150,7 @@ func (s *ContextRequestSuite) TestInputMapArray_Default() {
 }
 
 func (s *ContextRequestSuite) TestInputMapArray_KeyInBodyIsEmpty() {
-	s.route.Post("/input-map-array/empty/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map-array/empty/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"names": ctx.Request().InputMapArray("names", []map[string]any{
 				{"a": "b"},
@@ -1172,7 +1172,7 @@ func (s *ContextRequestSuite) TestInputMapArray_KeyInBodyIsEmpty() {
 }
 
 func (s *ContextRequestSuite) TestInputMapArray_Json() {
-	s.route.Post("/input-map-array/json/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map-array/json/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"ids": ctx.Request().InputMapArray("ids"),
 		})
@@ -1192,7 +1192,7 @@ func (s *ContextRequestSuite) TestInputMapArray_Json() {
 }
 
 func (s *ContextRequestSuite) TestInputMapArray_Form() {
-	s.route.Post("/input-map-array/form/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-map-array/form/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"ids": ctx.Request().InputMapArray("ids"),
 		})
@@ -1215,7 +1215,7 @@ func (s *ContextRequestSuite) TestInputMapArray_Form() {
 }
 
 func (s *ContextRequestSuite) TestInputInt() {
-	s.route.Post("/input-int/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-int/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputInt("id"),
 		})
@@ -1232,7 +1232,7 @@ func (s *ContextRequestSuite) TestInputInt() {
 }
 
 func (s *ContextRequestSuite) TestInputInt64() {
-	s.route.Post("/input-int64/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-int64/{id}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id": ctx.Request().InputInt64("id"),
 		})
@@ -1249,7 +1249,7 @@ func (s *ContextRequestSuite) TestInputInt64() {
 }
 
 func (s *ContextRequestSuite) TestInputBool() {
-	s.route.Post("/input-bool/{id1}/{id2}/{id3}/{id4}/{id5}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/input-bool/{id1}/{id2}/{id3}/{id4}/{id5}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"id1": ctx.Request().InputBool("id1"),
 			"id2": ctx.Request().InputBool("id2"),
@@ -1271,7 +1271,7 @@ func (s *ContextRequestSuite) TestInputBool() {
 
 // Test Issue: https://github.com/goravel/goravel/issues/528
 func (s *ContextRequestSuite) TestPostWithEmpty() {
-	s.route.Post("/post-with-empty", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/post-with-empty", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().All(),
 		})
@@ -1290,7 +1290,7 @@ func (s *ContextRequestSuite) TestPostWithEmpty() {
 }
 
 func (s *ContextRequestSuite) TestQuery() {
-	s.route.Get("/query", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/query", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"string":        ctx.Request().Query("string", ""),
 			"int":           ctx.Request().QueryInt("int", 11),
@@ -1317,7 +1317,7 @@ func (s *ContextRequestSuite) TestQuery() {
 }
 
 func (s *ContextRequestSuite) TestQueryArray() {
-	s.route.Get("/query-array", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/query-array", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().QueryArray("name"),
 		})
@@ -1334,7 +1334,7 @@ func (s *ContextRequestSuite) TestQueryArray() {
 }
 
 func (s *ContextRequestSuite) TestQueryMap() {
-	s.route.Get("/query-map", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/query-map", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"name": ctx.Request().QueryMap("name"),
 		})
@@ -1351,7 +1351,7 @@ func (s *ContextRequestSuite) TestQueryMap() {
 }
 
 func (s *ContextRequestSuite) TestQueries() {
-	s.route.Post("/queries", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/queries", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"all": ctx.Request().Queries(),
 		})
@@ -1371,7 +1371,7 @@ func (s *ContextRequestSuite) TestQueries() {
 }
 
 func (s *ContextRequestSuite) TestRoute() {
-	s.route.Get("/route/{string}/{int}/{int64}/{string1}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/route/{string}/{int}/{int64}/{string1}", func(ctx contractshttp.Context) error {
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"string": ctx.Request().Route("string"),
 			"int":    ctx.Request().RouteInt("int"),
@@ -1390,7 +1390,7 @@ func (s *ContextRequestSuite) TestRoute() {
 }
 
 func (s *ContextRequestSuite) TestSession() {
-	s.route.Get("/session", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/session", func(ctx contractshttp.Context) error {
 		ctx.Request().SetSession(session.NewSession("goravel_session", nil, foundationjson.NewJson()))
 
 		return ctx.Response().Success().Json(contractshttp.Json{
@@ -1408,7 +1408,7 @@ func (s *ContextRequestSuite) TestSession() {
 }
 
 func (s *ContextRequestSuite) TestSession_NotSet() {
-	s.route.Get("/session/not-set", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/session/not-set", func(ctx contractshttp.Context) error {
 		if ctx.Request().HasSession() {
 			return ctx.Response().Success().Json(contractshttp.Json{
 				"message": ctx.Request().Session().GetName(),
@@ -1430,7 +1430,7 @@ func (s *ContextRequestSuite) TestSession_NotSet() {
 }
 
 func (s *ContextRequestSuite) TestValidate_GetSuccess() {
-	s.route.Get("/validate/get-success/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate/get-success/{uuid}", func(ctx contractshttp.Context) error {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"uuid": "min_len:2",
 			"name": "required",
@@ -1470,7 +1470,7 @@ func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 }
 
 func (s *ContextRequestSuite) TestValidate_GetFail() {
-	s.route.Get("/validate/get-fail/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate/get-fail/{uuid}", func(ctx contractshttp.Context) error {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"uuid": "min_len:4",
 			"name": "required",
@@ -1498,7 +1498,7 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 }
 
 func (s *ContextRequestSuite) TestValidate_PostSuccess() {
-	s.route.Post("/validate/post-success/{id}/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate/post-success/{id}/{uuid}", func(ctx contractshttp.Context) error {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"id":   "required",
 			"uuid": "required",
@@ -1551,7 +1551,7 @@ func (s *ContextRequestSuite) TestValidate_PostSuccess() {
 }
 
 func (s *ContextRequestSuite) TestValidate_PostFail() {
-	s.route.Post("/validate/post-fail", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate/post-fail", func(ctx contractshttp.Context) error {
 		validator, err := ctx.Request().Validate(map[string]string{
 			"name1": "required",
 		}, validation.Filters(map[string]string{
@@ -1583,7 +1583,7 @@ func (s *ContextRequestSuite) TestValidate_PostFail() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_PrepareForValidationWithContext() {
-	s.route.Get("/validate-request/prepare-for-validation-with-context", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate-request/prepare-for-validation-with-context", func(ctx contractshttp.Context) error {
 		// nolint:all
 		ctx.WithValue("test", "-ctx")
 
@@ -1611,7 +1611,7 @@ func (s *ContextRequestSuite) TestValidateRequest_PrepareForValidationWithContex
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_GetSuccess() {
-	s.route.Get("/validate-request/get-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate-request/get-success", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1636,7 +1636,7 @@ func (s *ContextRequestSuite) TestValidateRequest_GetSuccess() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_GetFail() {
-	s.route.Get("/validate-request/get-fail", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate-request/get-fail", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1661,7 +1661,7 @@ func (s *ContextRequestSuite) TestValidateRequest_GetFail() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_FormSuccess() {
-	s.route.Post("/validate-request/form-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/form-success", func(ctx contractshttp.Context) error {
 		var request FileImageJson
 		validateErrors, err := ctx.Request().ValidateRequest(&request)
 		if err != nil {
@@ -1722,7 +1722,7 @@ func (s *ContextRequestSuite) TestValidateRequest_FormSuccess() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_FormFail() {
-	s.route.Post("/validate-request/form-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/form-success", func(ctx contractshttp.Context) error {
 		var request FileImageJson
 		validateErrors, err := ctx.Request().ValidateRequest(&request)
 		if err != nil {
@@ -1783,7 +1783,7 @@ func (s *ContextRequestSuite) TestValidateRequest_FormFail() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_JsonSuccess() {
-	s.route.Post("/validate-request/json-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/json-success", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1812,7 +1812,7 @@ func (s *ContextRequestSuite) TestValidateRequest_JsonSuccess() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_JsonFail() {
-	s.route.Post("/validate-request/json-fail", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/json-fail", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1841,7 +1841,7 @@ func (s *ContextRequestSuite) TestValidateRequest_JsonFail() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_GetSuccessWithFilter() {
-	s.route.Get("/validate-request/filter/get-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/validate-request/filter/get-success", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1866,7 +1866,7 @@ func (s *ContextRequestSuite) TestValidateRequest_GetSuccessWithFilter() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_PostSuccessWithFilter() {
-	s.route.Post("/validate-request/filter/post-success", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/filter/post-success", func(ctx contractshttp.Context) error {
 		var createUser CreateUser
 		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
 		if err != nil {
@@ -1895,7 +1895,7 @@ func (s *ContextRequestSuite) TestValidateRequest_PostSuccessWithFilter() {
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_Unauthorize() {
-	s.route.Post("/validate-request/unauthorize", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Post("/validate-request/unauthorize", func(ctx contractshttp.Context) error {
 		var unauthorize Unauthorize
 		validateErrors, err := ctx.Request().ValidateRequest(&unauthorize)
 		if err != nil {

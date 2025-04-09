@@ -6,11 +6,14 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	"github.com/spf13/cast"
 	"github.com/valyala/fasthttp"
 )
 
@@ -46,16 +49,33 @@ func (r *ContextResponse) Cookie(cookie contractshttp.Cookie) contractshttp.Cont
 	return r
 }
 
-func (r *ContextResponse) Data(code int, contentType string, data []byte) contractshttp.AbortableResponse {
-	return &DataResponse{code, contentType, data, r.instance}
+func (r *ContextResponse) Data(code int, contentType string, data []byte) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	r.instance.Response().Header.SetContentType(contentType)
+	return r.instance.Status(code).Send(data)
 }
 
-func (r *ContextResponse) Download(filepath, filename string) contractshttp.Response {
-	return &DownloadResponse{filename, filepath, r.instance}
+func (r *ContextResponse) Download(filepath, filename string) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Download(filepath, filename)
 }
 
-func (r *ContextResponse) File(filepath string) contractshttp.Response {
-	return &FileResponse{filepath, r.instance}
+func (r *ContextResponse) File(fp string) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	dir, file := filepath.Split(fp)
+	escapedFile := url.PathEscape(file)
+	escapedPath := filepath.Join(dir, escapedFile)
+
+	return r.instance.SendFile(escapedPath, true)
 }
 
 func (r *ContextResponse) Header(key, value string) contractshttp.ContextResponse {
@@ -64,28 +84,49 @@ func (r *ContextResponse) Header(key, value string) contractshttp.ContextRespons
 	return r
 }
 
-func (r *ContextResponse) Json(code int, obj any) contractshttp.AbortableResponse {
-	return &JsonResponse{code, obj, r.instance}
+func (r *ContextResponse) Json(code int, obj any) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Status(code).JSON(obj)
 }
 
-func (r *ContextResponse) NoContent(code ...int) contractshttp.AbortableResponse {
+func (r *ContextResponse) NoContent(code ...int) error {
 	if len(code) == 0 {
 		code = append(code, http.StatusNoContent)
 	}
 
-	return &NoContentResponse{code[0], r.instance}
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Status(code[0]).Send(nil)
 }
 
 func (r *ContextResponse) Origin() contractshttp.ResponseOrigin {
 	return r.origin
 }
 
-func (r *ContextResponse) Redirect(code int, location string) contractshttp.AbortableResponse {
-	return &RedirectResponse{code, location, r.instance}
+func (r *ContextResponse) Redirect(code int, location string) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Redirect(location, code)
 }
 
-func (r *ContextResponse) String(code int, format string, values ...any) contractshttp.AbortableResponse {
-	return &StringResponse{code, format, r.instance, values}
+func (r *ContextResponse) String(code int, format string, values ...any) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	if len(values) == 0 {
+		return r.instance.Status(code).SendString(format)
+	}
+
+	r.instance.Response().Header.SetContentType(format)
+	return r.instance.Status(code).SendString(cast.ToString(values[0]))
 }
 
 func (r *ContextResponse) Success() contractshttp.ResponseStatus {
@@ -96,8 +137,18 @@ func (r *ContextResponse) Status(code int) contractshttp.ResponseStatus {
 	return NewStatus(r.instance, code)
 }
 
-func (r *ContextResponse) Stream(code int, step func(w contractshttp.StreamWriter) error) contractshttp.Response {
-	return &StreamResponse{code, r.instance, step}
+func (r *ContextResponse) Stream(code int, step func(w contractshttp.StreamWriter) error) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	var err error
+	r.instance.Status(code)
+	r.instance.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		err = step(w)
+	})
+
+	return err
 }
 
 func (r *ContextResponse) View() contractshttp.ResponseView {
@@ -205,20 +256,48 @@ func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseStatus {
 	return &Status{instance, code}
 }
 
-func (r *Status) Data(contentType string, data []byte) contractshttp.AbortableResponse {
-	return &DataResponse{r.status, contentType, data, r.instance}
+func (r *Status) Data(contentType string, data []byte) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	r.instance.Response().Header.SetContentType(contentType)
+	return r.instance.Status(r.status).Send(data)
 }
 
-func (r *Status) Json(obj any) contractshttp.AbortableResponse {
-	return &JsonResponse{r.status, obj, r.instance}
+func (r *Status) Json(obj any) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	return r.instance.Status(r.status).JSON(obj)
 }
 
-func (r *Status) String(format string, values ...any) contractshttp.AbortableResponse {
-	return &StringResponse{r.status, format, r.instance, values}
+func (r *Status) String(format string, values ...any) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	if len(values) == 0 {
+		return r.instance.Status(r.status).SendString(format)
+	}
+
+	r.instance.Response().Header.SetContentType(format)
+	return r.instance.Status(r.status).SendString(cast.ToString(values[0]))
 }
 
-func (r *Status) Stream(step func(w contractshttp.StreamWriter) error) contractshttp.Response {
-	return &StreamResponse{r.status, r.instance, step}
+func (r *Status) Stream(step func(w contractshttp.StreamWriter) error) error {
+	if invalidFiber(r.instance) {
+		return nil
+	}
+
+	var err error
+	r.instance.Status(r.status)
+	r.instance.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		err = step(w)
+	})
+
+	return err
 }
 
 type ResponseOrigin struct {

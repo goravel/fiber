@@ -13,7 +13,7 @@ import (
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
 	return func(next contractshttp.Handler) contractshttp.Handler {
-		return contractshttp.HandleFunc(func(ctx contractshttp.Context) contractshttp.Response {
+		return contractshttp.HandlerFunc(func(ctx contractshttp.Context) error {
 			timeoutCtx, cancel := context.WithTimeout(ctx.Context(), timeout)
 			defer cancel()
 
