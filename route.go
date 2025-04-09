@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
@@ -32,8 +33,6 @@ var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx co
 	_ = ctx.Response().Status(contractshttp.StatusInternalServerError).String(contractshttp.StatusText(contractshttp.StatusInternalServerError))
 }
 
-// Route fiber route
-// Route fiber 路由
 type Route struct {
 	route.Router
 	config   config.Config
@@ -41,8 +40,6 @@ type Route struct {
 	fallback contractshttp.HandlerFunc
 }
 
-// NewRoute create new fiber route instance
-// NewRoute 创建新的 fiber 路由实例
 func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 	var views fiber.Views
 	if driver, exist := parameters["driver"]; exist {
@@ -101,8 +98,6 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 	}, nil
 }
 
-// Fallback set fallback handler
-// Fallback 设置回退处理程序
 func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 	r.fallback = handler
 }
@@ -111,8 +106,6 @@ func (r *Route) NotAllowed(handler contractshttp.HandlerFunc) {
 	panic("not support")
 }
 
-// GlobalMiddleware set global middleware
-// GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
 	debug := r.config.GetBool("app.debug", false)
 	fiberHandlers := []fiber.Handler{
@@ -157,8 +150,6 @@ func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	r.setMiddlewares(middleware)
 }
 
-// Listen listen server
-// Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
 	r.registerFallback()
 	r.outputRoutes()
@@ -167,14 +158,10 @@ func (r *Route) Listen(l net.Listener) error {
 	return r.instance.Listener(l)
 }
 
-// ListenTLS listen TLS server
-// ListenTLS 监听 TLS 服务器
 func (r *Route) ListenTLS(l net.Listener) error {
 	return r.ListenTLSWithCert(l, r.config.GetString("http.tls.ssl.cert"), r.config.GetString("http.tls.ssl.key"))
 }
 
-// ListenTLSWithCert listen TLS server with cert file and key file
-// ListenTLSWithCert 使用证书文件和密钥文件监听 TLS 服务器
 func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) error {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -199,8 +186,6 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 	return r.instance.Listener(tls.NewListener(l, tlsConfig))
 }
 
-// Run run server
-// Run 运行服务器
 func (r *Route) Run(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.host")
@@ -219,8 +204,6 @@ func (r *Route) Run(host ...string) error {
 	return r.instance.Listen(host[0])
 }
 
-// RunTLS run TLS server
-// RunTLS 运行 TLS 服务器
 func (r *Route) RunTLS(host ...string) error {
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.tls.host")
@@ -238,8 +221,6 @@ func (r *Route) RunTLS(host ...string) error {
 	return r.RunTLSWithCert(host[0], certFile, keyFile)
 }
 
-// RunTLSWithCert run TLS server with cert file and key file
-// RunTLSWithCert 使用证书文件和密钥文件运行 TLS 服务器
 func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	if host == "" {
 		return errors.New("host can't be empty")
@@ -255,8 +236,6 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	return r.instance.ListenTLS(host, certFile, keyFile)
 }
 
-// Shutdown gracefully shuts down the server
-// Shutdown 优雅退出HTTP Server
 func (r *Route) Shutdown(ctx ...context.Context) error {
 	c := context.Background()
 	if len(ctx) > 0 {
@@ -266,22 +245,16 @@ func (r *Route) Shutdown(ctx ...context.Context) error {
 	return r.instance.ShutdownWithContext(c)
 }
 
-// ServeHTTP serve http request (Not support)
-// ServeHTTP 服务 HTTP 请求 (不支持)
 func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	panic("not support")
+	adaptor.FiberApp(r.instance).ServeHTTP(writer, request)
 }
 
-// Test for unit test
-// Test 用于单元测试
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	r.registerFallback()
 
 	return r.instance.Test(request, -1)
 }
 
-// outputRoutes output all routes
-// outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
 		for _, item := range r.instance.GetRoutes() {

@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -594,6 +595,106 @@ func TestRunTLSWithCert(t *testing.T) {
 				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
 			}
 
+		})
+	}
+}
+
+func TestServeHTTP(t *testing.T) {
+	var (
+		err        error
+		mockConfig *mocksconfig.Config
+		route      *Route
+	)
+
+	tests := []struct {
+		name         string
+		setup        func() error
+		method       string
+		path         string
+		body         string
+		contentType  string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "serve HTTP GET request",
+			method:       "GET",
+			path:         "/test-serve-http",
+			expectedCode: http.StatusOK,
+			expectedBody: `{"message":"Hello from GET"}`,
+			setup: func() error {
+				route.Get("/test-serve-http", func(ctx contractshttp.Context) contractshttp.Response {
+					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+						"message": "Hello from GET",
+					})
+				})
+				return nil
+			},
+		},
+		{
+			name:         "serve HTTP POST request",
+			method:       "POST",
+			path:         "/api/users",
+			body:         `{"name":"John Doe"}`,
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			expectedBody: `{"name":"John Doe","status":"success"}`,
+			setup: func() error {
+				route.Post("/api/users", func(ctx contractshttp.Context) contractshttp.Response {
+					name := ctx.Request().Input("name", "")
+					return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+						"status": "success",
+						"name":   name,
+					})
+				})
+				return nil
+			},
+		},
+		{
+			name:         "serve Not Found request",
+			method:       "GET",
+			path:         "/not-found",
+			expectedCode: http.StatusNotFound,
+			setup:        func() error { return nil },
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockConfig = mocksconfig.NewConfig(t)
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+
+			route, err = NewRoute(mockConfig, nil)
+			assert.Nil(t, err)
+
+			err = test.setup()
+			assert.Nil(t, err)
+
+			var req *http.Request
+			if test.body != "" {
+				req = httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))
+			} else {
+				req = httptest.NewRequest(test.method, test.path, nil)
+			}
+
+			if test.contentType != "" {
+				req.Header.Set("Content-Type", test.contentType)
+			}
+
+			rec := httptest.NewRecorder()
+			route.ServeHTTP(rec, req)
+
+			resp := rec.Result()
+			assert.Equal(t, test.expectedCode, resp.StatusCode)
+
+			if test.expectedBody != "" {
+				body, err := io.ReadAll(resp.Body)
+				assert.Nil(t, err)
+				assert.JSONEq(t, test.expectedBody, string(body))
+			}
 		})
 	}
 }
