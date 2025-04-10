@@ -27,11 +27,11 @@ import (
 
 func TestRecoverWithCustomCallback(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
-
-	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	ConfigFacade = mockConfig
 
 	route, err := NewRoute(mockConfig, nil)
 	assert.Nil(t, err)
