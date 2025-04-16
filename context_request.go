@@ -571,7 +571,11 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 		args := ctx.instance.Request().PostArgs()
 		args.VisitAll(func(key, value []byte) {
 			if existValue, exist := data[utils.UnsafeString(key)]; exist {
-				data[utils.UnsafeString(key)] = append([]string{cast.ToString(existValue)}, utils.UnsafeString(value))
+				if stringSlice, ok := data[utils.UnsafeString(key)].([]string); ok {
+					data[utils.UnsafeString(key)] = append(stringSlice, utils.UnsafeString(value))
+				} else {
+					data[utils.UnsafeString(key)] = append([]string{cast.ToString(existValue)}, utils.UnsafeString(value))
+				}
 			} else {
 				data[utils.UnsafeString(key)] = utils.UnsafeString(value)
 			}
