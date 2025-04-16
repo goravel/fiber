@@ -1005,6 +1005,28 @@ func (s *ContextRequestSuite) TestInputArray_Url() {
 	s.Equal(http.StatusOK, code)
 }
 
+// Test Issue: https://github.com/goravel/goravel/issues/659
+func (s *ContextRequestSuite) TestInputArray_UrlMore() {
+	s.route.Post("/input-array/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"string":  ctx.Request().InputArray("string[]"),
+			"string1": ctx.Request().InputArray("string"),
+		})
+	})
+
+	form := neturl.Values{
+		"string[]": {"string 0", "string 1", "string 2", "string 3"},
+	}
+	req, err := http.NewRequest("POST", "/input-array/url/1?id=2", strings.NewReader(form.Encode()))
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"string\":[\"string 0\",\"string 1\",\"string 2\",\"string 3\"],\"string1\":[\"string 0\",\"string 1\",\"string 2\",\"string 3\"]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestInputMap_Default() {
 	s.route.Post("/input-map/default/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
