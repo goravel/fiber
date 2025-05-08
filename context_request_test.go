@@ -1413,7 +1413,7 @@ func (s *ContextRequestSuite) TestRoute() {
 
 func (s *ContextRequestSuite) TestSession() {
 	s.route.Get("/session", func(ctx contractshttp.Context) contractshttp.Response {
-		ctx.Request().SetSession(session.NewSession("goravel_session", nil, foundationjson.NewJson()))
+		ctx.Request().SetSession(session.NewSession("goravel_session", nil, foundationjson.New()))
 
 		return ctx.Response().Success().Json(contractshttp.Json{
 			"message": ctx.Request().Session().GetName(),
