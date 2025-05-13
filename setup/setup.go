@@ -36,6 +36,7 @@ func main() {
 			modify.GoFile(path.Config("http.go")).
 				Find(match.Imports()).
 				Modify(
+					modify.AddImport("github.com/goravel/framework/contracts/route"),
 					modify.AddImport("github.com/goravel/fiber/facades", "fiberfacades"), modify.AddImport("github.com/goravel/framework/support/path"),
 					modify.AddImport("github.com/gofiber/template/html/v2"), modify.AddImport("github.com/gofiber/fiber/v2"),
 				).
@@ -43,15 +44,16 @@ func main() {
 		).
 		Uninstall(
 			modify.GoFile(path.Config("app.go")).
-				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath())).
-				Find(match.Providers()).Modify(modify.Unregister("&fiber.ServiceProvider{}")),
+				Find(match.Providers()).Modify(modify.Unregister("&fiber.ServiceProvider{}")).
+				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath())),
 			modify.GoFile(path.Config("http.go")).
+				Find(match.Config("http.drivers")).Modify(modify.RemoveConfig("fiber")).
 				Find(match.Imports()).
 				Modify(
+					modify.RemoveImport("github.com/goravel/framework/contracts/route"),
 					modify.RemoveImport("github.com/goravel/fiber/facades", "fiberfacades"), modify.RemoveImport("github.com/goravel/framework/support/path"),
 					modify.RemoveImport("github.com/gofiber/template/html/v2"), modify.RemoveImport("github.com/gofiber/fiber/v2"),
-				).
-				Find(match.Config("http.drivers")).Modify(modify.RemoveConfig("fiber")),
+				),
 		).
 		Execute()
 }
