@@ -38,6 +38,9 @@ func TestView_Make(t *testing.T) {
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 		ConfigFacade = mockConfig
 
 		mockView = &httpmocks.View{}
@@ -263,6 +266,9 @@ func TestView_First(t *testing.T) {
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 		ConfigFacade = mockConfig
 
 		mockView = &httpmocks.View{}
