@@ -19,6 +19,9 @@ func TestTimeoutMiddleware(t *testing.T) {
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 
 	route, err := NewRoute(mockConfig, nil)
 	require.NoError(t, err)

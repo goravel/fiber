@@ -41,6 +41,9 @@ func (s *ContextRequestSuite) SetupTest() {
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	s.mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	s.mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 	ValidationFacade = validation.NewValidation()
 
 	var err error
@@ -540,9 +543,10 @@ func (s *ContextRequestSuite) TestMethods() {
 	s.Require().Nil(err)
 
 	req.Header.Set("Hello", "Goravel")
+	req.Header.Set("X-Forwarded-For", "1.1.1.1")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"full_url\":\"\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"0.0.0.0\",\"method\":\"GET\",\"name\":\"Goravel\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
+	s.Equal("{\"full_url\":\"\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"1.1.1.1\",\"method\":\"GET\",\"name\":\"Goravel\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
