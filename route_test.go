@@ -26,9 +26,12 @@ import (
 func TestRecoverWithCustomCallback(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
 
-	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 
 	route, err := NewRoute(mockConfig, nil)
 	assert.Nil(t, err)
@@ -58,6 +61,9 @@ func TestFallback(t *testing.T) {
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 	ConfigFacade = mockConfig
 
 	route, err := NewRoute(mockConfig, nil)
@@ -130,6 +136,9 @@ func TestListen(t *testing.T) {
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
@@ -193,6 +202,9 @@ func TestListenTLS(t *testing.T) {
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
 			mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -255,6 +267,9 @@ func TestListenTLSWithCert(t *testing.T) {
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -350,6 +365,9 @@ func TestRun(t *testing.T) {
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -448,6 +466,9 @@ func TestRunTLS(t *testing.T) {
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -538,6 +559,9 @@ func TestRunTLSWithCert(t *testing.T) {
 			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			ConfigFacade = mockConfig
 
 			route, err = NewRoute(mockConfig, nil)
@@ -584,6 +608,9 @@ func TestNewRoute(t *testing.T) {
 				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			},
 			expectTemplate: nil,
 		},
@@ -595,6 +622,9 @@ func TestNewRoute(t *testing.T) {
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
 				mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(template).Once()
+				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			},
 			expectTemplate: template,
 		},
@@ -608,6 +638,9 @@ func TestNewRoute(t *testing.T) {
 				mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(func() (fiber.Views, error) {
 					return template, nil
 				}).Twice()
+				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			},
 			expectTemplate: template,
 		},
@@ -706,6 +739,9 @@ func TestShutdown(t *testing.T) {
 			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 			mockConfig.EXPECT().GetString("http.host").Return(host).Once()
 			mockConfig.EXPECT().GetString("http.port").Return(port).Once()
+			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 			route, err = NewRoute(mockConfig, nil)
 			assert.Nil(t, err)
 			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {

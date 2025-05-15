@@ -73,15 +73,23 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		network = fiber.NetworkTCP4
 	}
 
+	var trustedProxies []string
+	if trustedProxiesConfig, ok := config.Get("http.drivers.fiber.trusted_proxies").([]string); ok {
+		trustedProxies = trustedProxiesConfig
+	}
+
 	app := fiber.New(fiber.Config{
-		Prefork:               prefork,
-		BodyLimit:             config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
-		ReadBufferSize:        config.GetInt("http.drivers.fiber.header_limit", 4096),
-		DisableStartupMessage: true,
-		JSONEncoder:           json.Marshal,
-		JSONDecoder:           json.Unmarshal,
-		Network:               network,
-		Views:                 views,
+		Prefork:                 prefork,
+		BodyLimit:               config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
+		ReadBufferSize:          config.GetInt("http.drivers.fiber.header_limit", 4096),
+		DisableStartupMessage:   true,
+		JSONEncoder:             json.Marshal,
+		JSONDecoder:             json.Unmarshal,
+		Network:                 network,
+		Views:                   views,
+		ProxyHeader:             config.GetString("http.drivers.fiber.proxy_header", ""),
+		EnableTrustedProxyCheck: config.GetBool("http.drivers.fiber.enable_trusted_proxy_check", false),
+		TrustedProxies:          trustedProxies,
 	})
 
 	return &Route{
