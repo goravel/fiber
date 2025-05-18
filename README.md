@@ -64,6 +64,9 @@ import (
         "route": func() (route.Route, error) {
             return fiberfacades.Route("fiber"), nil
         },
+        "proxy_header": "",
+        "enable_trusted_proxy_check": false,
+        "trusted_proxies": []string{},
         // Optional, default is "html/template"
         "template": func() (fiber.Views, error) {
             return html.New(path.Resource("views"), ".tmpl"), nil
