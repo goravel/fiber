@@ -57,6 +57,9 @@ import (
         // Optional, default is 4096 KB
         "body_limit": 4096,
         "header_limit": 4096,
+        "proxy_header": "",
+        "enable_trusted_proxy_check": false,
+        "trusted_proxies": []string{},
         "route": func() (route.Route, error) {
             return fiberfacades.Route("fiber"), nil
         },
