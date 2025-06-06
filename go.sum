@@ -144,8 +144,8 @@ github.com/gookit/validate v1.5.5 h1:jzMrwAYy9tbQa0mH8YFnv3C3JQR/0N4pRTsYiySwRJM
 github.com/gookit/validate v1.5.5/go.mod h1:p9sRPfpvYB4vXICBpEPzv8FoAky+XhUOhWQghgmmat4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2 h1:g68AzbePXcm0V2CpUMc9j4qVzcDn7+7aoWSjZ51C0m4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2/go.mod h1:23VuSW8cBS4ax5cmbV+5AaiLpq25b8UJ96IhbAkdo8I=
-github.com/goravel/framework v1.15.2-0.20250606141934-e1d67324b64d h1:65duOKBNCOv+s1OnuHyNYFCx4fNd67vTPpez8TMnRHs=
-github.com/goravel/framework v1.15.2-0.20250606141934-e1d67324b64d/go.mod h1:1auo8GUbJFMpIItjj/NUx0WfrAwTx/IzQGZoa8hHGhc=
+github.com/goravel/framework v1.15.2-0.20250606151802-c739f65fcc65 h1:ZbIc6jaNvrixw1W3pE/x85DEAyusXckIQq5kt+uvALE=
+github.com/goravel/framework v1.15.2-0.20250606151802-c739f65fcc65/go.mod h1:1auo8GUbJFMpIItjj/NUx0WfrAwTx/IzQGZoa8hHGhc=
 github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
 github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
