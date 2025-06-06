@@ -113,7 +113,7 @@ func TestGetRoutes(t *testing.T) {
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 
 	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	route.Get("/test/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().String(200, "ok")
