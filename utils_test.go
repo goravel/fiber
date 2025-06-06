@@ -9,3 +9,7 @@ import (
 func TestBracketToColon(t *testing.T) {
 	assert.Equal(t, "/:id/:name", bracketToColon("/{id}/{name}"))
 }
+
+func TestColonToBracket(t *testing.T) {
+	assert.Equal(t, "/{id}/{name}", colonToBracket("/:id/:name"))
+}
