@@ -7,9 +7,9 @@ toolchain go1.24.3
 require (
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/gofiber/template/html/v2 v2.1.3
-	github.com/gookit/validate v1.5.4
-	github.com/goravel/framework v1.15.2-0.20250514081635-e88f45b81ca2
-	github.com/spf13/cast v1.8.0
+	github.com/gookit/validate v1.5.5
+	github.com/goravel/framework v1.15.2-0.20250606141934-e1d67324b64d
+	github.com/spf13/cast v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.62.0
 )
@@ -23,7 +23,7 @@ require (
 	github.com/containerd/console v1.0.4 // indirect
 	github.com/dave/dst v0.27.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dromara/carbon/v2 v2.6.4 // indirect
+	github.com/dromara/carbon/v2 v2.6.6 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -67,10 +67,10 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 // indirect
-	google.golang.org/grpc v1.72.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
+	google.golang.org/grpc v1.72.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/gorm v1.26.1 // indirect
+	gorm.io/gorm v1.30.0 // indirect
 )

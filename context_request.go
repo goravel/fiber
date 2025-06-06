@@ -310,6 +310,10 @@ func (r *ContextRequest) Origin() *http.Request {
 	return &req
 }
 
+func (r *ContextRequest) OriginPath() string {
+	return colonToBracket(r.instance.Route().Path)
+}
+
 func (r *ContextRequest) Path() string {
 	return r.instance.Path()
 }
