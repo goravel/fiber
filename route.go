@@ -116,6 +116,24 @@ func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 	r.fallback = handler
 }
 
+// GetRoutes get all routes
+func (r *Route) GetRoutes() []route.RouteInfo {
+	var routes []route.RouteInfo
+	for _, item := range r.instance.GetRoutes() {
+		for _, handler := range item.Handlers {
+			if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
+				routes = append(routes, route.RouteInfo{
+					Method: item.Method,
+					Path:   colonToBracket(item.Path),
+				})
+				break
+			}
+		}
+	}
+
+	return routes
+}
+
 // GlobalMiddleware set global middleware
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middlewares ...contractshttp.Middleware) {
@@ -287,13 +305,8 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
-		for _, item := range r.instance.GetRoutes() {
-			for _, handler := range item.Handlers {
-				if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
-					fmt.Printf("%-10s %s\n", item.Method, colonToBracket(item.Path))
-					break
-				}
-			}
+		for _, item := range r.GetRoutes() {
+			fmt.Printf("%-10s %s\n", item.Method, item.Path)
 		}
 	}
 }

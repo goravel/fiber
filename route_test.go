@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	contractsroute "github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/contracts/validation"
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/path"
@@ -99,6 +100,36 @@ func TestFallback(t *testing.T) {
 	body, err = io.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, "not found", string(body))
+}
+
+func TestGetRoutes(t *testing.T) {
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.NoError(t, err)
+
+	route.Get("/test/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(200, "ok")
+	})
+
+	routes := route.GetRoutes()
+	assert.ElementsMatch(t, routes, []contractsroute.RouteInfo{
+		{
+			Method: "GET",
+			Path:   "/test/{id}",
+		},
+		{
+			Method: "HEAD",
+			Path:   "/test/{id}",
+		},
+	})
 }
 
 func TestGlobalMiddleware(t *testing.T) {
