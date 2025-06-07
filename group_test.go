@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	contractsroute "github.com/goravel/framework/contracts/route"
-	configmocks "github.com/goravel/framework/mocks/config"
+	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,10 +18,10 @@ import (
 func TestGroup(t *testing.T) {
 	var (
 		route      *Route
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 	)
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
+		mockConfig = mocksconfig.NewConfig(t)
 		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
 		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
@@ -523,10 +523,41 @@ func TestGroup(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode, test.name)
-
-			mockConfig.AssertExpectations(t)
 		})
 	}
+}
+
+// https://github.com/goravel/goravel/issues/408
+func TestIssue408(t *testing.T) {
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
+	route.Prefix("prefix/{id}").Group(func(route contractsroute.Router) {
+		route.Get("", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().String(200, "ok")
+		})
+		route.Post("test/{name}", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().String(200, "ok")
+		})
+	})
+
+	routes := route.GetRoutes()
+	assert.Len(t, routes, 3)
+	assert.Equal(t, "GET", routes[0].Method)
+	assert.Equal(t, "/prefix/{id}", routes[0].Path)
+	assert.Equal(t, "HEAD", routes[1].Method)
+	assert.Equal(t, "/prefix/{id}", routes[1].Path)
+	assert.Equal(t, "POST", routes[2].Method)
+	assert.Equal(t, "/prefix/{id}/test/{name}", routes[2].Path)
 }
 
 func abortMiddleware() contractshttp.Middleware {
