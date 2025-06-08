@@ -37,7 +37,10 @@ func (r *Group) Group(handler route.GroupFunc) {
 	middlewares = append(middlewares, r.originMiddlewares...)
 	middlewares = append(middlewares, r.middlewares...)
 	r.middlewares = []httpcontract.Middleware{}
-	prefix := pathToFiberPath(r.originPrefix + "/" + r.prefix)
+	prefix := r.originPrefix
+	if r.prefix != "" {
+		prefix += "/" + r.prefix
+	}
 	r.prefix = ""
 
 	handler(NewGroup(r.config, r.instance, prefix, middlewares, r.lastMiddlewares))
@@ -140,7 +143,14 @@ func (r *Group) getMiddlewares(handler httpcontract.HandlerFunc) []fiber.Handler
 }
 
 func (r *Group) getPath(relativePath string) string {
-	path := pathToFiberPath(r.originPrefix + "/" + r.prefix + "/" + relativePath)
+	path := r.originPrefix
+	if r.prefix != "" {
+		path += "/" + r.prefix
+	}
+	if relativePath != "" {
+		path += "/" + relativePath
+	}
+	path = pathToFiberPath(path)
 	r.prefix = ""
 
 	return path
