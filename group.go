@@ -48,43 +48,43 @@ func (r *Group) Middleware(middlewares ...httpcontract.Middleware) contractsrout
 func (r *Group) Any(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.All(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("ANY", path)
+	return NewAction("ANY", r.getFullPath(path))
 }
 
 func (r *Group) Get(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Get(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("GET|HEAD", path)
+	return NewAction("GET|HEAD", r.getFullPath(path))
 }
 
 func (r *Group) Post(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Post(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("POST", path)
+	return NewAction("POST", r.getFullPath(path))
 }
 
 func (r *Group) Delete(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Delete(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("DELETE", path)
+	return NewAction("DELETE", r.getFullPath(path))
 }
 
 func (r *Group) Patch(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Patch(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("PATCH", path)
+	return NewAction("PATCH", r.getFullPath(path))
 }
 
 func (r *Group) Put(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Put(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("PUT", path)
+	return NewAction("PUT", r.getFullPath(path))
 }
 
 func (r *Group) Options(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
 	r.instance.Options(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
 
-	return NewAction("OPTIONS", path)
+	return NewAction("OPTIONS", r.getFullPath(path))
 }
 
 func (r *Group) Resource(path string, controller httpcontract.ResourceController) contractsroute.Action {
@@ -98,14 +98,14 @@ func (r *Group) Resource(path string, controller httpcontract.ResourceController
 	r.instance.Patch(fullPathWithID, r.getMiddlewares(controller.Update)...)
 	r.instance.Delete(fullPathWithID, r.getMiddlewares(controller.Destroy)...)
 
-	return NewAction("RESOURCE", path)
+	return NewAction("RESOURCE", r.getFullPath(path))
 }
 
 func (r *Group) Static(path, root string) contractsroute.Action {
 	fullPath := r.getFiberFullPath(path)
 	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Static(fullPath, root)
 
-	return NewAction("STATIC", path)
+	return NewAction("STATIC", r.getFullPath(path))
 }
 
 func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
@@ -118,7 +118,7 @@ func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
 		return c.SendFile(escapedPath, true)
 	})
 
-	return NewAction("STATIC_FILE", path)
+	return NewAction("STATIC_FILE", r.getFullPath(path))
 }
 
 func (r *Group) StaticFS(path string, fs http.FileSystem) contractsroute.Action {
@@ -127,7 +127,7 @@ func (r *Group) StaticFS(path string, fs http.FileSystem) contractsroute.Action 
 		Root: fs,
 	}))
 
-	return NewAction("STATIC_FS", path)
+	return NewAction("STATIC_FS", r.getFullPath(path))
 }
 
 func (r *Group) getMiddlewares(handler httpcontract.HandlerFunc) []fiber.Handler {
