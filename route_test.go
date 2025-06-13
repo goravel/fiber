@@ -120,7 +120,7 @@ func TestGetRoutes(t *testing.T) {
 	})
 
 	routes := route.GetRoutes()
-	assert.ElementsMatch(t, routes, []contractsroute.RouteInfo{
+	assert.ElementsMatch(t, routes, []contractsroute.Info{
 		{
 			Method: "GET",
 			Path:   "/test/{id}",
@@ -358,6 +358,35 @@ func TestListenTLSWithCert(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInfo(t *testing.T) {
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+
+	route, err := NewRoute(mockConfig, nil)
+	assert.Nil(t, err)
+
+	action := route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Json(200, contractshttp.Json{
+			"Hello": "Goravel",
+		})
+	}).Name("test")
+
+	assert.Equal(t, &Action{
+		path: "/test",
+	}, action)
+
+	info := route.Info("test")
+	assert.Equal(t, "GET|HEAD", info.Method)
+	assert.Equal(t, "test", info.Name)
+	assert.Equal(t, "/test", info.Path)
 }
 
 func TestRun(t *testing.T) {

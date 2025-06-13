@@ -9,132 +9,130 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/goravel/framework/contracts/config"
 	httpcontract "github.com/goravel/framework/contracts/http"
-	"github.com/goravel/framework/contracts/route"
+	contractsroute "github.com/goravel/framework/contracts/route"
+	"github.com/goravel/framework/support/str"
 )
 
+var routes = make(map[string]contractsroute.Info)
+
 type Group struct {
-	config            config.Config
-	instance          *fiber.App
-	originPrefix      string
-	prefix            string
-	originMiddlewares []httpcontract.Middleware
-	middlewares       []httpcontract.Middleware
-	lastMiddlewares   []httpcontract.Middleware
+	config          config.Config
+	instance        *fiber.App
+	prefix          string
+	middlewares     []httpcontract.Middleware
+	lastMiddlewares []httpcontract.Middleware
 }
 
-func NewGroup(config config.Config, instance *fiber.App, prefix string, originMiddlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) route.Router {
+func NewGroup(config config.Config, instance *fiber.App, prefix string, middlewares []httpcontract.Middleware, lastMiddlewares []httpcontract.Middleware) contractsroute.Router {
 	return &Group{
-		config:            config,
-		instance:          instance,
-		originPrefix:      prefix,
-		originMiddlewares: originMiddlewares,
-		lastMiddlewares:   lastMiddlewares,
+		config:          config,
+		instance:        instance,
+		prefix:          prefix,
+		middlewares:     middlewares,
+		lastMiddlewares: lastMiddlewares,
 	}
 }
 
-func (r *Group) Group(handler route.GroupFunc) {
-	var middlewares []httpcontract.Middleware
-	middlewares = append(middlewares, r.originMiddlewares...)
-	middlewares = append(middlewares, r.middlewares...)
-	r.middlewares = []httpcontract.Middleware{}
-	prefix := r.originPrefix
-	if r.prefix != "" {
-		prefix += "/" + r.prefix
-	}
-	r.prefix = ""
-
-	handler(NewGroup(r.config, r.instance, prefix, middlewares, r.lastMiddlewares))
+func (r *Group) Group(handler contractsroute.GroupFunc) {
+	handler(NewGroup(r.config, r.instance, r.getFullPath(""), r.middlewares, r.lastMiddlewares))
 }
 
-func (r *Group) Prefix(addr string) route.Router {
-	r.prefix += "/" + addr
-
-	return r
+func (r *Group) Prefix(path string) contractsroute.Router {
+	return NewGroup(r.config, r.instance, r.getFullPath(path), r.middlewares, r.lastMiddlewares)
 }
 
-func (r *Group) Middleware(middlewares ...httpcontract.Middleware) route.Router {
-	r.middlewares = append(r.middlewares, middlewares...)
-
-	return r
+func (r *Group) Middleware(middlewares ...httpcontract.Middleware) contractsroute.Router {
+	return NewGroup(r.config, r.instance, r.getFullPath(""), append(r.middlewares, middlewares...), r.lastMiddlewares)
 }
 
-func (r *Group) Any(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.All(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Any(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.All(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("ANY", path)
 }
 
-func (r *Group) Get(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Get(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Get(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Get(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("GET|HEAD", path)
 }
 
-func (r *Group) Post(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Post(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Post(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Post(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("POST", path)
 }
 
-func (r *Group) Delete(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Delete(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Delete(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Delete(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("DELETE", path)
 }
 
-func (r *Group) Patch(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Patch(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Patch(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Patch(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("PATCH", path)
 }
 
-func (r *Group) Put(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Put(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Put(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Put(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("PUT", path)
 }
 
-func (r *Group) Options(relativePath string, handler httpcontract.HandlerFunc) {
-	r.instance.Options(r.getPath(relativePath), r.getMiddlewares(handler)...)
-	r.clearMiddlewares()
+func (r *Group) Options(path string, handler httpcontract.HandlerFunc) contractsroute.Action {
+	r.instance.Options(r.getFiberFullPath(path), r.getMiddlewares(handler)...)
+
+	return NewAction("OPTIONS", path)
 }
 
-func (r *Group) Resource(relativePath string, controller httpcontract.ResourceController) {
-	relativePath = r.getPath(relativePath)
-	r.instance.Get(relativePath, r.getMiddlewares(controller.Index)...)
-	r.instance.Post(relativePath, r.getMiddlewares(controller.Store)...)
-	r.instance.Get(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Show)...)
-	r.instance.Put(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Patch(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Update)...)
-	r.instance.Delete(r.getPath(relativePath+"/{id}"), r.getMiddlewares(controller.Destroy)...)
-	r.clearMiddlewares()
+func (r *Group) Resource(path string, controller httpcontract.ResourceController) contractsroute.Action {
+	fullPath := r.getFiberFullPath(path)
+	r.instance.Get(fullPath, r.getMiddlewares(controller.Index)...)
+	r.instance.Post(fullPath, r.getMiddlewares(controller.Store)...)
+
+	fullPathWithID := r.getFiberFullPath(path + "/{id}")
+	r.instance.Get(fullPathWithID, r.getMiddlewares(controller.Show)...)
+	r.instance.Put(fullPathWithID, r.getMiddlewares(controller.Update)...)
+	r.instance.Patch(fullPathWithID, r.getMiddlewares(controller.Update)...)
+	r.instance.Delete(fullPathWithID, r.getMiddlewares(controller.Destroy)...)
+
+	return NewAction("RESOURCE", path)
 }
 
-func (r *Group) Static(relativePath, root string) {
-	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(r.getPath(relativePath), nil)...).Static(relativePath, root)
-	r.clearMiddlewares()
+func (r *Group) Static(path, root string) contractsroute.Action {
+	fullPath := r.getFiberFullPath(path)
+	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Static(fullPath, root)
+
+	return NewAction("STATIC", path)
 }
 
-func (r *Group) StaticFile(relativePath, filePath string) {
-	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, func(c *fiber.Ctx) error {
+func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
+	fullPath := r.getFiberFullPath(path)
+	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, func(c *fiber.Ctx) error {
 		dir, file := filepath.Split(filePath)
 		escapedFile := url.PathEscape(file)
 		escapedPath := filepath.Join(dir, escapedFile)
 
 		return c.SendFile(escapedPath, true)
 	})
-	r.clearMiddlewares()
+
+	return NewAction("STATIC_FILE", path)
 }
 
-func (r *Group) StaticFS(relativePath string, fs http.FileSystem) {
-	relativePath = r.getPath(relativePath)
-	r.instance.Use(r.getMiddlewaresWithPath(relativePath, nil)...).Use(relativePath, filesystem.New(filesystem.Config{
+func (r *Group) StaticFS(path string, fs http.FileSystem) contractsroute.Action {
+	fullPath := r.getFiberFullPath(path)
+	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, filesystem.New(filesystem.Config{
 		Root: fs,
 	}))
-	r.clearMiddlewares()
+
+	return NewAction("STATIC_FS", path)
 }
 
 func (r *Group) getMiddlewares(handler httpcontract.HandlerFunc) []fiber.Handler {
 	var middlewares []fiber.Handler
-	middlewares = append(middlewares, middlewaresToFiberHandlers(r.originMiddlewares)...)
-	middlewares = append(middlewares, middlewaresToFiberHandlers(r.middlewares)...)
-	middlewares = append(middlewares, middlewaresToFiberHandlers(r.lastMiddlewares)...)
+	middlewares = middlewaresToFiberHandlers(append(r.middlewares, r.lastMiddlewares...))
 	if handler != nil {
 		middlewares = append(middlewares, handlerToFiberHandler(handler))
 	}
@@ -142,23 +140,9 @@ func (r *Group) getMiddlewares(handler httpcontract.HandlerFunc) []fiber.Handler
 	return middlewares
 }
 
-func (r *Group) getPath(relativePath string) string {
-	path := r.originPrefix
-	if r.prefix != "" {
-		path += "/" + r.prefix
-	}
-	if relativePath != "" {
-		path += "/" + relativePath
-	}
-	path = pathToFiberPath(path)
-	r.prefix = ""
-
-	return path
-}
-
-func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract.HandlerFunc) []any {
+func (r *Group) getMiddlewaresWithPath(path string, handler httpcontract.HandlerFunc) []any {
 	var handlers []any
-	handlers = append(handlers, relativePath)
+	handlers = append(handlers, path)
 	middlewares := r.getMiddlewares(handler)
 
 	// Fiber will panic if no middleware is provided, So we add a dummy middleware
@@ -175,6 +159,14 @@ func (r *Group) getMiddlewaresWithPath(relativePath string, handler httpcontract
 	return handlers
 }
 
-func (r *Group) clearMiddlewares() {
-	r.middlewares = []httpcontract.Middleware{}
+func (r *Group) getFiberFullPath(path string) string {
+	return pathToFiberPath(r.getFullPath(path))
+}
+
+func (r *Group) getFullPath(path string) string {
+	if path == "" {
+		return r.prefix
+	}
+
+	return r.prefix + str.Of(path).Start("/").String()
 }
