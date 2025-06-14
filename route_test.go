@@ -23,104 +23,93 @@ import (
 	"github.com/goravel/framework/support/path"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestRecoverWithCustomCallback(t *testing.T) {
-	mockConfig := mocksconfig.NewConfig(t)
+type RouteTestSuite struct {
+	suite.Suite
+	mockConfig *mocksconfig.Config
+	route      *Route
+}
 
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+func TestRouteTestSuite(t *testing.T) {
+	suite.Run(t, new(RouteTestSuite))
+}
 
-	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
+func (s *RouteTestSuite) SetupTest() {
+	s.mockConfig = mocksconfig.NewConfig(s.T())
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	s.mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	s.mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 
+	route, err := NewRoute(s.mockConfig, nil)
+	s.NoError(err)
+
+	s.route = route
+}
+
+func (s *RouteTestSuite) TestRecoverWithCustomCallback() {
 	globalRecoverCallback := func(ctx contractshttp.Context, err any) {
 		ctx.Request().Abort(http.StatusInternalServerError)
 	}
 
-	route.Recover(globalRecoverCallback)
+	s.route.Recover(globalRecoverCallback)
 
-	route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/recover", func(ctx contractshttp.Context) contractshttp.Response {
 		panic(1)
 	})
 
 	req := httptest.NewRequest("GET", "/recover", nil)
-	resp, err := route.Test(req)
-	assert.Nil(t, err)
+	resp, err := s.route.Test(req)
+	s.NoError(err)
 
 	body, err := io.ReadAll(resp.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "Internal Server Error", string(body))
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	s.NoError(err)
+	s.Equal("Internal Server Error", string(body))
+	s.Equal(http.StatusInternalServerError, resp.StatusCode)
 }
 
-func TestFallback(t *testing.T) {
-	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-	ConfigFacade = mockConfig
-
-	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
-
-	route.Fallback(func(ctx contractshttp.Context) contractshttp.Response {
+func (s *RouteTestSuite) TestFallback() {
+	s.route.Fallback(func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().String(http.StatusNotFound, "not found")
 	})
-	route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().String(http.StatusOK, "test")
 	})
 
 	req, err := http.NewRequest("GET", "/test", nil)
-	assert.Nil(t, err)
-	resp, err := route.Test(req)
-	assert.Nil(t, err)
+	s.NoError(err)
+	resp, err := s.route.Test(req)
+	s.NoError(err)
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	s.Equal(http.StatusOK, resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "test", string(body))
+	s.NoError(err)
+	s.Equal("test", string(body))
 
 	req, err = http.NewRequest("GET", "/not-found", nil)
-	assert.Nil(t, err)
+	s.NoError(err)
 
-	resp, err = route.Test(req)
-	assert.Nil(t, err)
+	resp, err = s.route.Test(req)
+	s.NoError(err)
 
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	s.Equal(http.StatusNotFound, resp.StatusCode)
 	body, err = io.ReadAll(resp.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "not found", string(body))
+	s.NoError(err)
+	s.Equal("not found", string(body))
 }
 
-func TestGetRoutes(t *testing.T) {
-	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-
-	route, err := NewRoute(mockConfig, nil)
-	assert.NoError(t, err)
-
-	route.Get("/test/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+func (s *RouteTestSuite) TestGetRoutes() {
+	s.route.Get("/test/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().String(200, "ok")
 	})
 
-	routes := route.GetRoutes()
-	assert.ElementsMatch(t, routes, []contractsroute.Info{
+	routes := s.route.GetRoutes()
+	s.ElementsMatch(routes, []contractsroute.Info{
 		{
 			Method: "GET",
 			Path:   "/test/{id}",
@@ -132,561 +121,357 @@ func TestGetRoutes(t *testing.T) {
 	})
 }
 
-func TestGlobalMiddleware(t *testing.T) {
-	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("app.debug", false).Return(false).Twice()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Twice()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Twice()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Twice()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Twice()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Twice()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Twice()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Twice()
-
+func (s *RouteTestSuite) TestGlobalMiddleware() {
 	// has timeout middleware
-	mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
-	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
-	route.GlobalMiddleware()
-	assert.Equal(t, route.instance.HandlersCount(), uint32(3))
+	s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+	s.mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(1).Once()
+	s.route.GlobalMiddleware()
+	s.Equal(s.route.instance.HandlersCount(), uint32(4))
 
 	// no timeout middleware
-	mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(0).Once()
-	route, err = NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
-	route.GlobalMiddleware()
-	assert.Equal(t, route.instance.HandlersCount(), uint32(2))
-
+	s.SetupTest()
+	s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+	s.mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(0).Once()
+	s.route.GlobalMiddleware()
+	s.Equal(s.route.instance.HandlersCount(), uint32(3))
 }
 
-func TestListen(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+func (s *RouteTestSuite) TestListen() {
+	host := "127.0.0.1:3100"
 
-	tests := []struct {
-		name        string
-		setup       func(host string, port string) error
-		host        string
-		port        string
-		expectError error
-	}{
-		{
-			name: "success listen",
-			setup: func(host string, port string) error {
-				go func() {
-					l, err := net.Listen("tcp", host)
-					assert.Nil(t, err)
-					assert.Nil(t, route.Listen(l))
-				}()
-				time.Sleep(1 * time.Second)
-
-				return errors.New("error")
-			},
-			host: "127.0.0.1:3100",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
-			})
-			if err := test.setup(test.host, test.port); err == nil {
-				time.Sleep(1 * time.Second)
-				hostUrl := "http://" + test.host
-				if test.port != "" {
-					hostUrl = hostUrl + ":" + test.port
-				}
-				resp, err := http.Get(hostUrl)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
+	s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Json(200, contractshttp.Json{
+			"Hello": "Goravel",
 		})
-	}
+	})
+
+	s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+
+	go func() {
+		l, err := net.Listen("tcp", host)
+		s.NoError(err)
+		s.NoError(s.route.Listen(l))
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	resp, err := http.Get("http://" + host)
+	s.NoError(err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	s.NoError(err)
+	s.Equal("{\"Hello\":\"Goravel\"}", string(body))
 }
 
-func TestListenTLS(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+func (s *RouteTestSuite) TestListenTLS() {
+	host := "127.0.0.1:3101"
 
-	tests := []struct {
-		name        string
-		setup       func(host string) error
-		host        string
-		expectError error
-	}{
-		{
-			name: "success listen",
-			setup: func(host string) error {
-				go func() {
-					l, err := net.Listen("tcp", host)
-					assert.Nil(t, err)
-					assert.Nil(t, route.ListenTLS(l))
-				}()
-
-				return nil
-			},
-			host: "127.0.0.1:3101",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
-			mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			ConfigFacade = mockConfig
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
-			})
-			if err := test.setup(test.host); err == nil {
-				time.Sleep(1 * time.Second)
-				tr := &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}
-				client := &http.Client{Transport: tr}
-				resp, err := client.Get("https://" + test.host)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
+	s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Json(200, contractshttp.Json{
+			"Hello": "Goravel",
 		})
+	})
+
+	s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+	s.mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
+	s.mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+
+	go func() {
+		l, err := net.Listen("tcp", host)
+		s.NoError(err)
+		s.NoError(s.route.ListenTLS(l))
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get("https://" + host)
+	s.NoError(err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	s.NoError(err)
+	s.Equal("{\"Hello\":\"Goravel\"}", string(body))
 }
 
-func TestListenTLSWithCert(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+func (s *RouteTestSuite) TestListenTLSWithCert() {
+	host := "127.0.0.1:3102"
 
-	tests := []struct {
-		name        string
-		setup       func(host string) error
-		host        string
-		expectError error
-	}{
-		{
-			name: "success listen",
-			setup: func(host string) error {
-				go func() {
-					l, err := net.Listen("tcp", host)
-					assert.Nil(t, err)
-					assert.Nil(t, route.ListenTLSWithCert(l, "test_ca.crt", "test_ca.key"))
-				}()
-
-				return nil
-			},
-			host: "127.0.0.1:3102",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			ConfigFacade = mockConfig
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
-			})
-			if err := test.setup(test.host); err == nil {
-				time.Sleep(1 * time.Second)
-				tr := &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}
-				client := &http.Client{Transport: tr}
-				resp, err := client.Get("https://" + test.host)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
+	s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Json(200, contractshttp.Json{
+			"Hello": "Goravel",
 		})
+	})
+
+	s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+
+	go func() {
+		l, err := net.Listen("tcp", host)
+		s.NoError(err)
+		s.NoError(s.route.ListenTLSWithCert(l, "test_ca.crt", "test_ca.key"))
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get("https://" + host)
+	s.NoError(err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	s.NoError(err)
+	s.Equal("{\"Hello\":\"Goravel\"}", string(body))
 }
 
-func TestInfo(t *testing.T) {
-	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-
-	route, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
-
-	action := route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
+func (s *RouteTestSuite) TestInfo() {
+	action := s.route.Get("/test", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Json(200, contractshttp.Json{
 			"Hello": "Goravel",
 		})
 	}).Name("test")
 
-	assert.Equal(t, &Action{
+	s.Equal(&Action{
 		path: "/test",
 	}, action)
 
-	info := route.Info("test")
-	assert.Equal(t, "GET|HEAD", info.Method)
-	assert.Equal(t, "test", info.Name)
-	assert.Equal(t, "/test", info.Path)
+	info := s.route.Info("test")
+	s.Equal("GET|HEAD", info.Method)
+	s.Equal("test", info.Name)
+	s.Equal("/test", info.Path)
 }
 
-func TestRun(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+func (s *RouteTestSuite) TestRun() {
+	s.Run("error when default port is empty", func() {
+		s.mockConfig.EXPECT().GetString("http.host").Return("127.0.0.1").Once()
+		s.mockConfig.EXPECT().GetString("http.port").Return("").Once()
 
-	tests := []struct {
-		name        string
-		setup       func(host string, port string) error
-		host        string
-		port        string
-		expectError error
-	}{
-		{
-			name: "error when default port is empty",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetString("http.host").Return(host).Once()
-				mockConfig.EXPECT().GetString("http.port").Return(port).Once()
+		s.Equal(errors.New("port can't be empty"), s.route.Run())
+	})
 
-				go func() {
-					assert.EqualError(t, route.Run(), "port can't be empty")
-				}()
-				time.Sleep(1 * time.Second)
+	s.Run("use default host", func() {
+		host := "127.0.0.1"
+		port := "3031"
+		addr := host + ":" + port
 
-				return errors.New("error")
-			},
-			host: "127.0.0.1",
-		},
-		{
-			name: "use default host",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-				mockConfig.EXPECT().GetString("http.host").Return(host).Once()
-				mockConfig.EXPECT().GetString("http.port").Return(port).Once()
-
-				go func() {
-					assert.Nil(t, route.Run())
-				}()
-
-				time.Sleep(1 * time.Second)
-
-				return nil
-			},
-			host: "127.0.0.1",
-			port: "3031",
-		},
-		{
-			name: "use custom host",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-
-				go func() {
-					assert.Nil(t, route.Run(host))
-				}()
-
-				return nil
-			},
-			host: "127.0.0.1:3032",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			ConfigFacade = mockConfig
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
 			})
-			if err := test.setup(test.host, test.port); err == nil {
-				time.Sleep(1 * time.Second)
-				hostUrl := "http://" + test.host
-				if test.port != "" {
-					hostUrl = hostUrl + ":" + test.port
-				}
-				resp, err := http.Get(hostUrl)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
 		})
-	}
-}
 
-func TestRunTLS(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+		s.mockConfig.EXPECT().GetString("http.host").Return(host).Once()
+		s.mockConfig.EXPECT().GetString("http.port").Return(port).Once()
 
-	tests := []struct {
-		name        string
-		setup       func(host string, port string) error
-		host        string
-		port        string
-		expectError error
-	}{
-		{
-			name: "error when default port is empty",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetString("http.tls.host").Return(host).Once()
-				mockConfig.EXPECT().GetString("http.tls.port").Return(port).Once()
+		go func() {
+			s.NoError(s.route.Run())
+		}()
 
-				go func() {
-					assert.EqualError(t, route.RunTLS(), "port can't be empty")
-				}()
-				time.Sleep(1 * time.Second)
+		time.Sleep(1 * time.Second)
 
-				return errors.New("error")
-			},
-			host: "127.0.0.1",
-		},
-		{
-			name: "use default host",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-				mockConfig.EXPECT().GetString("http.tls.host").Return(host).Once()
-				mockConfig.EXPECT().GetString("http.tls.port").Return(port).Once()
-				mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
-				mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+		hostUrl := "http://" + addr
 
-				go func() {
-					assert.Nil(t, route.RunTLS())
-				}()
+		resp, err := http.Get(hostUrl)
+		s.NoError(err)
+		defer resp.Body.Close()
 
-				return nil
-			},
-			host: "127.0.0.1",
-			port: "3003",
-		},
-		{
-			name: "use custom host",
-			setup: func(host string, port string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-				mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
-				mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
 
-				go func() {
-					assert.Nil(t, route.RunTLS(host))
-				}()
+	s.Run("use custom host", func() {
+		host := "127.0.0.1"
+		port := "3032"
+		addr := host + ":" + port
 
-				return nil
-			},
-			host: "127.0.0.1:3004",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			ConfigFacade = mockConfig
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
 			})
-			if err := test.setup(test.host, test.port); err == nil {
-				time.Sleep(1 * time.Second)
-				tr := &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}
-				client := &http.Client{Transport: tr}
-				hostUrl := "https://" + test.host
-				if test.port != "" {
-					hostUrl = hostUrl + ":" + test.port
-				}
-				resp, err := client.Get(hostUrl)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
 		})
-	}
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+
+		go func() {
+			s.NoError(s.route.Run(addr))
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		hostUrl := "http://" + addr
+
+		resp, err := http.Get(hostUrl)
+		s.NoError(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
 }
 
-func TestRunTLSWithCert(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-	)
+func (s *RouteTestSuite) TestRunTLS() {
+	s.Run("error when default port is empty", func() {
+		s.mockConfig.EXPECT().GetString("http.tls.host").Return("127.0.0.1").Once()
+		s.mockConfig.EXPECT().GetString("http.tls.port").Return("").Once()
 
-	tests := []struct {
-		name        string
-		setup       func(host string) error
-		host        string
-		expectError error
-	}{
-		{
-			name: "error when default host is empty",
-			setup: func(host string) error {
-				go func() {
-					assert.EqualError(t, route.RunTLSWithCert(host, "test_ca.crt", "test_ca.key"), "host can't be empty")
-				}()
-				time.Sleep(1 * time.Second)
+		s.Equal(errors.New("port can't be empty"), s.route.RunTLS())
+	})
 
-				return errors.New("error")
-			},
-		},
-		{
-			name: "use default host",
-			setup: func(host string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+	s.Run("use default host", func() {
+		host := "127.0.0.1"
+		port := "3033"
+		addr := host + ":" + port
 
-				go func() {
-					assert.Nil(t, route.RunTLSWithCert(host, "test_ca.crt", "test_ca.key"))
-				}()
-
-				return nil
-			},
-			host: "127.0.0.1:3005",
-		},
-		{
-			name: "use custom host",
-			setup: func(host string) error {
-				mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
-
-				go func() {
-					assert.Nil(t, route.RunTLSWithCert(host, "test_ca.crt", "test_ca.key"))
-				}()
-
-				return nil
-			},
-			host: "127.0.0.1:3006",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			ConfigFacade = mockConfig
-
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				return ctx.Response().Json(200, contractshttp.Json{
-					"Hello": "Goravel",
-				})
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
 			})
-			if err := test.setup(test.host); err == nil {
-				time.Sleep(1 * time.Second)
-				tr := &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}
-				client := &http.Client{Transport: tr}
-				resp, err := client.Get("https://" + test.host)
-				assert.Nil(t, err)
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				assert.Nil(t, err)
-				assert.Equal(t, "{\"Hello\":\"Goravel\"}", string(body))
-			}
-
 		})
-	}
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+		s.mockConfig.EXPECT().GetString("http.tls.host").Return(host).Once()
+		s.mockConfig.EXPECT().GetString("http.tls.port").Return(port).Once()
+		s.mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
+		s.mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+
+		go func() {
+			s.NoError(s.route.RunTLS())
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+
+		resp, err := client.Get("https://" + addr)
+		s.NoError(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
+
+	s.Run("use custom host", func() {
+		host := "127.0.0.1"
+		port := "3034"
+		addr := host + ":" + port
+
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
+			})
+		})
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+		s.mockConfig.EXPECT().GetString("http.tls.ssl.cert").Return("test_ca.crt").Once()
+		s.mockConfig.EXPECT().GetString("http.tls.ssl.key").Return("test_ca.key").Once()
+
+		go func() {
+			s.NoError(s.route.RunTLS(addr))
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+
+		resp, err := client.Get("https://" + addr)
+		s.NoError(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
 }
 
-func TestNewRoute(t *testing.T) {
+func (s *RouteTestSuite) TestRunTLSWithCert() {
+	s.Run("error when default host is empty", func() {
+		s.Equal(errors.New("host can't be empty"), s.route.RunTLSWithCert("", "test_ca.crt", "test_ca.key"))
+	})
+
+	s.Run("use default host", func() {
+		host := "127.0.0.1"
+		port := "3035"
+		addr := host + ":" + port
+
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
+			})
+		})
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+
+		go func() {
+			s.NoError(s.route.RunTLSWithCert(addr, "test_ca.crt", "test_ca.key"))
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		resp, err := client.Get("https://" + addr)
+		s.NoError(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
+
+	s.Run("use custom host", func() {
+		host := "127.0.0.1"
+		port := "3036"
+		addr := host + ":" + port
+
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Json(200, contractshttp.Json{
+				"Hello": "Goravel",
+			})
+		})
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+
+		go func() {
+			s.NoError(s.route.RunTLSWithCert(addr, "test_ca.crt", "test_ca.key"))
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		resp, err := client.Get("https://" + addr)
+		s.NoError(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		s.NoError(err)
+		s.Equal("{\"Hello\":\"Goravel\"}", string(body))
+	})
+}
+
+func (s *RouteTestSuite) TestNewRoute() {
 	var mockConfig *mocksconfig.Config
 	template := html.New(path.Resource("views"), ".tmpl")
 
@@ -755,104 +540,87 @@ func TestNewRoute(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
+		s.Run(test.name, func() {
+			mockConfig = mocksconfig.NewConfig(s.T())
 			test.setup()
 			route, err := NewRoute(mockConfig, test.parameters)
-			assert.Equal(t, test.expectError, err)
+			s.Equal(test.expectError, err)
 			if route != nil {
-				assert.IsType(t, test.expectTemplate, route.instance.Config().Views)
+				s.IsType(test.expectTemplate, route.instance.Config().Views)
 			}
-
 		})
 	}
 }
 
-func TestShutdown(t *testing.T) {
-	var (
-		err        error
-		mockConfig *mocksconfig.Config
-		route      *Route
-		count      atomic.Int64
-		host       = "127.0.0.1"
-		port       = "6789"
-		addr       = fmt.Sprintf("http://%s:%s", host, port)
-	)
+func (s *RouteTestSuite) TestShutdown() {
+	s.Run("no new requests will be accepted after shutdown", func() {
+		host := "127.0.0.1"
+		port := "6789"
+		addr := fmt.Sprintf("http://%s:%s", host, port)
 
-	tests := []struct {
-		name  string
-		setup func() error
-	}{
-		{
-			name: "no new requests will be accepted after shutdown",
-			setup: func() error {
-				go func() {
-					assert.Nil(t, route.Run())
-				}()
-
-				time.Sleep(1 * time.Second)
-
-				assertHttpNormal(t, addr, true)
-
-				assert.Nil(t, route.Shutdown())
-
-				assertHttpNormal(t, addr, false)
-				return nil
-			},
-		},
-		{
-			name: "Ensure that received requests are processed",
-			setup: func() error {
-				go func() {
-					assert.Nil(t, route.Run())
-				}()
-
-				time.Sleep(1 * time.Second)
-
-				wg := sync.WaitGroup{}
-				count.Store(0)
-				for i := 0; i < 3; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						assertHttpNormal(t, addr, true)
-					}()
-				}
-				time.Sleep(100 * time.Millisecond)
-				assert.Nil(t, route.Shutdown())
-				assertHttpNormal(t, addr, false)
-				wg.Wait()
-				assert.Equal(t, count.Load(), int64(3))
-				return nil
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockConfig = mocksconfig.NewConfig(t)
-			mockConfig.EXPECT().GetBool("app.debug").Return(true)
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-			mockConfig.EXPECT().GetString("http.host").Return(host).Once()
-			mockConfig.EXPECT().GetString("http.port").Return(port).Once()
-			mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-			mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-			mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-			route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
-				time.Sleep(time.Second)
-				defer count.Add(1)
-				return ctx.Response().Success().String("Goravel")
-			})
-			if err := test.setup(); err == nil {
-				assert.Nil(t, err)
-			}
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			return ctx.Response().Success().String("Goravel")
 		})
-	}
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+		s.mockConfig.EXPECT().GetString("http.host").Return(host).Once()
+		s.mockConfig.EXPECT().GetString("http.port").Return(port).Once()
+
+		go func() {
+			s.NoError(s.route.Run())
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		assertHttpNormal(s.T(), addr, true)
+
+		s.NoError(s.route.Shutdown())
+		assertHttpNormal(s.T(), addr, false)
+	})
+
+	s.Run("ensure that received requests are processed", func() {
+		s.SetupTest()
+
+		var (
+			host = "127.0.0.1"
+			port = "6789"
+			addr = fmt.Sprintf("http://%s:%s", host, port)
+
+			count atomic.Int64
+		)
+
+		s.route.Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+			defer count.Add(1)
+			return ctx.Response().Success().String("Goravel")
+		})
+
+		s.mockConfig.EXPECT().GetBool("app.debug").Return(true).Once()
+		s.mockConfig.EXPECT().GetString("http.host").Return(host).Once()
+		s.mockConfig.EXPECT().GetString("http.port").Return(port).Once()
+
+		go func() {
+			s.NoError(s.route.Run())
+		}()
+
+		time.Sleep(1 * time.Second)
+
+		wg := sync.WaitGroup{}
+		count.Store(0)
+		for i := 0; i < 3; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				assertHttpNormal(s.T(), addr, true)
+			}()
+		}
+
+		time.Sleep(100 * time.Millisecond)
+
+		s.NoError(s.route.Shutdown())
+		assertHttpNormal(s.T(), addr, false)
+		wg.Wait()
+		s.Equal(count.Load(), int64(3))
+	})
 }
 
 func assertHttpNormal(t *testing.T, addr string, expectNormal bool) {
