@@ -37,6 +37,8 @@ func TestRouteTestSuite(t *testing.T) {
 }
 
 func (s *RouteTestSuite) SetupTest() {
+	routes = make(map[string]map[string]contractsroute.Info)
+
 	s.mockConfig = mocksconfig.NewConfig(s.T())
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
@@ -104,21 +106,24 @@ func (s *RouteTestSuite) TestFallback() {
 }
 
 func (s *RouteTestSuite) TestGetRoutes() {
-	s.route.Get("/test/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+	s.route.Get("/b/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(200, "ok")
+	})
+	s.route.Post("/b/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(200, "ok")
+	})
+	s.route.Get("/a/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().String(200, "ok")
 	})
 
 	routes := s.route.GetRoutes()
-	s.ElementsMatch(routes, []contractsroute.Info{
-		{
-			Method: "GET",
-			Path:   "/test/{id}",
-		},
-		{
-			Method: "HEAD",
-			Path:   "/test/{id}",
-		},
-	})
+	s.Len(routes, 3)
+	s.Equal(MethodGet, routes[0].Method)
+	s.Equal("/a/{id}", routes[0].Path)
+	s.Equal(MethodGet, routes[1].Method)
+	s.Equal("/b/{id}", routes[1].Path)
+	s.Equal(MethodPost, routes[2].Method)
+	s.Equal("/b/{id}", routes[2].Path)
 }
 
 func (s *RouteTestSuite) TestGlobalMiddleware() {
@@ -240,7 +245,8 @@ func (s *RouteTestSuite) TestInfo() {
 	}).Name("test")
 
 	s.Equal(&Action{
-		path: "/test",
+		method: MethodGet,
+		path:   "/test",
 	}, action)
 
 	info := s.route.Info("test")
