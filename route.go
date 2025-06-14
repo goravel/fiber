@@ -117,12 +117,12 @@ func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 }
 
 // GetRoutes get all routes
-func (r *Route) GetRoutes() []route.RouteInfo {
-	var routes []route.RouteInfo
+func (r *Route) GetRoutes() []route.Info {
+	var routes []route.Info
 	for _, item := range r.instance.GetRoutes() {
 		for _, handler := range item.Handlers {
 			if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
-				routes = append(routes, route.RouteInfo{
+				routes = append(routes, route.Info{
 					Method: item.Method,
 					Path:   colonToBracket(item.Path),
 				})
@@ -218,6 +218,16 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 	r.instance.SetTLSHandler(tlsHandler)
 
 	return r.instance.Listener(tls.NewListener(l, tlsConfig))
+}
+
+func (r *Route) Info(name string) route.Info {
+	for _, info := range routes {
+		if info.Name == name {
+			return info
+		}
+	}
+
+	return route.Info{}
 }
 
 // Run run server
