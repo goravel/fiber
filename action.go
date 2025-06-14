@@ -3,24 +3,30 @@ package fiber
 import contractsroute "github.com/goravel/framework/contracts/route"
 
 type Action struct {
-	path string
+	method string
+	path   string
 }
 
 func NewAction(method, path string) contractsroute.Action {
-	routes[path] = contractsroute.Info{
+	if _, ok := routes[path]; !ok {
+		routes[path] = make(map[string]contractsroute.Info)
+	}
+
+	routes[path][method] = contractsroute.Info{
 		Method: method,
 		Path:   path,
 	}
 
 	return &Action{
-		path: path,
+		method: method,
+		path:   path,
 	}
 }
 
 func (r *Action) Name(name string) contractsroute.Action {
-	info := routes[r.path]
+	info := routes[r.path][r.method]
 	info.Name = name
-	routes[r.path] = info
+	routes[r.path][r.method] = info
 
 	return r
 }

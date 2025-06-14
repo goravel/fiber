@@ -9,7 +9,7 @@ import (
 
 func TestNewAction(t *testing.T) {
 	// Clear routes map before test
-	routes = make(map[string]contractsroute.Info)
+	routes = make(map[string]map[string]contractsroute.Info)
 
 	// Test creating a new action
 	action := NewAction("GET", "/test-path")
@@ -17,7 +17,7 @@ func TestNewAction(t *testing.T) {
 	assert.IsType(t, &Action{}, action)
 
 	// Verify route was added to routes map
-	routeInfo, exists := routes["/test-path"]
+	routeInfo, exists := routes["/test-path"]["GET"]
 	assert.True(t, exists)
 	assert.Equal(t, "GET", routeInfo.Method)
 	assert.Equal(t, "/test-path", routeInfo.Path)
@@ -26,7 +26,7 @@ func TestNewAction(t *testing.T) {
 
 func TestAction_Name(t *testing.T) {
 	// Clear routes map before test
-	routes = make(map[string]contractsroute.Info)
+	routes = make(map[string]map[string]contractsroute.Info)
 
 	// Create a new action
 	action := NewAction("POST", "/named-path")
@@ -37,7 +37,7 @@ func TestAction_Name(t *testing.T) {
 	assert.IsType(t, &Action{}, namedAction)
 
 	// Verify route info was updated
-	routeInfo, exists := routes["/named-path"]
+	routeInfo, exists := routes["/named-path"]["POST"]
 	assert.True(t, exists)
 	assert.Equal(t, "POST", routeInfo.Method)
 	assert.Equal(t, "/named-path", routeInfo.Path)
@@ -48,7 +48,7 @@ func TestAction_Name(t *testing.T) {
 	assert.NotNil(t, chainedAction)
 
 	// Verify final route info
-	routeInfo, exists = routes["/named-path"]
+	routeInfo, exists = routes["/named-path"]["POST"]
 	assert.True(t, exists)
 	assert.Equal(t, "final-name", routeInfo.Name)
 }

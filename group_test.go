@@ -27,6 +27,8 @@ func TestGroupTestSuite(t *testing.T) {
 }
 
 func (s *GroupTestSuite) SetupTest() {
+	routes = make(map[string]map[string]contractsroute.Info)
+
 	s.mockConfig = mocksconfig.NewConfig(s.T())
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
@@ -284,13 +286,11 @@ func (s *GroupTestSuite) TestIssue408() {
 	})
 
 	routes := s.route.GetRoutes()
-	s.Len(routes, 3)
-	s.Equal("GET", routes[0].Method)
+	s.Len(routes, 2)
+	s.Equal(MethodGet, routes[0].Method)
 	s.Equal("/prefix/{id}", routes[0].Path)
-	s.Equal("HEAD", routes[1].Method)
-	s.Equal("/prefix/{id}", routes[1].Path)
-	s.Equal("POST", routes[2].Method)
-	s.Equal("/prefix/{id}/test/{name}", routes[2].Path)
+	s.Equal(MethodPost, routes[1].Method)
+	s.Equal("/prefix/{id}/test/{name}", routes[1].Path)
 }
 
 func (s *GroupTestSuite) assert(method, url string, expectCode int, expectBody string) {

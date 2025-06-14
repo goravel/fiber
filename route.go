@@ -7,8 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
-	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,13 +19,33 @@ import (
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
+	contractsroute "github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
+	"github.com/goravel/framework/support/console"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/path"
 	"github.com/goravel/framework/support/str"
 )
+
+const (
+	MethodHead       = "HEAD"
+	MethodGet        = "GET|HEAD"
+	MethodPost       = "POST"
+	MethodPut        = "PUT"
+	MethodDelete     = "DELETE"
+	MethodPatch      = "PATCH"
+	MethodOptions    = "OPTIONS"
+	MethodAny        = "ANY"
+	MethodResource   = "RESOURCE"
+	MethodStatic     = "STATIC"
+	MethodStaticFile = "STATIC_FILE"
+	MethodStaticFS   = "STATIC_FS"
+)
+
+// map[path]map[method]info
+var routes = make(map[string]map[string]contractsroute.Info)
 
 var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
@@ -118,20 +137,24 @@ func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 
 // GetRoutes get all routes
 func (r *Route) GetRoutes() []route.Info {
-	var routes []route.Info
-	for _, item := range r.instance.GetRoutes() {
-		for _, handler := range item.Handlers {
-			if strings.Contains(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), "handlerToFiberHandler") {
-				routes = append(routes, route.Info{
-					Method: item.Method,
-					Path:   colonToBracket(item.Path),
-				})
-				break
+	paths := []string{}
+	for path := range routes {
+		paths = append(paths, path)
+	}
+
+	sort.Strings(paths)
+	methods := []string{MethodHead, MethodGet, MethodPost, MethodPut, MethodDelete, MethodPatch, MethodOptions, MethodAny, MethodResource, MethodStatic, MethodStaticFile, MethodStaticFS}
+
+	var infos []route.Info
+	for _, path := range paths {
+		for _, method := range methods {
+			if info, ok := routes[path][method]; ok {
+				infos = append(infos, info)
 			}
 		}
 	}
 
-	return routes
+	return infos
 }
 
 // GlobalMiddleware set global middleware
@@ -221,9 +244,11 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 }
 
 func (r *Route) Info(name string) route.Info {
-	for _, info := range routes {
-		if info.Name == name {
-			return info
+	routes := r.GetRoutes()
+
+	for _, route := range routes {
+		if route.Name == name {
+			return route
 		}
 	}
 
@@ -315,9 +340,21 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
-		for _, item := range r.GetRoutes() {
-			fmt.Printf("%-10s %s\n", item.Method, item.Path)
+		routes := r.GetRoutes()
+
+		if len(routes) == 0 {
+			return
 		}
+
+		print := []string{""}
+
+		for _, item := range routes {
+			first := fmt.Sprintf("%-12s %s", item.Method, item.Path)
+
+			print = append(print, console.TwoColumnDetail(first, item.Name))
+		}
+
+		color.Gray().Println(strings.Join(print, "\n") + "\n")
 	}
 }
 
