@@ -82,7 +82,7 @@ func (s *ContextRequestSuite) TestAll_GetWithQuery() {
 	s.Require().Nil(err)
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -111,7 +111,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQueryAndForm() {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"4\",\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"4\",\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -128,7 +128,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQuery() {
 	req.Header.Set("Content-Type", "multipart/form-data;boundary=0")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -159,7 +159,7 @@ func (s *ContextRequestSuite) TestAll_PostWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"2\",\"name\":\"3\"},\"name\":\"goravel\"}", body)
+	s.Equal("{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"1,2\",\"name\":\"3\"},\"name\":\"goravel\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -194,7 +194,7 @@ func (s *ContextRequestSuite) TestAll_PostWithErrorJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"age\":0,\"all\":{\"a\":\"2\",\"name\":\"3\"},\"name\":\"\"}", body)
+	s.Equal("{\"age\":0,\"all\":{\"a\":\"1,2\",\"name\":\"3\"},\"name\":\"\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -211,7 +211,7 @@ func (s *ContextRequestSuite) TestAll_PostWithEmptyJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"name\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"name\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -254,7 +254,7 @@ func (s *ContextRequestSuite) TestAll_PutWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":4,\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -275,7 +275,7 @@ func (s *ContextRequestSuite) TestAll_DeleteWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":4,\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
