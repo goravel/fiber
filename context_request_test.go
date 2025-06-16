@@ -82,7 +82,7 @@ func (s *ContextRequestSuite) TestAll_GetWithQuery() {
 	s.Require().Nil(err)
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -111,7 +111,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQueryAndForm() {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"4\",\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"4\",\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -128,7 +128,7 @@ func (s *ContextRequestSuite) TestAll_PostWithQuery() {
 	req.Header.Set("Content-Type", "multipart/form-data;boundary=0")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -159,7 +159,7 @@ func (s *ContextRequestSuite) TestAll_PostWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"2\",\"name\":\"3\"},\"name\":\"goravel\"}", body)
+	s.Equal("{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"1,2\",\"name\":\"3\"},\"name\":\"goravel\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -194,7 +194,7 @@ func (s *ContextRequestSuite) TestAll_PostWithErrorJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"age\":0,\"all\":{\"a\":\"2\",\"name\":\"3\"},\"name\":\"\"}", body)
+	s.Equal("{\"age\":0,\"all\":{\"a\":\"1,2\",\"name\":\"3\"},\"name\":\"\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -211,7 +211,29 @@ func (s *ContextRequestSuite) TestAll_PostWithEmptyJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"name\":\"3\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"name\":\"3\"}}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestAll_PostWithMiddleware() {
+	s.route.Middleware(testAllMiddleware()).Post("/all-with-middleware", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"all":        ctx.Request().All(),
+			"middleware": ctx.Value("all"),
+		})
+	})
+
+	payload := strings.NewReader(`{
+		"Name": "goravel",
+		"Age": 1
+	}`)
+	req, err := http.NewRequest("POST", "/all-with-middleware?a=1&a=2&name=3", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"1,2\",\"name\":\"3\"},\"middleware\":{\"Age\":1,\"Name\":\"goravel\",\"a\":\"1,2\",\"name\":\"3\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -232,7 +254,7 @@ func (s *ContextRequestSuite) TestAll_PutWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":4,\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -253,7 +275,7 @@ func (s *ContextRequestSuite) TestAll_DeleteWithJson() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"all\":{\"a\":\"2\",\"b\":4,\"e\":\"e\"}}", body)
+	s.Equal("{\"all\":{\"a\":\"1,2\",\"b\":4,\"e\":\"e\"}}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -2041,5 +2063,15 @@ func TestGetValueFromHttpBody(t *testing.T) {
 			value := contextRequest.getValueFromHttpBody(test.key)
 			assert.Equal(t, test.expectValue, value)
 		})
+	}
+}
+
+// Timeout creates middleware to set a timeout for a request
+func testAllMiddleware() contractshttp.Middleware {
+	return func(ctx contractshttp.Context) {
+		all := ctx.Request().All()
+		ctx.WithValue("all", all)
+
+		ctx.Request().Next()
 	}
 }

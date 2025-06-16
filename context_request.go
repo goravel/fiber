@@ -86,9 +86,20 @@ func (r *ContextRequest) All() map[string]any {
 	for k, v := range r.instance.AllParams() {
 		data[k] = v
 	}
-	for k, v := range r.instance.Queries() {
-		data[k] = v
+
+	keyToSlice := make(map[string][]string, r.instance.Context().QueryArgs().Len())
+	r.instance.Context().QueryArgs().VisitAll(func(key, value []byte) {
+		keyStr := string(key)
+		if _, ok := keyToSlice[keyStr]; !ok {
+			keyToSlice[keyStr] = []string{}
+		}
+		keyToSlice[keyStr] = append(keyToSlice[keyStr], string(value))
+	})
+
+	for k, v := range keyToSlice {
+		data[k] = strings.Join(v, ",")
 	}
+
 	for k, v := range r.httpBody {
 		data[k] = v
 	}
