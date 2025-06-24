@@ -49,9 +49,16 @@ func (s *GroupTestSuite) TestGet() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("get")
 
 	s.assert("GET", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestGet.func1",
+		Method:  MethodGet,
+		Path:    "/input/{id}",
+		Name:    "get",
+	}, s.route.Info("get"))
+
 }
 
 func (s *GroupTestSuite) TestPost() {
@@ -59,9 +66,15 @@ func (s *GroupTestSuite) TestPost() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("post")
 
 	s.assert("POST", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestPost.func1",
+		Method:  MethodPost,
+		Path:    "/input/{id}",
+		Name:    "post",
+	}, s.route.Info("post"))
 }
 
 func (s *GroupTestSuite) TestPut() {
@@ -79,9 +92,15 @@ func (s *GroupTestSuite) TestDelete() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("delete")
 
 	s.assert("DELETE", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestDelete.func1",
+		Method:  MethodDelete,
+		Path:    "/input/{id}",
+		Name:    "delete",
+	}, s.route.Info("delete"))
 }
 
 func (s *GroupTestSuite) TestOptions() {
@@ -89,9 +108,15 @@ func (s *GroupTestSuite) TestOptions() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("options")
 
 	s.assert("OPTIONS", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestOptions.func1",
+		Method:  MethodOptions,
+		Path:    "/input/{id}",
+		Name:    "options",
+	}, s.route.Info("options"))
 }
 
 func (s *GroupTestSuite) TestPatch() {
@@ -99,9 +124,15 @@ func (s *GroupTestSuite) TestPatch() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("patch")
 
 	s.assert("PATCH", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestPatch.func1",
+		Method:  MethodPatch,
+		Path:    "/input/{id}",
+		Name:    "patch",
+	}, s.route.Info("patch"))
 }
 
 func (s *GroupTestSuite) TestAny() {
@@ -109,7 +140,7 @@ func (s *GroupTestSuite) TestAny() {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"id": ctx.Request().Input("id"),
 		})
-	})
+	}).Name("any")
 
 	s.assert("GET", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
 	s.assert("POST", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
@@ -117,6 +148,13 @@ func (s *GroupTestSuite) TestAny() {
 	s.assert("DELETE", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
 	s.assert("OPTIONS", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
 	s.assert("PATCH", "/input/1", http.StatusOK, "{\"id\":\"1\"}")
+
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(*GroupTestSuite).TestAny.func1",
+		Method:  MethodAny,
+		Path:    "/input/{id}",
+		Name:    "any",
+	}, s.route.Info("any"))
 }
 
 func (s *GroupTestSuite) TestResource() {
@@ -126,13 +164,20 @@ func (s *GroupTestSuite) TestResource() {
 			ctx.Request().Next()
 		}),
 	})
-	s.route.Resource("/resource", resourceController{})
+	s.route.Resource("/resource", resourceController{}).Name("resource")
 
 	s.assert("GET", "/resource", http.StatusOK, "{\"action\":\"GET\"}")
 	s.assert("GET", "/resource/1", http.StatusOK, "{\"action\":\"GET\",\"id\":\"1\"}")
 	s.assert("POST", "/resource", http.StatusOK, "{\"action\":\"POST\"}")
 	s.assert("PUT", "/resource/1", http.StatusOK, "{\"action\":\"PUT\",\"id\":\"1\"}")
 	s.assert("PATCH", "/resource/1", http.StatusOK, "{\"action\":\"PATCH\",\"id\":\"1\"}")
+
+	s.Equal(contractsroute.Info{
+		Handler: "github.com/goravel/fiber.(resourceController)",
+		Method:  MethodResource,
+		Path:    "/resource",
+		Name:    "resource",
+	}, s.route.Info("resource"))
 }
 
 func (s *GroupTestSuite) TestStatic() {
@@ -142,9 +187,15 @@ func (s *GroupTestSuite) TestStatic() {
 	err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 	assert.NoError(s.T(), err)
 
-	s.route.Static("static", tempDir)
+	s.route.Static("static", tempDir).Name("static")
 
 	s.assert("GET", "/static/test.json", http.StatusOK, "{\"id\":1}")
+
+	s.Equal(contractsroute.Info{
+		Method: MethodStatic,
+		Path:   "/static",
+		Name:   "static",
+	}, s.route.Info("static"))
 }
 
 func (s *GroupTestSuite) TestStaticFile() {
@@ -154,9 +205,15 @@ func (s *GroupTestSuite) TestStaticFile() {
 	err = os.WriteFile(file.Name(), []byte("{\"id\":1}"), 0755)
 	assert.NoError(s.T(), err)
 
-	s.route.StaticFile("static-file", file.Name())
+	s.route.StaticFile("static-file", file.Name()).Name("static-file")
 
 	s.assert("GET", "/static-file", http.StatusOK, "{\"id\":1}")
+
+	s.Equal(contractsroute.Info{
+		Method: MethodStaticFile,
+		Path:   "/static-file",
+		Name:   "static-file",
+	}, s.route.Info("static-file"))
 }
 
 func (s *GroupTestSuite) TestStaticFS() {
@@ -166,9 +223,15 @@ func (s *GroupTestSuite) TestStaticFS() {
 	err = os.WriteFile(filepath.Join(tempDir, "test.json"), []byte("{\"id\":1}"), 0755)
 	assert.NoError(s.T(), err)
 
-	s.route.StaticFS("static-fs", http.Dir(tempDir))
+	s.route.StaticFS("static-fs", http.Dir(tempDir)).Name("static-fs")
 
 	s.assert("GET", "/static-fs/test.json", http.StatusOK, "{\"id\":1}")
+
+	s.Equal(contractsroute.Info{
+		Method: MethodStaticFS,
+		Path:   "/static-fs",
+		Name:   "static-fs",
+	}, s.route.Info("static-fs"))
 }
 
 func (s *GroupTestSuite) TestAbortMiddleware() {

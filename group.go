@@ -1,9 +1,11 @@
 package fiber
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"reflect"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -173,6 +175,19 @@ func (r *Group) getFullPath(path string) string {
 func (r *Group) getHandlerName(handler any) string {
 	if handler == nil {
 		return ""
+	}
+
+	if res, ok := handler.(httpcontract.ResourceController); ok {
+		var (
+			prefix string
+			t      = reflect.TypeOf(res)
+		)
+		if t.Kind() == reflect.Ptr {
+			prefix = "*"
+			t = t.Elem()
+		}
+
+		return fmt.Sprintf("%s.(%s%s)", t.PkgPath(), prefix, t.Name())
 	}
 
 	return debug.GetFuncInfo(handler).Name
