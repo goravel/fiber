@@ -7,14 +7,15 @@ type Action struct {
 	path   string
 }
 
-func NewAction(method, path string) contractsroute.Action {
+func NewAction(method, path, handler string) contractsroute.Action {
 	if _, ok := routes[path]; !ok {
 		routes[path] = make(map[string]contractsroute.Info)
 	}
 
 	routes[path][method] = contractsroute.Info{
-		Method: method,
-		Path:   path,
+		Handler: handler,
+		Method:  method,
+		Path:    path,
 	}
 
 	return &Action{
