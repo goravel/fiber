@@ -8,21 +8,18 @@ import (
 	"net"
 	"net/http"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
-
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
 	contractsroute "github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
-	"github.com/goravel/framework/support/console"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/path"
@@ -339,22 +336,10 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 // outputRoutes output all routes
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
-	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan {
-		routes := r.GetRoutes()
-
-		if len(routes) == 0 {
-			return
+	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan && support.RuntimeMode != support.RuntimeTest {
+		if err := App.MakeArtisan().Call("route:list"); err != nil {
+			color.Errorln(fmt.Errorf("print route list failed: %w", err))
 		}
-
-		print := []string{""}
-
-		for _, item := range routes {
-			first := fmt.Sprintf("%-12s %s", item.Method, item.Path)
-
-			print = append(print, console.TwoColumnDetail(first, item.Name))
-		}
-
-		color.Gray().Println(strings.Join(print, "\n") + "\n")
 	}
 }
 

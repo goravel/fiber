@@ -12,7 +12,7 @@ func TestNewAction(t *testing.T) {
 	routes = make(map[string]map[string]contractsroute.Info)
 
 	// Test creating a new action
-	action := NewAction("GET", "/test-path")
+	action := NewAction("GET", "/test-path", "test.Action")
 	assert.NotNil(t, action)
 	assert.IsType(t, &Action{}, action)
 
@@ -21,6 +21,7 @@ func TestNewAction(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, "GET", routeInfo.Method)
 	assert.Equal(t, "/test-path", routeInfo.Path)
+	assert.Equal(t, "test.Action", routeInfo.Handler)
 	assert.Empty(t, routeInfo.Name)
 }
 
@@ -29,7 +30,7 @@ func TestAction_Name(t *testing.T) {
 	routes = make(map[string]map[string]contractsroute.Info)
 
 	// Create a new action
-	action := NewAction("POST", "/named-path")
+	action := NewAction("POST", "/named-path", "")
 
 	// Test setting name
 	namedAction := action.Name("test-route")
