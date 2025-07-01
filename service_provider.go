@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"github.com/goravel/framework/contracts/binding"
 	"github.com/goravel/framework/contracts/config"
 	"github.com/goravel/framework/contracts/foundation"
 	"github.com/goravel/framework/contracts/http"
@@ -20,7 +21,24 @@ var (
 
 type ServiceProvider struct{}
 
-func (receiver *ServiceProvider) Register(app foundation.Application) {
+func (r *ServiceProvider) Relationship() binding.Relationship {
+	return binding.Relationship{
+		Bindings: []string{
+			RouteBinding,
+		},
+		Dependencies: []string{
+			binding.Config,
+			binding.Log,
+			binding.Validation,
+			binding.View,
+		},
+		ProvideFor: []string{
+			binding.Route,
+		},
+	}
+}
+
+func (r *ServiceProvider) Register(app foundation.Application) {
 	App = app
 
 	app.BindWith(RouteBinding, func(app foundation.Application, parameters map[string]any) (any, error) {
@@ -28,7 +46,7 @@ func (receiver *ServiceProvider) Register(app foundation.Application) {
 	})
 }
 
-func (receiver *ServiceProvider) Boot(app foundation.Application) {
+func (r *ServiceProvider) Boot(app foundation.Application) {
 	ConfigFacade = app.MakeConfig()
 	LogFacade = app.MakeLog()
 	ValidationFacade = app.MakeValidation()
