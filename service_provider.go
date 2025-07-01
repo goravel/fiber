@@ -9,7 +9,7 @@ import (
 	"github.com/goravel/framework/contracts/validation"
 )
 
-const RouteBinding = "goravel.fiber.route"
+const BindingRoute = "goravel.fiber.route"
 
 var (
 	App              foundation.Application
@@ -24,7 +24,7 @@ type ServiceProvider struct{}
 func (r *ServiceProvider) Relationship() binding.Relationship {
 	return binding.Relationship{
 		Bindings: []string{
-			RouteBinding,
+			BindingRoute,
 		},
 		Dependencies: []string{
 			binding.Config,
@@ -41,7 +41,7 @@ func (r *ServiceProvider) Relationship() binding.Relationship {
 func (r *ServiceProvider) Register(app foundation.Application) {
 	App = app
 
-	app.BindWith(RouteBinding, func(app foundation.Application, parameters map[string]any) (any, error) {
+	app.BindWith(BindingRoute, func(app foundation.Application, parameters map[string]any) (any, error) {
 		return NewRoute(app.MakeConfig(), parameters)
 	})
 }
