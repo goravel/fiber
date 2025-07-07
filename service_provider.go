@@ -51,8 +51,4 @@ func (r *ServiceProvider) Boot(app foundation.Application) {
 	LogFacade = app.MakeLog()
 	ValidationFacade = app.MakeValidation()
 	ViewFacade = app.MakeView()
-
-	app.Publishes("github.com/goravel/fiber", map[string]string{
-		"config/cors.go": app.ConfigPath("cors.go"),
-	})
 }
