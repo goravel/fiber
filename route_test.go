@@ -17,7 +17,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
-	contractsroute "github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/contracts/validation"
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/path"
@@ -37,7 +36,7 @@ func TestRouteTestSuite(t *testing.T) {
 }
 
 func (s *RouteTestSuite) SetupTest() {
-	routes = make(map[string]map[string]contractsroute.Info)
+	routes = make(map[string]map[string]contractshttp.Info)
 
 	s.mockConfig = mocksconfig.NewConfig(s.T())
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
@@ -118,11 +117,11 @@ func (s *RouteTestSuite) TestGetRoutes() {
 
 	routes := s.route.GetRoutes()
 	s.Len(routes, 3)
-	s.Equal(MethodGet, routes[0].Method)
+	s.Equal("GET|HEAD", routes[0].Method)
 	s.Equal("/a/{id}", routes[0].Path)
-	s.Equal(MethodGet, routes[1].Method)
+	s.Equal("GET|HEAD", routes[1].Method)
 	s.Equal("/b/{id}", routes[1].Path)
-	s.Equal(MethodPost, routes[2].Method)
+	s.Equal("POST", routes[2].Method)
 	s.Equal("/b/{id}", routes[2].Path)
 }
 
@@ -245,7 +244,7 @@ func (s *RouteTestSuite) TestInfo() {
 	}).Name("test")
 
 	s.Equal(&Action{
-		method: MethodGet,
+		method: "GET|HEAD",
 		path:   "/test",
 	}, action)
 

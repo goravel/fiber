@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gookit/validate v1.5.5
-	github.com/goravel/framework v1.15.2-0.20250701070909-51b5ee2aed12
+	github.com/goravel/framework v1.15.2-0.20250712102013-18aec32a4b92
 	github.com/spf13/cast v1.9.2
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.62.0
@@ -29,7 +29,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/gofiber/template v1.8.3 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
-	github.com/goforj/godump v1.4.0 // indirect
+	github.com/goforj/godump v1.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/gookit/filter v1.2.2 // indirect
@@ -68,7 +68,7 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect

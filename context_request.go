@@ -228,6 +228,10 @@ func (r *ContextRequest) Method() string {
 	return r.instance.Method()
 }
 
+func (r *ContextRequest) Name() string {
+	return r.Info().Name
+}
+
 func (r *ContextRequest) Next() {
 	if err := r.instance.Next(); err != nil {
 		var fiberErr *fiber.Error
@@ -327,6 +331,37 @@ func (r *ContextRequest) OriginPath() string {
 
 func (r *ContextRequest) Path() string {
 	return r.instance.Path()
+}
+
+func (r *ContextRequest) Info() contractshttp.Info {
+	methodToInfo, exist := routes[r.OriginPath()]
+	if !exist {
+		return contractshttp.Info{}
+	}
+
+	method := r.Method()
+
+	methodsToTry := []string{
+		method,
+		contractshttp.MethodAny,
+		contractshttp.MethodResource,
+	}
+
+	if method == contractshttp.MethodGet || method == contractshttp.MethodHead {
+		methodsToTry = append([]string{contractshttp.MethodGet + "|" + contractshttp.MethodHead}, methodsToTry...)
+	}
+
+	for _, tryMethod := range methodsToTry {
+		if info, exist := methodToInfo[tryMethod]; exist {
+			info.Method = r.Method()
+			return info
+		}
+	}
+
+	return contractshttp.Info{
+		Method: r.Method(),
+		Path:   r.OriginPath(),
+	}
 }
 
 func (r *ContextRequest) Input(key string, defaultValue ...string) string {
