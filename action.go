@@ -1,6 +1,9 @@
 package fiber
 
-import contractsroute "github.com/goravel/framework/contracts/route"
+import (
+	contractshttp "github.com/goravel/framework/contracts/http"
+	contractsroute "github.com/goravel/framework/contracts/route"
+)
 
 type Action struct {
 	method string
@@ -9,10 +12,14 @@ type Action struct {
 
 func NewAction(method, path, handler string) contractsroute.Action {
 	if _, ok := routes[path]; !ok {
-		routes[path] = make(map[string]contractsroute.Info)
+		routes[path] = make(map[string]contractshttp.Info)
 	}
 
-	routes[path][method] = contractsroute.Info{
+	if method == contractshttp.MethodGet {
+		method = contractshttp.MethodGet + "|" + contractshttp.MethodHead
+	}
+
+	routes[path][method] = contractshttp.Info{
 		Handler: handler,
 		Method:  method,
 		Path:    path,

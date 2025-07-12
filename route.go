@@ -17,7 +17,6 @@ import (
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
-	contractsroute "github.com/goravel/framework/contracts/route"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
 	"github.com/goravel/framework/support/file"
@@ -26,23 +25,8 @@ import (
 	"github.com/goravel/framework/support/str"
 )
 
-const (
-	MethodHead       = "HEAD"
-	MethodGet        = "GET|HEAD"
-	MethodPost       = "POST"
-	MethodPut        = "PUT"
-	MethodDelete     = "DELETE"
-	MethodPatch      = "PATCH"
-	MethodOptions    = "OPTIONS"
-	MethodAny        = "ANY"
-	MethodResource   = "RESOURCE"
-	MethodStatic     = "STATIC"
-	MethodStaticFile = "STATIC_FILE"
-	MethodStaticFS   = "STATIC_FS"
-)
-
 // map[path]map[method]info
-var routes = make(map[string]map[string]contractsroute.Info)
+var routes = make(map[string]map[string]contractshttp.Info)
 
 var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
@@ -133,16 +117,16 @@ func (r *Route) Fallback(handler contractshttp.HandlerFunc) {
 }
 
 // GetRoutes get all routes
-func (r *Route) GetRoutes() []route.Info {
+func (r *Route) GetRoutes() []contractshttp.Info {
 	paths := []string{}
 	for path := range routes {
 		paths = append(paths, path)
 	}
 
 	sort.Strings(paths)
-	methods := []string{MethodHead, MethodGet, MethodPost, MethodPut, MethodDelete, MethodPatch, MethodOptions, MethodAny, MethodResource, MethodStatic, MethodStaticFile, MethodStaticFS}
+	methods := []string{contractshttp.MethodGet + "|" + contractshttp.MethodHead, contractshttp.MethodHead, contractshttp.MethodGet, contractshttp.MethodPost, contractshttp.MethodPut, contractshttp.MethodDelete, contractshttp.MethodPatch, contractshttp.MethodOptions, contractshttp.MethodAny, contractshttp.MethodResource, contractshttp.MethodStatic, contractshttp.MethodStaticFile, contractshttp.MethodStaticFS}
 
-	var infos []route.Info
+	var infos []contractshttp.Info
 	for _, path := range paths {
 		for _, method := range methods {
 			if info, ok := routes[path][method]; ok {
@@ -240,7 +224,7 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 	return r.instance.Listener(tls.NewListener(l, tlsConfig))
 }
 
-func (r *Route) Info(name string) route.Info {
+func (r *Route) Info(name string) contractshttp.Info {
 	routes := r.GetRoutes()
 
 	for _, route := range routes {
@@ -249,7 +233,7 @@ func (r *Route) Info(name string) route.Info {
 		}
 	}
 
-	return route.Info{}
+	return contractshttp.Info{}
 }
 
 // Run run server
