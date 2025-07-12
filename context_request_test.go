@@ -695,6 +695,16 @@ func (s *ContextRequestSuite) TestInfo() {
 			"info": ctx.Request().Info(),
 		})
 	}).Name("test-info-post")
+	s.route.Any("/info/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"info": ctx.Request().Info(),
+		})
+	}).Name("test-info-any")
+	s.route.Any("/info/resource/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"info": ctx.Request().Info(),
+		})
+	}).Name("test-info-resource")
 
 	req, err := http.NewRequest("GET", "/info/1", nil)
 	s.Require().Nil(err)
@@ -715,6 +725,20 @@ func (s *ContextRequestSuite) TestInfo() {
 
 	code, body, _, _ = s.request(req)
 	s.Equal(`{"info":{"handler":"github.com/goravel/fiber.(*ContextRequestSuite).TestInfo.func2","method":"POST","name":"test-info-post","path":"/info/{id}"}}`, body)
+	s.Equal(http.StatusOK, code)
+
+	req, err = http.NewRequest("GET", "/info/any/1", nil)
+	s.Require().Nil(err)
+
+	code, body, _, _ = s.request(req)
+	s.Equal(`{"info":{"handler":"github.com/goravel/fiber.(*ContextRequestSuite).TestInfo.func3","method":"GET","name":"test-info-any","path":"/info/any/{id}"}}`, body)
+	s.Equal(http.StatusOK, code)
+
+	req, err = http.NewRequest("POST", "/info/resource/1", nil)
+	s.Require().Nil(err)
+
+	code, body, _, _ = s.request(req)
+	s.Equal(`{"info":{"handler":"github.com/goravel/fiber.(*ContextRequestSuite).TestInfo.func4","method":"POST","name":"test-info-resource","path":"/info/resource/{id}"}}`, body)
 	s.Equal(http.StatusOK, code)
 }
 

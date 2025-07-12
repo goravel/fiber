@@ -340,18 +340,28 @@ func (r *ContextRequest) Info() contractshttp.Info {
 	}
 
 	method := r.Method()
+
+	methodsToTry := []string{
+		method,
+		contractshttp.MethodAny,
+		contractshttp.MethodResource,
+	}
+
 	if method == contractshttp.MethodGet || method == contractshttp.MethodHead {
-		method = contractshttp.MethodGet + "|" + contractshttp.MethodHead
+		methodsToTry = append([]string{contractshttp.MethodGet + "|" + contractshttp.MethodHead}, methodsToTry...)
 	}
 
-	info, exist := methodToInfo[method]
-	if !exist {
-		return contractshttp.Info{}
+	for _, tryMethod := range methodsToTry {
+		if info, exist := methodToInfo[tryMethod]; exist {
+			info.Method = r.Method()
+			return info
+		}
 	}
 
-	info.Method = r.Method()
-
-	return info
+	return contractshttp.Info{
+		Method: r.Method(),
+		Path:   r.OriginPath(),
+	}
 }
 
 func (r *ContextRequest) Input(key string, defaultValue ...string) string {
