@@ -88,13 +88,13 @@ func (r *ContextRequest) All() map[string]any {
 	}
 
 	keyToSlice := make(map[string][]string, r.instance.Context().QueryArgs().Len())
-	r.instance.Context().QueryArgs().VisitAll(func(key, value []byte) {
+	for key, value := range r.instance.Context().QueryArgs().All() {
 		keyStr := string(key)
 		if _, ok := keyToSlice[keyStr]; !ok {
 			keyToSlice[keyStr] = []string{}
 		}
 		keyToSlice[keyStr] = append(keyToSlice[keyStr], string(value))
-	})
+	}
 
 	for k, v := range keyToSlice {
 		data[k] = strings.Join(v, ",")
@@ -187,9 +187,9 @@ func (r *ContextRequest) Header(key string, defaultValue ...string) string {
 
 func (r *ContextRequest) Headers() http.Header {
 	result := http.Header{}
-	r.instance.Request().Header.VisitAll(func(key, value []byte) {
+	for key, value := range r.instance.Request().Header.All() {
 		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
-	})
+	}
 
 	return result
 }
@@ -291,23 +291,23 @@ func (r *ContextRequest) QueryBool(key string, defaultValue ...bool) bool {
 
 func (r *ContextRequest) QueryArray(key string) []string {
 	var queries []string
-	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
+	for k, v := range r.instance.Request().URI().QueryArgs().All() {
 		if key == utils.UnsafeString(k) {
 			queries = append(queries, utils.UnsafeString(v))
 		}
-	})
+	}
 
 	return queries
 }
 
 func (r *ContextRequest) QueryMap(key string) map[string]string {
 	queries := make(map[string]string)
-	r.instance.Request().URI().QueryArgs().VisitAll(func(k, v []byte) {
+	for k, v := range r.instance.Request().URI().QueryArgs().All() {
 		matches := regexp.MustCompile(`^` + key + `\[(.+)\]$`).FindSubmatch(k)
 		if len(matches) > 0 {
 			queries[utils.UnsafeString(matches[1])] = utils.UnsafeString(v)
 		}
-	})
+	}
 
 	return queries
 }
@@ -673,7 +673,7 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 
 	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
 		args := ctx.instance.Request().PostArgs()
-		args.VisitAll(func(key, value []byte) {
+		for key, value := range args.All() {
 			if existValue, exist := data[utils.UnsafeString(key)]; exist {
 				if stringSlice, ok := data[utils.UnsafeString(key)].([]string); ok {
 					data[utils.UnsafeString(key)] = append(stringSlice, utils.UnsafeString(value))
@@ -683,7 +683,7 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 			} else {
 				data[utils.UnsafeString(key)] = utils.UnsafeString(value)
 			}
-		})
+		}
 	}
 
 	return data, nil
