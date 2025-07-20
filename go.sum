@@ -81,8 +81,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
-github.com/dromara/carbon/v2 v2.6.9 h1:kx4D7qqLmNkKRLYo/2n1owtu/A1hfPs4WTGYC2tUFFA=
-github.com/dromara/carbon/v2 v2.6.9/go.mod h1:7GXqCUplwN1s1b4whGk2zX4+g4CMCoDIZzmjlyt0vLY=
+github.com/dromara/carbon/v2 v2.6.11 h1:wnAWZ+sbza1uXw3r05hExNSCaBPFaarWfUvYAX86png=
+github.com/dromara/carbon/v2 v2.6.11/go.mod h1:7GXqCUplwN1s1b4whGk2zX4+g4CMCoDIZzmjlyt0vLY=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
@@ -146,8 +146,8 @@ github.com/gookit/validate v1.5.5 h1:jzMrwAYy9tbQa0mH8YFnv3C3JQR/0N4pRTsYiySwRJM
 github.com/gookit/validate v1.5.5/go.mod h1:p9sRPfpvYB4vXICBpEPzv8FoAky+XhUOhWQghgmmat4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2 h1:g68AzbePXcm0V2CpUMc9j4qVzcDn7+7aoWSjZ51C0m4=
 github.com/goravel/file-rotatelogs/v2 v2.4.2/go.mod h1:23VuSW8cBS4ax5cmbV+5AaiLpq25b8UJ96IhbAkdo8I=
-github.com/goravel/framework v1.15.2-0.20250714040034-81c2a5091b25 h1:vMMa7l0ACxr/YD0ubHgqYw1kKSJbuNz/ObVMh6jxrrk=
-github.com/goravel/framework v1.15.2-0.20250714040034-81c2a5091b25/go.mod h1:LPsoAnOlXBi+zAPm3N0heG0WH0ob7WoaqsnZL1JFMZM=
+github.com/goravel/framework v1.16.0 h1:86Y2ArdAu6BMNgrmNgj2NEcam1Vh2ksGSN+OGLZh1g8=
+github.com/goravel/framework v1.16.0/go.mod h1:0Am/55ondjh9Nw1TgrwfvWv9cgwDoBg4GaL70/cEmVY=
 github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
 github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
