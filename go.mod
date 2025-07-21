@@ -11,7 +11,7 @@ require (
 	github.com/goravel/framework v1.16.0
 	github.com/spf13/cast v1.9.2
 	github.com/stretchr/testify v1.10.0
-	github.com/valyala/fasthttp v1.63.0
+	github.com/valyala/fasthttp v1.64.0
 )
 
 require (
