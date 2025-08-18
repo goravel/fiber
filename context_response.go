@@ -242,7 +242,7 @@ func (w *ResponseOrigin) Body() *bytes.Buffer {
 
 func (w *ResponseOrigin) Header() http.Header {
 	result := http.Header{}
-	for key, value := range w.Ctx.Response().Header.All() {
+	for key, value := range w.Response().Header.All() {
 		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
 	}
 
