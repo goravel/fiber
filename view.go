@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
+	contractsession "github.com/goravel/framework/contracts/session"
 )
 
 type View struct {
@@ -18,6 +19,14 @@ func NewView(instance *fiber.Ctx) *View {
 
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
+	if contextValues := receive.instance.UserContext().Value(contextKey); contextValues != nil {
+		contextValuesMap := contextValues.(map[any]any)
+		if session := contextValuesMap[sessionKey]; session != nil {
+			sessionValue := session.(contractsession.Session)
+			token := sessionValue.Token()
+			shared["csrf_token"] = token
+		}
+	}
 	if len(data) == 0 {
 		return &HtmlResponse{shared, receive.instance, view}
 	} else {

@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
+	foundationjson "github.com/goravel/framework/foundation/json"
 	configmocks "github.com/goravel/framework/mocks/config"
 	httpmocks "github.com/goravel/framework/mocks/http"
+	"github.com/goravel/framework/session"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 	"github.com/stretchr/testify/assert"
@@ -389,6 +391,48 @@ func TestView_First(t *testing.T) {
 			mockView.AssertExpectations(t)
 		})
 	}
+
+	assert.Nil(t, file.Remove("resources"))
+}
+
+func TestView_CSRFToken(t *testing.T) {
+
+	assert.Nil(t, file.PutContent(path.Resource("views", "csrf.tmpl"), `{{ define "csrf.tmpl" }}
+csrf_token={{ .csrf_token }}
+{{ end }}
+`))
+
+	mockConfig := configmocks.NewConfig(t)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	ConfigFacade = mockConfig
+
+	mockView := httpmocks.NewView(t)
+	ViewFacade = mockView
+	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
+
+	t.Run("CSRF token", func(t *testing.T) {
+		route, err := NewRoute(mockConfig, nil)
+		assert.Nil(t, err)
+		route.Get("/csrf", func(ctx contractshttp.Context) contractshttp.Response {
+			sessionData := session.NewSession("goravel_session", nil, foundationjson.New())
+			ctx.Request().SetSession(sessionData)
+			err = sessionData.Regenerate()
+			assert.Nil(t, err)
+			return ctx.Response().View().Make("csrf.tmpl")
+		})
+		req, err := http.NewRequest("GET", "/csrf", nil)
+		assert.Nil(t, err)
+		resp, err := route.Test(req)
+		body, err := io.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		assert.Regexp(t, `^\ncsrf_token=([A-Za-z0-9\-_]+)\n$`, string(body))
+	})
 
 	assert.Nil(t, file.Remove("resources"))
 }
