@@ -412,8 +412,6 @@ csrf_token={{ .csrf_token }}
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 	ConfigFacade = mockConfig
 
-	ConfigFacade = mockConfig
-
 	mockView := httpmocks.NewView(t)
 	ViewFacade = mockView
 	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
