@@ -9,7 +9,7 @@ require (
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gookit/validate v1.5.6
 	github.com/goravel/framework v1.16.3
-	github.com/spf13/cast v1.9.2
+	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.65.0
 )
