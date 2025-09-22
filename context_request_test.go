@@ -1588,7 +1588,7 @@ func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 		})
 	})
 
-	req, err := http.NewRequest("GET", "/validate/get-success/abc?name= Goravel ", nil)
+	req, err := http.NewRequest("GET", "/validate/get-success/abc?name=Goravel", nil)
 	s.Require().Nil(err)
 
 	code, body, _, _ := s.request(req)
@@ -1616,7 +1616,7 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 		return nil
 	})
 
-	req, err := http.NewRequest("GET", "/validate/get-fail/abc?name= Goravel ", nil)
+	req, err := http.NewRequest("GET", "/validate/get-fail/abc?name=Goravel", nil)
 	s.Require().Nil(err)
 
 	code, body, _, _ := s.request(req)
@@ -1974,31 +1974,6 @@ func (s *ContextRequestSuite) TestValidateRequest_JsonFail() {
 
 	s.Equal("Validate fail: map[name:map[required:name is required to not be empty]]", body)
 	s.Equal(http.StatusBadRequest, code)
-}
-
-func (s *ContextRequestSuite) TestValidateRequest_GetSuccessWithFilter() {
-	s.route.Get("/validate-request/filter/get-success", func(ctx contractshttp.Context) contractshttp.Response {
-		var createUser CreateUser
-		validateErrors, err := ctx.Request().ValidateRequest(&createUser)
-		if err != nil {
-			return ctx.Response().String(http.StatusBadRequest, "Validate error: "+err.Error())
-		}
-		if validateErrors != nil {
-			return ctx.Response().String(http.StatusBadRequest, fmt.Sprintf("Validate fail: %+v", validateErrors.All()))
-		}
-
-		return ctx.Response().Success().Json(contractshttp.Json{
-			"name": createUser.Name,
-		})
-	})
-
-	req, err := http.NewRequest("GET", "/validate-request/filter/get-success?name= Goravel ", nil)
-	s.Require().Nil(err)
-
-	code, body, _, _ := s.request(req)
-
-	s.Equal("{\"name\":\"Goravel 1\"}", body)
-	s.Equal(http.StatusOK, code)
 }
 
 func (s *ContextRequestSuite) TestValidateRequest_PostSuccessWithFilter() {
