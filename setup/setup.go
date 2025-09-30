@@ -40,7 +40,8 @@ func main() {
 					modify.AddImport("github.com/goravel/fiber/facades", "fiberfacades"), modify.AddImport("github.com/goravel/framework/support/path"),
 					modify.AddImport("github.com/gofiber/template/html/v2"), modify.AddImport("github.com/gofiber/fiber/v2"),
 				).
-				Find(match.Config("http.drivers")).Modify(modify.AddConfig("fiber", config)),
+				Find(match.Config("http.drivers")).Modify(modify.AddConfig("fiber", config)).
+				Find(match.Config("http")).Modify(modify.AddConfig("default", `"fiber"`)),
 		).
 		Uninstall(
 			modify.GoFile(path.Config("app.go")).
@@ -48,6 +49,7 @@ func main() {
 				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath())),
 			modify.GoFile(path.Config("http.go")).
 				Find(match.Config("http.drivers")).Modify(modify.RemoveConfig("fiber")).
+				Find(match.Config("http")).Modify(modify.AddConfig("default", `""`)).
 				Find(match.Imports()).
 				Modify(
 					modify.RemoveImport("github.com/goravel/framework/contracts/route"),
