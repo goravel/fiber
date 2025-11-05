@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gookit/validate v1.5.6
-	github.com/goravel/framework v1.16.5
+	github.com/goravel/framework v1.16.1-0.20251104151004-3c7c0d634ebd
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.68.0
@@ -41,7 +41,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.11 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gofiber/template v1.8.3 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
@@ -96,7 +96,5 @@ require (
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/gorm v1.31.0 // indirect
+	gorm.io/gorm v1.31.1 // indirect
 )
-
-replace github.com/goravel/framework => ../framework

@@ -29,10 +29,7 @@ import (
 // map[path]map[method]info
 var routes = make(map[string]map[string]contractshttp.Info)
 
-var globalRecoverCallback func(ctx contractshttp.Context, err any) = func(ctx contractshttp.Context, err any) {
-	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
-	ctx.Request().Abort(contractshttp.StatusInternalServerError)
-}
+var globalRecoverCallback func(ctx contractshttp.Context, err any) = defaultRecoverCallback
 
 // Route fiber route
 // Route fiber 路由
@@ -48,15 +45,22 @@ type Route struct {
 // NewRoute creates new fiber route instance
 // NewRoute 创建新的 fiber 路由实例
 func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
+	driver := cast.ToString(parameters["driver"])
+	if driver == "" {
+		return nil, errors.New("please set the driver")
+	}
+
 	timeout := time.Duration(config.GetInt("http.request_timeout", 3)) * time.Second
 	globalMiddleware := []contractshttp.Middleware{Timeout(timeout), Cors()}
 
 	route := &Route{
 		config:           config,
-		driver:           cast.ToString(parameters["driver"]),
+		driver:           driver,
 		globalMiddleware: globalMiddleware,
 	}
-	route.init(globalMiddleware)
+	if err := route.init(globalMiddleware); err != nil {
+		return nil, err
+	}
 
 	return route, nil
 }
@@ -157,7 +161,9 @@ func (r *Route) Info(name string) contractshttp.Info {
 
 func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	globalRecoverCallback = callback
-	r.init(r.globalMiddleware)
+	if err := r.init(r.globalMiddleware); err != nil {
+		panic(err)
+	}
 }
 
 // Run run server
@@ -219,7 +225,9 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 // SetGlobalMiddleware sets global middleware
 func (r *Route) SetGlobalMiddleware(middlewares []contractshttp.Middleware) {
 	r.globalMiddleware = middlewares
-	r.init(r.globalMiddleware)
+	if err := r.init(r.globalMiddleware); err != nil {
+		panic(err)
+	}
 }
 
 // Shutdown gracefully shuts down the server
@@ -249,20 +257,18 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 
 func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 	var views fiber.Views
-	if r.driver != "" {
-		template, ok := r.config.Get("http.drivers." + r.driver + ".template").(fiber.Views)
+	template, ok := r.config.Get("http.drivers." + r.driver + ".template").(fiber.Views)
+	if ok {
+		views = template
+	} else {
+		templateCallback, ok := r.config.Get("http.drivers." + r.driver + ".template").(func() (fiber.Views, error))
 		if ok {
-			views = template
-		} else {
-			templateCallback, ok := r.config.Get("http.drivers." + r.driver + ".template").(func() (fiber.Views, error))
-			if ok {
-				template, err := templateCallback()
-				if err != nil {
-					return err
-				}
-
-				views = template
+			template, err := templateCallback()
+			if err != nil {
+				return err
 			}
+
+			views = template
 		}
 	}
 
@@ -271,9 +277,9 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		views = html.New(dir, ".tmpl")
 	}
 
-	immutable := r.config.GetBool("http.drivers.fiber.immutable", true)
+	immutable := r.config.GetBool(fmt.Sprintf("http.drivers.%s.immutable", r.driver), true)
 	network := fiber.NetworkTCP
-	prefork := r.config.GetBool("http.drivers.fiber.prefork", false)
+	prefork := r.config.GetBool(fmt.Sprintf("http.drivers.%s.prefork", r.driver), false)
 
 	// Fiber not support prefork on dual stack
 	// https://docs.gofiber.io/api/fiber#config
@@ -282,22 +288,22 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 	}
 
 	var trustedProxies []string
-	if trustedProxiesConfig, ok := r.config.Get("http.drivers.fiber.trusted_proxies").([]string); ok {
+	if trustedProxiesConfig, ok := r.config.Get(fmt.Sprintf("http.drivers.%s.trusted_proxies", r.driver)).([]string); ok {
 		trustedProxies = trustedProxiesConfig
 	}
 
 	instance := fiber.New(fiber.Config{
 		Immutable:               immutable,
 		Prefork:                 prefork,
-		BodyLimit:               r.config.GetInt("http.drivers.fiber.body_limit", 4096) << 10,
-		ReadBufferSize:          r.config.GetInt("http.drivers.fiber.header_limit", 4096),
+		BodyLimit:               r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
+		ReadBufferSize:          r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
 		DisableStartupMessage:   true,
 		JSONEncoder:             json.Marshal,
 		JSONDecoder:             json.Unmarshal,
 		Network:                 network,
 		Views:                   views,
-		ProxyHeader:             r.config.GetString("http.drivers.fiber.proxy_header", ""),
-		EnableTrustedProxyCheck: r.config.GetBool("http.drivers.fiber.enable_trusted_proxy_check", false),
+		ProxyHeader:             r.config.GetString(fmt.Sprintf("http.drivers.%s.proxy_header", r.driver), ""),
+		EnableTrustedProxyCheck: r.config.GetBool(fmt.Sprintf("http.drivers.%s.enable_trusted_proxy_check", r.driver), false),
 		TrustedProxies:          trustedProxies,
 	})
 
@@ -370,4 +376,9 @@ func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
 	for _, middleware := range middlewares {
 		r.instance.Use(middleware)
 	}
+}
+
+func defaultRecoverCallback(ctx contractshttp.Context, err any) {
+	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
+	ctx.Request().Abort(contractshttp.StatusInternalServerError)
 }
