@@ -102,7 +102,9 @@ func (r *Route) GetRoutes() []contractshttp.Info {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middleware ...contractshttp.Middleware) {
 	r.globalMiddleware = append(r.globalMiddleware, middleware...)
-	r.init(r.globalMiddleware)
+	if err := r.init(r.globalMiddleware); err != nil {
+		panic(err)
+	}
 }
 
 // Listen listen server
