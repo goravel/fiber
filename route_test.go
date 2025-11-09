@@ -94,7 +94,7 @@ func (s *RouteTestSuite) TestRecover() {
 		s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
 		s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
-		globalRecoverCallback := func(ctx contractshttp.Context, err any) {
+		globalRecoverCallback = func(ctx contractshttp.Context, err any) {
 			ctx.Request().Abort(http.StatusBadRequest)
 		}
 
