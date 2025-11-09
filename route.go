@@ -47,7 +47,7 @@ type Route struct {
 func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 	driver := cast.ToString(parameters["driver"])
 	if driver == "" {
-		return nil, errors.New("please set the driver")
+		return nil, errors.New("please set the fiber driver")
 	}
 
 	timeout := time.Duration(config.GetInt("http.request_timeout", 3)) * time.Second
@@ -318,7 +318,7 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		handlers = append(handlers, logger.New(logger.Config{
 			Format:     "[HTTP] ${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
 			TimeZone:   r.config.GetString("app.timezone", "UTC"),
-			TimeFormat: "2006/01/02 - 15:04:05",
+			TimeFormat: "2006-01-02 15:04:05.000",
 		}))
 	}
 

@@ -38,14 +38,16 @@ func TestContextRequestSuite(t *testing.T) {
 
 func (s *ContextRequestSuite) SetupTest() {
 	s.mockConfig = mocksconfig.NewConfig(s.T())
-	s.mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Once()
-	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	s.mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	s.mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	s.mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	s.mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
 	s.mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 	s.mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 	ValidationFacade = validation.NewValidation()
 
 	s.route = &Route{

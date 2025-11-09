@@ -16,16 +16,23 @@ import (
 
 func TestTimeoutMiddleware(t *testing.T) {
 	mockConfig := mocksconfig.NewConfig(t)
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
-	route, err := NewRoute(mockConfig, nil)
-	require.NoError(t, err)
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err := route.init(nil)
+	require.Nil(t, err)
 
 	route.Middleware(Timeout(1*time.Second)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
 		time.Sleep(2 * time.Second)
@@ -90,10 +97,25 @@ func TestTimeoutMiddleware(t *testing.T) {
 	})
 
 	t.Run("panic with custom recover", func(t *testing.T) {
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+
 		globalRecover := func(ctx contractshttp.Context, err any) {
-			ctx.Request().Abort(http.StatusInternalServerError)
+			ctx.Request().Abort(http.StatusBadRequest)
 		}
 		route.Recover(globalRecover)
+
+		route.Middleware(Timeout(5*time.Second)).Get("/panic", func(ctx contractshttp.Context) contractshttp.Response {
+			panic("test panic")
+		})
 
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
@@ -101,10 +123,12 @@ func TestTimeoutMiddleware(t *testing.T) {
 		resp, err := route.instance.Test(req, -1)
 		require.NoError(t, err)
 
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
-		assert.Equal(t, "Internal Server Error", string(body))
+		assert.Equal(t, "Bad Request", string(body))
+
+		globalRecoverCallback = defaultRecoverCallback
 	})
 }
