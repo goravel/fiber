@@ -4,9 +4,9 @@ import (
 	"github.com/goravel/framework/contracts/binding"
 	"github.com/goravel/framework/contracts/config"
 	"github.com/goravel/framework/contracts/foundation"
-	"github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/log"
 	"github.com/goravel/framework/contracts/validation"
+	"github.com/goravel/framework/contracts/view"
 )
 
 const BindingRoute = "goravel.fiber.route"
@@ -16,7 +16,7 @@ var (
 	ConfigFacade     config.Config
 	LogFacade        log.Log
 	ValidationFacade validation.Validation
-	ViewFacade       http.View
+	ViewFacade       view.View
 )
 
 type ServiceProvider struct{}

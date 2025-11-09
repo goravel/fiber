@@ -7,21 +7,22 @@ import (
 
 	contractshttp "github.com/goravel/framework/contracts/http"
 	foundationjson "github.com/goravel/framework/foundation/json"
-	configmocks "github.com/goravel/framework/mocks/config"
-	httpmocks "github.com/goravel/framework/mocks/http"
+	mocksconfig "github.com/goravel/framework/mocks/config"
+	mocksview "github.com/goravel/framework/mocks/view"
 	"github.com/goravel/framework/session"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestView_Make(t *testing.T) {
 	var (
 		err        error
-		fiber      *Route
+		route      *Route
 		req        *http.Request
-		mockConfig *configmocks.Config
-		mockView   *httpmocks.View
+		mockConfig *mocksconfig.Config
+		mockView   *mocksview.View
 	)
 
 	assert.Nil(t, file.PutContent(path.Resource("views", "empty.tmpl"), `{{ define "empty.tmpl" }}
@@ -35,17 +36,20 @@ func TestView_Make(t *testing.T) {
 `))
 
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		mockView = &httpmocks.View{}
+		mockView = mocksview.NewView(t)
 		ViewFacade = mockView
 	}
 	tests := []struct {
@@ -64,7 +68,7 @@ func TestView_Make(t *testing.T) {
 			setup: func(method, url string) error {
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/make/empty", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/empty", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().Make("empty.tmpl")
 				})
 
@@ -89,7 +93,7 @@ func TestView_Make(t *testing.T) {
 					"Age":  18,
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().Make("data.tmpl")
 				})
 
@@ -113,7 +117,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().Make("data.tmpl", map[string]any{
 						"Age": 18,
 					})
@@ -139,7 +143,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().Make("data.tmpl", map[string]any{
 						"Name": "test1",
 						"Age":  18,
@@ -166,7 +170,7 @@ func TestView_Make(t *testing.T) {
 					"Name": "test",
 				}).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().Make("data.tmpl", struct {
 						Name string
 						Age  int
@@ -194,7 +198,7 @@ func TestView_Make(t *testing.T) {
 			setup: func(method, url string) error {
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/make/data", func(ctx contractshttp.Context) contractshttp.Response {
 					assert.Panics(t, func() {
 						ctx.Response().View().Make("data.tmpl", []string{"test"})
 					})
@@ -218,13 +222,17 @@ func TestView_Make(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			fiber, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
+			route = &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err = route.init(nil)
+			require.Nil(t, err)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
-			resp, err := fiber.Test(req)
+			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
 			if test.expectBody != "" {
@@ -246,10 +254,10 @@ func TestView_Make(t *testing.T) {
 func TestView_First(t *testing.T) {
 	var (
 		err        error
-		fiber      *Route
+		route      *Route
 		req        *http.Request
-		mockConfig *configmocks.Config
-		mockView   *httpmocks.View
+		mockConfig *mocksconfig.Config
+		mockView   *mocksview.View
 	)
 
 	assert.Nil(t, file.PutContent(path.Resource("views", "empty.tmpl"), `{{ define "empty.tmpl" }}
@@ -263,17 +271,20 @@ func TestView_First(t *testing.T) {
 `))
 
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 
-		mockView = &httpmocks.View{}
+		mockView = mocksview.NewView(t)
 		ViewFacade = mockView
 	}
 	tests := []struct {
@@ -293,7 +304,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "empty.tmpl").Return(true).Once()
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"})
 				})
 
@@ -317,7 +328,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "data.tmpl").Return(true).Once()
 				mockView.On("GetShared").Return(nil).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"}, map[string]any{
 						"Name": "test",
 						"Age":  18,
@@ -343,7 +354,7 @@ func TestView_First(t *testing.T) {
 				mockView.On("Exists", "empty.tmpl").Return(false).Once()
 				mockView.On("Exists", "data.tmpl").Return(false).Once()
 
-				fiber.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/first", func(ctx contractshttp.Context) contractshttp.Response {
 					assert.Panics(t, func() {
 						ctx.Response().View().First([]string{"empty.tmpl", "data.tmpl"}, map[string]any{
 							"Name": "test",
@@ -370,13 +381,17 @@ func TestView_First(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			fiber, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
+			route = &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err = route.init(nil)
+			require.Nil(t, err)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
-			resp, err := fiber.Test(req)
+			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
 			if test.expectBody != "" {
@@ -396,29 +411,36 @@ func TestView_First(t *testing.T) {
 }
 
 func TestView_CSRFToken(t *testing.T) {
-
 	assert.Nil(t, file.PutContent(path.Resource("views", "csrf.tmpl"), `{{ define "csrf.tmpl" }}
 csrf_token={{ .csrf_token }}
 {{ end }}
 `))
 
-	mockConfig := configmocks.NewConfig(t)
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 	ConfigFacade = mockConfig
 
-	mockView := httpmocks.NewView(t)
+	mockView := mocksview.NewView(t)
 	ViewFacade = mockView
 	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
 
 	t.Run("CSRF token", func(t *testing.T) {
-		route, err := NewRoute(mockConfig, nil)
-		assert.Nil(t, err)
+		route := &Route{
+			config: mockConfig,
+			driver: "fiber",
+		}
+		err := route.init(nil)
+		require.Nil(t, err)
+
 		route.Get("/csrf", func(ctx contractshttp.Context) contractshttp.Response {
 			sessionData := session.NewSession("goravel_session", nil, foundationjson.New())
 			ctx.Request().SetSession(sessionData)

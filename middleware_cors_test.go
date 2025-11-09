@@ -4,20 +4,29 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
-
 	contractshttp "github.com/goravel/framework/contracts/http"
-	configmocks "github.com/goravel/framework/mocks/config"
+	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCors(t *testing.T) {
 	var (
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 		resp       *http.Response
 	)
 	beforeEach := func() {
-		mockConfig = configmocks.NewConfig(t)
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 	}
 
 	tests := []struct {
@@ -28,13 +37,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow all paths",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
@@ -55,13 +57,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow path",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"api"}).Once()
 				ConfigFacade = mockConfig
 			},
@@ -76,13 +71,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow path with *",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"any/*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
@@ -103,13 +91,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "only allow POST",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"POST"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
@@ -130,13 +111,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow POST",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"GET"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
@@ -157,13 +131,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow origin",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"https://goravel.com"}).Once()
@@ -184,13 +151,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "allow specific origin",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"https://www.goravel.dev"}).Once()
@@ -211,13 +171,6 @@ func TestCors(t *testing.T) {
 		{
 			name: "not allow exposed headers",
 			setup: func() {
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-				mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-				mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
-				mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
 				mockConfig.EXPECT().Get("cors.paths").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_methods").Return([]string{"*"}).Once()
 				mockConfig.EXPECT().Get("cors.allowed_origins").Return([]string{"*"}).Once()
@@ -242,11 +195,13 @@ func TestCors(t *testing.T) {
 			beforeEach()
 			test.setup()
 
-			route, err := NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
-			route.setMiddlewares([]fiber.Handler{
-				middlewareToFiberHandler(Cors()),
-			})
+			route := &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err := route.init([]contractshttp.Middleware{Cors()})
+			require.Nil(t, err)
+
 			route.Post("/any/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 				return ctx.Response().Success().Json(contractshttp.Json{
 					"id": ctx.Request().Input("id"),

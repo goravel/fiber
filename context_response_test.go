@@ -10,9 +10,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
-	configmocks "github.com/goravel/framework/mocks/config"
+	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResponse(t *testing.T) {
@@ -20,17 +21,20 @@ func TestResponse(t *testing.T) {
 		err        error
 		route      *Route
 		req        *http.Request
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 	)
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
@@ -391,10 +395,14 @@ func TestResponse(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			route, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
+			route = &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err = route.init(nil)
+			require.Nil(t, err)
 
-			err := test.setup(test.method, test.url)
+			err = test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
 			resp, err := route.Test(req)
@@ -435,8 +443,6 @@ func TestResponse(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
-
-			mockConfig.AssertExpectations(t)
 		})
 	}
 }
@@ -444,19 +450,22 @@ func TestResponse(t *testing.T) {
 func TestResponse_Success(t *testing.T) {
 	var (
 		err        error
-		fiber      *Route
+		route      *Route
 		req        *http.Request
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 	)
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
@@ -474,7 +483,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/data",
 			setup: func(method, url string) error {
-				fiber.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Data("text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -494,7 +503,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/json",
 			setup: func(method, url string) error {
-				fiber.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().Json(contractshttp.Json{
 						"id": "1",
 					})
@@ -516,7 +525,7 @@ func TestResponse_Success(t *testing.T) {
 			method: "GET",
 			url:    "/string",
 			setup: func(method, url string) error {
-				fiber.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Success().String("Goravel")
 				})
 
@@ -536,13 +545,17 @@ func TestResponse_Success(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			fiber, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
+			route = &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err = route.init(nil)
+			require.Nil(t, err)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
-			resp, err := fiber.Test(req)
+			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
 			if test.expectBody != "" {
@@ -568,8 +581,6 @@ func TestResponse_Success(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
-
-			mockConfig.AssertExpectations(t)
 		})
 	}
 }
@@ -577,19 +588,22 @@ func TestResponse_Success(t *testing.T) {
 func TestResponse_Status(t *testing.T) {
 	var (
 		err        error
-		fiber      *Route
+		route      *Route
 		req        *http.Request
-		mockConfig *configmocks.Config
+		mockConfig *mocksconfig.Config
 	)
 	beforeEach := func() {
-		mockConfig = &configmocks.Config{}
-		mockConfig.On("GetBool", "http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.On("GetBool", "http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.On("GetInt", "http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig = mocksconfig.NewConfig(t)
+		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
 		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 		ConfigFacade = mockConfig
 	}
 	tests := []struct {
@@ -607,7 +621,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/data",
 			setup: func(method, url string) error {
-				fiber.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/data", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Status(http.StatusCreated).Data("text/html; charset=utf-8", []byte("<b>Goravel</b>"))
 				})
 
@@ -627,7 +641,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/json",
 			setup: func(method, url string) error {
-				fiber.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/json", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Status(http.StatusCreated).Json(contractshttp.Json{
 						"id": "1",
 					})
@@ -649,7 +663,7 @@ func TestResponse_Status(t *testing.T) {
 			method: "GET",
 			url:    "/string",
 			setup: func(method, url string) error {
-				fiber.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
+				route.Get("/string", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().Status(http.StatusCreated).String("Goravel")
 				})
 
@@ -669,13 +683,17 @@ func TestResponse_Status(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			beforeEach()
-			fiber, err = NewRoute(mockConfig, nil)
-			assert.Nil(t, err)
+			route = &Route{
+				config: mockConfig,
+				driver: "fiber",
+			}
+			err = route.init(nil)
+			require.Nil(t, err)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
-			resp, err := fiber.Test(req)
+			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
 			if test.expectBody != "" {
@@ -701,26 +719,31 @@ func TestResponse_Status(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expectCode, resp.StatusCode)
-
-			mockConfig.AssertExpectations(t)
 		})
 	}
 }
 
 func TestResponse_Stream(t *testing.T) {
-	mockConfig := &configmocks.Config{}
-	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
 	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("").Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
-	fiber, err := NewRoute(mockConfig, nil)
-	assert.Nil(t, err)
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err := route.init(nil)
+	require.Nil(t, err)
 
-	fiber.Get("/stream", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Get("/stream", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Status(http.StatusCreated).Stream(func(w contractshttp.StreamWriter) error {
 			b := []string{"a", "b", "c"}
 			for _, a := range b {
@@ -740,7 +763,7 @@ func TestResponse_Stream(t *testing.T) {
 	req, err := http.NewRequest("GET", "/stream", nil)
 	assert.Nil(t, err)
 
-	resp, err := fiber.Test(req)
+	resp, err := route.Test(req)
 	assert.NoError(t, err)
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -750,7 +773,5 @@ func TestResponse_Stream(t *testing.T) {
 	}
 
 	assert.Equal(t, []string{"a", "b", "c"}, output)
-
-	mockConfig.AssertExpectations(t)
 
 }
