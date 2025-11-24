@@ -1,12 +1,13 @@
 module github.com/goravel/fiber
 
-go 1.24.0
+go 1.25
 
 toolchain go1.25.4
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/gofiber/template/html/v2 v2.1.3
+	github.com/gofiber/template/html/v3 v3.0.0
 	github.com/gookit/validate v1.5.6
 	github.com/goravel/framework v1.16.1-0.20251104151004-3c7c0d634ebd
 	github.com/spf13/cast v1.10.0
