@@ -6,10 +6,12 @@ import (
 	"github.com/goravel/framework/packages"
 	"github.com/goravel/framework/packages/match"
 	"github.com/goravel/framework/packages/modify"
+	"github.com/goravel/framework/support/env"
 	"github.com/goravel/framework/support/path"
 )
 
-var config = `map[string]any{
+func main() {
+	var config = `map[string]any{
         // immutable mode, see https://docs.gofiber.io/#zero-allocation
         // WARNING: This option is dangerous. Only change it if you fully understand the potential consequences.
         "immutable": true,
@@ -26,36 +28,66 @@ var config = `map[string]any{
             return html.New(path.Resource("views"), ".tmpl"), nil
         },
     }`
+	modulePath := packages.GetModulePath()
+	fiberServiceProvider := "&fiber.ServiceProvider{}"
+	appConfigPath := path.Config("app.go")
+	httpConfigPath := path.Config("http.go")
+	routeContract := "github.com/goravel/framework/contracts/route"
+	fiberFacade := "github.com/goravel/fiber/facades"
+	html := "github.com/gofiber/template/html/v2"
+	supportPath := "github.com/goravel/framework/support/path"
+	fiber := "github.com/gofiber/fiber/v2"
+	httpDriversConfig := match.Config("http.drivers")
+	httpConfig := match.Config("http")
 
-func main() {
 	packages.Setup(os.Args).
 		Install(
-			modify.GoFile(path.Config("app.go")).
-				Find(match.Imports()).Modify(modify.AddImport(packages.GetModulePath())).
-				Find(match.Providers()).Modify(modify.Register("&fiber.ServiceProvider{}")),
-			modify.GoFile(path.Config("http.go")).
+			// Add fiber service provider to app.go if not using bootstrap setup
+			modify.When(func(_ map[string]any) bool {
+				return !env.IsBootstrapSetup()
+			}, modify.GoFile(appConfigPath).
+				Find(match.Imports()).Modify(modify.AddImport(modulePath)).
+				Find(match.Providers()).Modify(modify.Register(fiberServiceProvider))),
+
+			// Add fiber service provider to providers.go if using bootstrap setup
+			modify.When(func(_ map[string]any) bool {
+				return env.IsBootstrapSetup()
+			}, modify.AddProviderApply(modulePath, fiberServiceProvider)),
+
+			// Add fiber config to http.go
+			modify.GoFile(httpConfigPath).
 				Find(match.Imports()).
 				Modify(
-					modify.AddImport("github.com/goravel/framework/contracts/route"),
-					modify.AddImport("github.com/goravel/fiber/facades", "fiberfacades"), modify.AddImport("github.com/goravel/framework/support/path"),
-					modify.AddImport("github.com/gofiber/template/html/v2"), modify.AddImport("github.com/gofiber/fiber/v2"),
+					modify.AddImport(routeContract),
+					modify.AddImport(fiberFacade, "fiberfacades"), modify.AddImport(supportPath),
+					modify.AddImport(html), modify.AddImport(fiber),
 				).
-				Find(match.Config("http.drivers")).Modify(modify.AddConfig("fiber", config)).
-				Find(match.Config("http")).Modify(modify.AddConfig("default", `"fiber"`)),
+				Find(httpDriversConfig).Modify(modify.AddConfig("fiber", config)).
+				Find(httpConfig).Modify(modify.AddConfig("default", `"fiber"`)),
 		).
 		Uninstall(
-			modify.GoFile(path.Config("app.go")).
-				Find(match.Providers()).Modify(modify.Unregister("&fiber.ServiceProvider{}")).
-				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath())),
-			modify.GoFile(path.Config("http.go")).
-				Find(match.Config("http.drivers")).Modify(modify.RemoveConfig("fiber")).
-				Find(match.Config("http")).Modify(modify.AddConfig("default", `""`)).
+			// Remove fiber config from http.go
+			modify.GoFile(httpConfigPath).
+				Find(httpDriversConfig).Modify(modify.RemoveConfig("fiber")).
+				Find(httpConfig).Modify(modify.AddConfig("default", `""`)).
 				Find(match.Imports()).
 				Modify(
-					modify.RemoveImport("github.com/goravel/framework/contracts/route"),
-					modify.RemoveImport("github.com/goravel/fiber/facades", "fiberfacades"), modify.RemoveImport("github.com/goravel/framework/support/path"),
-					modify.RemoveImport("github.com/gofiber/template/html/v2"), modify.RemoveImport("github.com/gofiber/fiber/v2"),
+					modify.RemoveImport(routeContract),
+					modify.RemoveImport(fiberFacade, "fiberfacades"), modify.RemoveImport(supportPath),
+					modify.RemoveImport(html), modify.RemoveImport(fiber),
 				),
+
+			// Remove fiber service provider from app.go if not using bootstrap setup
+			modify.When(func(_ map[string]any) bool {
+				return !env.IsBootstrapSetup()
+			}, modify.GoFile(appConfigPath).
+				Find(match.Providers()).Modify(modify.Unregister(fiberServiceProvider)).
+				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath()))),
+
+			// Remove fiber service provider from providers.go if using bootstrap setup
+			modify.When(func(_ map[string]any) bool {
+				return env.IsBootstrapSetup()
+			}, modify.RemoveProviderApply(modulePath, fiberServiceProvider)),
 		).
 		Execute()
 }
