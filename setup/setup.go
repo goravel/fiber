@@ -42,14 +42,14 @@ func main() {
 
 	packages.Setup(os.Args).
 		Install(
-			// Add gin service provider to app.go if not using bootstrap setup
+			// Add fiber service provider to app.go if not using bootstrap setup
 			modify.When(func(_ map[string]any) bool {
 				return !env.IsBootstrapSetup()
 			}, modify.GoFile(appConfigPath).
 				Find(match.Imports()).Modify(modify.AddImport(modulePath)).
 				Find(match.Providers()).Modify(modify.Register(fiberServiceProvider))),
 
-			// Add gin service provider to providers.go if using bootstrap setup
+			// Add fiber service provider to providers.go if using bootstrap setup
 			modify.When(func(_ map[string]any) bool {
 				return env.IsBootstrapSetup()
 			}, modify.AddProviderApply(modulePath, fiberServiceProvider)),
@@ -77,14 +77,14 @@ func main() {
 					modify.RemoveImport(html), modify.RemoveImport(fiber),
 				),
 
-			// Remove fiber service provider to app.go if not using bootstrap setup
+			// Remove fiber service provider from app.go if not using bootstrap setup
 			modify.When(func(_ map[string]any) bool {
 				return !env.IsBootstrapSetup()
 			}, modify.GoFile(appConfigPath).
 				Find(match.Providers()).Modify(modify.Unregister(fiberServiceProvider)).
 				Find(match.Imports()).Modify(modify.RemoveImport(packages.GetModulePath()))),
 
-			// Remove fiber service provider to providers.go if using bootstrap setup
+			// Remove fiber service provider from providers.go if using bootstrap setup
 			modify.When(func(_ map[string]any) bool {
 				return env.IsBootstrapSetup()
 			}, modify.RemoveProviderApply(modulePath, fiberServiceProvider)),
