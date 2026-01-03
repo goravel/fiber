@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -567,7 +568,7 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 		}
 	}
 
-	return r.validation.Make(dataFace, rules, options...)
+	return r.validation.Make(r.ctx, dataFace, rules, options...)
 }
 
 func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (contractsvalidate.Errors, error) {
@@ -586,7 +587,14 @@ func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (con
 		options = append(options, validation.Attributes(requestWithAttributes.Attributes(r.ctx)))
 	}
 	if prepareForValidation, ok := request.(contractshttp.FormRequestWithPrepareForValidation); ok {
-		options = append(options, validation.PrepareForValidation(r.ctx, prepareForValidation.PrepareForValidation))
+		options = append(options, validation.PrepareForValidation(func(ctx context.Context, data contractsvalidate.Data) error {
+			httpCtx, ok := ctx.(contractshttp.Context)
+			if !ok {
+				httpCtx = r.ctx
+			}
+
+			return prepareForValidation.PrepareForValidation(httpCtx, data)
+		}))
 	}
 
 	validator, err := r.Validate(request.Rules(r.ctx), options...)
