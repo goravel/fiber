@@ -14,6 +14,7 @@ Fiber http driver for Goravel.
 
 | goravel/fiber | goravel/framework |
 |---------------|-------------------|
+| v1.17.x       | v1.17.x           |
 | v1.4.x        | v1.16.x           |
 | v1.3.x        | v1.15.x           |
 | v1.2.x        | v1.14.x           |
