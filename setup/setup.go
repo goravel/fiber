@@ -52,7 +52,7 @@ func main() {
 		// Add fiber service provider to providers.go if using bootstrap setup
 		modify.When(func(_ map[string]any) bool {
 			return env.IsBootstrapSetup()
-		}, modify.AddProviderApply(moduleImport, fiberServiceProvider)),
+		}, modify.RegisterProvider(moduleImport, fiberServiceProvider)),
 
 		// Add fiber config to http.go
 		modify.GoFile(httpConfigPath).
@@ -86,6 +86,6 @@ func main() {
 		// Remove fiber service provider from providers.go if using bootstrap setup
 		modify.When(func(_ map[string]any) bool {
 			return env.IsBootstrapSetup()
-		}, modify.RemoveProviderApply(moduleImport, fiberServiceProvider)),
+		}, modify.UnregisterProvider(moduleImport, fiberServiceProvider)),
 	).Execute()
 }
