@@ -1,11 +1,12 @@
 module github.com/goravel/fiber
 
-go 1.24.0
+go 1.25.0
 
 toolchain go1.25.6
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.11
+	github.com/gofiber/fiber/v3 v3.0.0
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gookit/validate v1.5.6
 	github.com/goravel/framework v1.17.0
@@ -56,7 +57,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
