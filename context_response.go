@@ -105,7 +105,7 @@ func (r *ContextResponse) View() contractshttp.ResponseView {
 }
 
 func (r *ContextResponse) Flush() {
-	r.instance.Fresh() //nolint:errcheck
+	r.instance.Fresh()
 }
 
 func (r *ContextResponse) WithoutCookie(name string) contractshttp.ContextResponse {
