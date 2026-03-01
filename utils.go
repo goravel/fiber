@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	httpcontract "github.com/goravel/framework/contracts/http"
 )
 
@@ -21,8 +21,22 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 	return fiberHandlers
 }
 
+// fiberHandlerArgs converts a []fiber.Handler to the variadic argument form
+// required by fiber v3 routing methods: (first any, rest ...any).
+func fiberHandlerArgs(handlers []fiber.Handler) (first any, rest []any) {
+	if len(handlers) == 0 {
+		return nil, nil
+	}
+	first = handlers[0]
+	rest = make([]any, len(handlers)-1)
+	for i, h := range handlers[1:] {
+		rest[i] = h
+	}
+	return first, rest
+}
+
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		context := NewContext(c)
 		defer func() {
 			contextRequestPool.Put(context.request)
@@ -40,7 +54,7 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 }
 
 func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		context := NewContext(c)
 		defer func() {
 			contextRequestPool.Put(context.request)

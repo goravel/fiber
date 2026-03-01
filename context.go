@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/goravel/framework/contracts/http"
 	"github.com/valyala/fasthttp"
 )
@@ -37,12 +37,12 @@ var contextPool = sync.Pool{New: func() any {
 }}
 
 type Context struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	request  http.ContextRequest
 	response http.ContextResponse
 }
 
-func NewContext(c *fiber.Ctx) *Context {
+func NewContext(c fiber.Ctx) *Context {
 	ctx := contextPool.Get().(*Context)
 	ctx.instance = c
 	return ctx
@@ -73,15 +73,15 @@ func (c *Context) WithValue(key any, value any) {
 		values = make(map[any]any)
 	}
 	values[key] = value
-	ctx := context.WithValue(c.instance.UserContext(), contextKey, values)
-	c.instance.SetUserContext(ctx)
+	ctx := context.WithValue(c.instance.Context(), contextKey, values)
+	c.instance.SetContext(ctx)
 }
 
 func (c *Context) WithContext(ctx context.Context) {
 	// We want to return the original context back when calling `Context()`, so we need to store it.
 	ctx = context.WithValue(ctx, userContextKey, ctx)
 	ctx = context.WithValue(ctx, contextKey, c.getGoravelContextValues())
-	c.instance.SetUserContext(ctx)
+	c.instance.SetContext(ctx)
 }
 
 func (c *Context) Context() context.Context {
@@ -104,15 +104,15 @@ func (c *Context) Context() context.Context {
 }
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return c.instance.UserContext().Deadline()
+	return c.instance.Context().Deadline()
 }
 
 func (c *Context) Done() <-chan struct{} {
-	return c.instance.UserContext().Done()
+	return c.instance.Context().Done()
 }
 
 func (c *Context) Err() error {
-	return c.instance.UserContext().Err()
+	return c.instance.Context().Err()
 }
 
 func (c *Context) Value(key any) any {
@@ -121,15 +121,15 @@ func (c *Context) Value(key any) any {
 		return value
 	}
 
-	return c.instance.UserContext().Value(key)
+	return c.instance.Context().Value(key)
 }
 
-func (c *Context) Instance() *fiber.Ctx {
+func (c *Context) Instance() fiber.Ctx {
 	return c.instance
 }
 
 func (c *Context) getGoravelContextValues() map[any]any {
-	value := c.instance.UserContext().Value(contextKey)
+	value := c.instance.Context().Value(contextKey)
 	if goravelCtxVal, ok := value.(map[any]any); ok {
 		return goravelCtxVal
 	}
@@ -138,7 +138,7 @@ func (c *Context) getGoravelContextValues() map[any]any {
 }
 
 func (c *Context) getUserContext() context.Context {
-	ctx, exist := c.instance.UserContext().Value(userContextKey).(context.Context)
+	ctx, exist := c.instance.Context().Value(userContextKey).(context.Context)
 	if !exist {
 		ctx = context.Background()
 	}

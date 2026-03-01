@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	"github.com/gookit/validate"
 	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -36,7 +36,7 @@ var contextRequestPool = sync.Pool{New: func() any {
 
 type ContextRequest struct {
 	ctx        *Context
-	instance   *fiber.Ctx
+	instance   fiber.Ctx
 	httpBody   map[string]any
 	log        log.Log
 	validation contractsvalidate.Validation
@@ -84,12 +84,12 @@ func (r *ContextRequest) AbortWithStatusJson(code int, jsonObj any) {
 func (r *ContextRequest) All() map[string]any {
 	data := make(map[string]any)
 
-	for k, v := range r.instance.AllParams() {
+	for k, v := range allParams(r.instance) {
 		data[k] = v
 	}
 
-	keyToSlice := make(map[string][]string, r.instance.Context().QueryArgs().Len())
-	for key, value := range r.instance.Context().QueryArgs().All() {
+	keyToSlice := make(map[string][]string, r.instance.RequestCtx().QueryArgs().Len())
+	for key, value := range r.instance.RequestCtx().QueryArgs().All() {
 		keyStr := string(key)
 		if _, ok := keyToSlice[keyStr]; !ok {
 			keyToSlice[keyStr] = []string{}
@@ -109,11 +109,11 @@ func (r *ContextRequest) All() map[string]any {
 }
 
 func (r *ContextRequest) Bind(obj any) error {
-	return r.instance.BodyParser(obj)
+	return r.instance.Bind().Body(obj)
 }
 
 func (r *ContextRequest) BindQuery(obj any) error {
-	return r.instance.QueryParser(obj)
+	return r.instance.Bind().Query(obj)
 }
 
 func (r *ContextRequest) Cookie(key string, defaultValue ...string) string {
@@ -319,7 +319,7 @@ func (r *ContextRequest) Queries() map[string]string {
 
 func (r *ContextRequest) Origin() *http.Request {
 	var req http.Request
-	if err := fasthttpadaptor.ConvertRequest(r.instance.Context(), &req, true); err != nil {
+	if err := fasthttpadaptor.ConvertRequest(r.instance.RequestCtx(), &req, true); err != nil {
 		panic(err)
 	}
 
@@ -383,7 +383,7 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 		}
 	}
 
-	if r.instance.Context().QueryArgs().Has(key) {
+	if r.instance.RequestCtx().QueryArgs().Has(key) {
 		return r.instance.Query(key)
 	}
 
@@ -399,8 +399,8 @@ func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []stri
 		}
 	}
 
-	if r.instance.Context().QueryArgs().Has(key) {
-		valueSlice := r.instance.Context().QueryArgs().PeekMulti(key)
+	if r.instance.RequestCtx().QueryArgs().Has(key) {
+		valueSlice := r.instance.RequestCtx().QueryArgs().PeekMulti(key)
 		value := make([]string, 0)
 		for _, item := range valueSlice {
 			if itemStr := utils.UnsafeString(item); itemStr != "" {
@@ -411,7 +411,7 @@ func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []stri
 		return value
 	}
 
-	if value, exist := r.instance.AllParams()[key]; exist {
+	if value, exist := allParams(r.instance)[key]; exist {
 		return str.Of(value).Split(",")
 	}
 
@@ -427,7 +427,7 @@ func (r *ContextRequest) InputMap(key string, defaultValue ...map[string]any) ma
 		return cast.ToStringMap(valueFromHttpBody)
 	}
 
-	if r.instance.Context().QueryArgs().Has(key) {
+	if r.instance.RequestCtx().QueryArgs().Has(key) {
 		valueStr := r.instance.Query(key)
 		var value map[string]any
 		if err := json.Unmarshal([]byte(valueStr), &value); err != nil {
@@ -560,7 +560,7 @@ func (r *ContextRequest) Validate(rules map[string]string, options ...contractsv
 		}
 	}
 
-	for key, param := range r.instance.AllParams() {
+	for key, param := range allParams(r.instance) {
 		if _, exist := dataFace.Get(key); !exist {
 			if _, err := dataFace.Set(key, param); err != nil {
 				return nil, err
@@ -699,4 +699,15 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 
 func stringToBool(value string) bool {
 	return value == "1" || value == "true" || value == "on" || value == "yes"
+}
+
+func allParams(c fiber.Ctx) map[string]string {
+	params := make(map[string]string)
+	route := c.Route()
+	if route != nil {
+		for _, key := range route.Params {
+			params[key] = c.Params(key)
+		}
+	}
+	return params
 }

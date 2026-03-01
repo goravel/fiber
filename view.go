@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	contractsession "github.com/goravel/framework/contracts/session"
 )
 
 type View struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 }
 
-func NewView(instance *fiber.Ctx) *View {
+func NewView(instance fiber.Ctx) *View {
 	return &View{instance: instance}
 }
 
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
-	if contextValues := receive.instance.UserContext().Value(contextKey); contextValues != nil {
+	if contextValues := receive.instance.Context().Value(contextKey); contextValues != nil {
 		contextValuesMap := contextValues.(map[any]any)
 		if session := contextValuesMap[sessionKey]; session != nil {
 			sessionValue := session.(contractsession.Session)
