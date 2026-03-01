@@ -1,6 +1,6 @@
 module github.com/goravel/fiber
 
-go 1.24.0
+go 1.25
 
 toolchain go1.26.0
 
@@ -47,7 +47,10 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gofiber/template v1.8.3 // indirect
+	github.com/gofiber/template/html/v3 v3.0.2 // indirect
+	github.com/gofiber/template/v2 v2.1.0 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
+	github.com/gofiber/utils/v2 v2.0.0 // indirect
 	github.com/goforj/godump v1.9.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
