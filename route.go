@@ -300,35 +300,23 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		network = fiber.NetworkTCP4
 	}
 
-	proxyHeader := r.config.GetString(fmt.Sprintf("http.drivers.%s.proxy_header", r.driver), "")
-	enableTrustedProxyCheck := r.config.GetBool(fmt.Sprintf("http.drivers.%s.enable_trusted_proxy_check", r.driver), false)
 	var trustedProxies []string
 	if trustedProxiesConfig, ok := r.config.Get(fmt.Sprintf("http.drivers.%s.trusted_proxies", r.driver)).([]string); ok {
 		trustedProxies = trustedProxiesConfig
 	}
 
-	// In v2, ProxyHeader without EnableTrustedProxyCheck meant "always trust the proxy header".
-	// In v3, TrustProxy must be true for ProxyHeader to be used.
-	// When enable_trusted_proxy_check is false but proxy_header is set, trust all proxy IPs to maintain v2 behavior.
-	trustProxy := enableTrustedProxyCheck || proxyHeader != ""
-	trustProxyConfig := fiber.TrustProxyConfig{
-		Proxies: trustedProxies,
-	}
-	if !enableTrustedProxyCheck && proxyHeader != "" {
-		// Trust all IPs when no specific check is configured (v2 compatibility)
-		trustProxyConfig.Proxies = append(trustedProxies, "0.0.0.0/0", "::/0")
-	}
-
 	instance := fiber.New(fiber.Config{
-		Immutable:        immutable,
-		BodyLimit:        r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
-		ReadBufferSize:   r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
-		JSONEncoder:      json.Marshal,
-		JSONDecoder:      json.Unmarshal,
-		Views:            views,
-		ProxyHeader:      proxyHeader,
-		TrustProxy:       trustProxy,
-		TrustProxyConfig: trustProxyConfig,
+		Immutable:      immutable,
+		BodyLimit:      r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
+		ReadBufferSize: r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
+		JSONEncoder:    json.Marshal,
+		JSONDecoder:    json.Unmarshal,
+		Views:          views,
+		ProxyHeader:    r.config.GetString(fmt.Sprintf("http.drivers.%s.proxy_header", r.driver), ""),
+		TrustProxy:     r.config.GetBool(fmt.Sprintf("http.drivers.%s.enable_trusted_proxy_check", r.driver), false),
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Proxies: trustedProxies,
+		},
 	})
 
 	r.listenConfig = fiber.ListenConfig{

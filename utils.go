@@ -21,8 +21,8 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 	return fiberHandlers
 }
 
-// fiberHandlerArgs converts a []fiber.Handler to the variadic argument form
-// required by fiber v3 routing methods: (first any, rest ...any).
+// fiberHandlerArgs splits a handler slice into the first handler and the remaining handlers,
+// matching the signature required by fiber v3 routing methods: (path string, handler any, handlers ...any).
 func fiberHandlerArgs(handlers []fiber.Handler) (first any, rest []any) {
 	if len(handlers) == 0 {
 		return nil, nil

@@ -673,7 +673,7 @@ func (s *ContextRequestSuite) TestMethods() {
 	req.Header.Set("X-Forwarded-For", "1.1.1.1")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"full_url\":\"\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"1.1.1.1\",\"method\":\"GET\",\"name\":\"Goravel\",\"origin_path\":\"/methods/{id}\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
+	s.Equal("{\"full_url\":\"\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"0.0.0.0\",\"method\":\"GET\",\"name\":\"Goravel\",\"origin_path\":\"/methods/{id}\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 

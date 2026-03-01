@@ -19,7 +19,7 @@ func NewView(instance fiber.Ctx) *View {
 
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
-	if contextValues := receive.instance.Context().Value(contextKey); contextValues != nil {
+	if contextValues := receive.instance.Value(contextKey); contextValues != nil {
 		contextValuesMap := contextValues.(map[any]any)
 		if session := contextValuesMap[sessionKey]; session != nil {
 			sessionValue := session.(contractsession.Session)
