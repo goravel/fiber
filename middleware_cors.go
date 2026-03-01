@@ -1,10 +1,9 @@
 package fiber
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/goravel/framework/contracts/http"
 )
 
@@ -40,91 +39,56 @@ func Cors() http.Middleware {
 		}
 
 		fiberCtx := ctx.(*Context)
-		if err := cors.New(cors.Config{
+		handler := cors.New(cors.Config{
 			AllowMethods:     allowedMethods(),
 			AllowOrigins:     allowedOrigins(),
 			AllowHeaders:     allowedHeaders(),
 			ExposeHeaders:    exposedHeaders(),
 			MaxAge:           ConfigFacade.GetInt("cors.max_age"),
 			AllowCredentials: ConfigFacade.GetBool("cors.supports_credentials"),
-		})(fiberCtx.Instance()); err != nil {
+		})
+		if err := handler(fiberCtx.Instance()); err != nil {
 			panic(err)
 		}
 	}
 }
 
-func allowedMethods() string {
-	var allowedMethods string
+func allowedMethods() []string {
 	allowedMethodConfigs := ConfigFacade.Get("cors.allowed_methods").([]string)
-	for i, method := range allowedMethodConfigs {
+	for _, method := range allowedMethodConfigs {
 		if method == "*" {
-			allowedMethods = fmt.Sprintf("%s,%s,%s,%s,%s,%s", http.MethodGet, http.MethodPost, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodPatch)
-			break
+			return []string{http.MethodGet, http.MethodPost, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodPatch}
 		}
-		if i == len(allowedMethodConfigs)-1 {
-			allowedMethods += method
-			break
-		}
-
-		allowedMethods += method + ","
 	}
-
-	return allowedMethods
+	return allowedMethodConfigs
 }
 
-func allowedOrigins() string {
-	var allowedOrigins string
+func allowedOrigins() []string {
 	allowedOriginConfigs := ConfigFacade.Get("cors.allowed_origins").([]string)
-	for i, origin := range allowedOriginConfigs {
+	for _, origin := range allowedOriginConfigs {
 		if origin == "*" {
-			allowedOrigins = "*"
-			break
+			return []string{"*"}
 		}
-		if i == len(allowedOriginConfigs)-1 {
-			allowedOrigins += origin
-			break
-		}
-
-		allowedOrigins += origin + ","
 	}
-
-	return allowedOrigins
+	return allowedOriginConfigs
 }
 
-func allowedHeaders() string {
-	var allowedHeaders string
+func allowedHeaders() []string {
 	allowedHeaderConfigs := ConfigFacade.Get("cors.allowed_headers").([]string)
-	for i, header := range allowedHeaderConfigs {
+	for _, header := range allowedHeaderConfigs {
 		if header == "*" {
-			allowedHeaders = ""
-			break
+			return []string{}
 		}
-		if i == len(allowedHeaderConfigs)-1 {
-			allowedHeaders += header
-			break
-		}
-
-		allowedHeaders += header + ","
 	}
-
-	return allowedHeaders
+	return allowedHeaderConfigs
 }
 
-func exposedHeaders() string {
-	var exposedHeaders string
+func exposedHeaders() []string {
 	exposedHeaderConfigs := ConfigFacade.Get("cors.exposed_headers").([]string)
-	for i, header := range exposedHeaderConfigs {
+	for _, header := range exposedHeaderConfigs {
 		if header == "*" {
-			exposedHeaders = ""
-			break
+			return []string{}
 		}
-		if i == len(exposedHeaderConfigs)-1 {
-			exposedHeaders += header
-			break
-		}
-
-		exposedHeaders += header + ","
 	}
-
-	return exposedHeaders
+	return exposedHeaderConfigs
 }

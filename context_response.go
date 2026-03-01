@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/valyala/fasthttp"
 )
@@ -19,11 +19,11 @@ var contextResponsePool = sync.Pool{New: func() any {
 }}
 
 type ContextResponse struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	origin   contractshttp.ResponseOrigin
 }
 
-func NewContextResponse(instance *fiber.Ctx, origin contractshttp.ResponseOrigin) contractshttp.ContextResponse {
+func NewContextResponse(instance fiber.Ctx, origin contractshttp.ResponseOrigin) contractshttp.ContextResponse {
 	response := contextResponsePool.Get().(*ContextResponse)
 	response.instance = instance
 	response.origin = origin
@@ -120,7 +120,7 @@ func (r *ContextResponse) WithoutCookie(name string) contractshttp.ContextRespon
 func (r *ContextResponse) Writer() http.ResponseWriter {
 	return &netHTTPResponseWriter{
 		w:   r.instance.Response().BodyWriter(),
-		ctx: r.instance.Context(),
+		ctx: r.instance.RequestCtx(),
 	}
 }
 
@@ -197,11 +197,11 @@ func (w *netHTTPResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 type Status struct {
-	instance *fiber.Ctx
+	instance fiber.Ctx
 	status   int
 }
 
-func NewStatus(instance *fiber.Ctx, code int) contractshttp.ResponseStatus {
+func NewStatus(instance fiber.Ctx, code int) contractshttp.ResponseStatus {
 	return &Status{instance, code}
 }
 
@@ -233,7 +233,7 @@ func ResponseMiddleware() contractshttp.Middleware {
 }
 
 type ResponseOrigin struct {
-	*fiber.Ctx
+	Ctx fiber.Ctx
 }
 
 func (w *ResponseOrigin) Body() *bytes.Buffer {
@@ -242,7 +242,7 @@ func (w *ResponseOrigin) Body() *bytes.Buffer {
 
 func (w *ResponseOrigin) Header() http.Header {
 	result := http.Header{}
-	for key, value := range w.Response().Header.All() {
+	for key, value := range w.Ctx.Response().Header.All() {
 		result.Add(utils.UnsafeString(key), utils.UnsafeString(value))
 	}
 

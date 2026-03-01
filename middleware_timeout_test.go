@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	mockslog "github.com/goravel/framework/mocks/log"
@@ -51,7 +52,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
 		require.NoError(t, err)
 
-		resp, err := route.instance.Test(req, -1)
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
@@ -66,7 +67,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		req, err := http.NewRequest("GET", "/normal", nil)
 		require.NoError(t, err)
 
-		resp, err := route.instance.Test(req, -1)
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		assert.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -86,7 +87,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
 
-		resp, err := route.instance.Test(req, -1)
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -120,7 +121,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
 
-		resp, err := route.instance.Test(req, -1)
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)

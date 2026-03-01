@@ -10,10 +10,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/gofiber/template/html/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
+	"github.com/gofiber/template/html/v3"
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -40,6 +40,7 @@ type Route struct {
 	fallback         contractshttp.HandlerFunc
 	globalMiddleware []contractshttp.Middleware
 	instance         *fiber.App
+	listenConfig     fiber.ListenConfig
 }
 
 // NewRoute creates new fiber route instance
@@ -114,7 +115,9 @@ func (r *Route) Listen(l net.Listener) error {
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(l.Addr().String()).Start("http://").String())
 
-	return r.instance.Listener(l)
+	listenConfig := r.listenConfig
+	listenConfig.DisableStartupMessage = true
+	return r.instance.Listener(l, listenConfig)
 }
 
 // ListenTLS listen TLS server
@@ -146,7 +149,9 @@ func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) erro
 
 	r.instance.SetTLSHandler(tlsHandler)
 
-	return r.instance.Listener(tls.NewListener(l, tlsConfig))
+	listenConfig := r.listenConfig
+	listenConfig.DisableStartupMessage = true
+	return r.instance.Listener(tls.NewListener(l, tlsConfig), listenConfig)
 }
 
 func (r *Route) Info(name string) contractshttp.Info {
@@ -185,7 +190,9 @@ func (r *Route) Run(host ...string) error {
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(host[0]).Start("http://").String())
 
-	return r.instance.Listen(host[0])
+	listenConfig := r.listenConfig
+	listenConfig.DisableStartupMessage = true
+	return r.instance.Listen(host[0], listenConfig)
 }
 
 // RunTLS run TLS server
@@ -221,7 +228,11 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 	r.outputRoutes()
 	color.Green().Println("[HTTPS] Listening on: " + str.Of(host).Start("https://").String())
 
-	return r.instance.ListenTLS(host, certFile, keyFile)
+	listenConfig := r.listenConfig
+	listenConfig.DisableStartupMessage = true
+	listenConfig.CertFile = certFile
+	listenConfig.CertKeyFile = keyFile
+	return r.instance.Listen(host, listenConfig)
 }
 
 // SetGlobalMiddleware sets global middleware
@@ -254,7 +265,7 @@ func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	r.registerFallback()
 
-	return r.instance.Test(request, -1)
+	return r.instance.Test(request, fiber.TestConfig{Timeout: 0})
 }
 
 func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
@@ -295,19 +306,23 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 	}
 
 	instance := fiber.New(fiber.Config{
-		Immutable:               immutable,
-		Prefork:                 prefork,
-		BodyLimit:               r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
-		ReadBufferSize:          r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
-		DisableStartupMessage:   true,
-		JSONEncoder:             json.Marshal,
-		JSONDecoder:             json.Unmarshal,
-		Network:                 network,
-		Views:                   views,
-		ProxyHeader:             r.config.GetString(fmt.Sprintf("http.drivers.%s.proxy_header", r.driver), ""),
-		EnableTrustedProxyCheck: r.config.GetBool(fmt.Sprintf("http.drivers.%s.enable_trusted_proxy_check", r.driver), false),
-		TrustedProxies:          trustedProxies,
+		Immutable:      immutable,
+		BodyLimit:      r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
+		ReadBufferSize: r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
+		JSONEncoder:    json.Marshal,
+		JSONDecoder:    json.Unmarshal,
+		Views:          views,
+		ProxyHeader:    r.config.GetString(fmt.Sprintf("http.drivers.%s.proxy_header", r.driver), ""),
+		TrustProxy:     r.config.GetBool(fmt.Sprintf("http.drivers.%s.enable_trusted_proxy_check", r.driver), false),
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Proxies: trustedProxies,
+		},
 	})
+
+	r.listenConfig = fiber.ListenConfig{
+		EnablePrefork:   prefork,
+		ListenerNetwork: network,
+	}
 
 	debug := r.config.GetBool("app.debug", false)
 	handlers := []fiber.Handler{
@@ -366,7 +381,7 @@ func (r *Route) registerFallback() {
 		return
 	}
 
-	r.instance.Use(func(ctx *fiber.Ctx) error {
+	r.instance.Use(func(ctx fiber.Ctx) error {
 		if response := r.fallback(NewContext(ctx)); response != nil {
 			return response.Render()
 		}

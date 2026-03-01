@@ -48,7 +48,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
+				assert.Equal(t, "GET, POST, HEAD, PUT, DELETE, PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
@@ -82,7 +82,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
+				assert.Equal(t, "GET, POST, HEAD, PUT, DELETE, PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
@@ -142,7 +142,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
+				assert.Equal(t, "GET, POST, HEAD, PUT, DELETE, PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
@@ -162,7 +162,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
+				assert.Equal(t, "GET, POST, HEAD, PUT, DELETE, PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "https://www.goravel.dev", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Expose-Headers"))
@@ -182,7 +182,7 @@ func TestCors(t *testing.T) {
 			},
 			assert: func() {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-				assert.Equal(t, "GET,POST,HEAD,PUT,DELETE,PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
+				assert.Equal(t, "GET, POST, HEAD, PUT, DELETE, PATCH", resp.Header.Get("Access-Control-Allow-Methods"))
 				assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "", resp.Header.Get("Access-Control-Allow-Headers"))
 				assert.Equal(t, "Goravel", resp.Header.Get("Access-Control-Expose-Headers"))
