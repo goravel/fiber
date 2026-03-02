@@ -7,7 +7,7 @@ toolchain go1.26.0
 require (
 	github.com/gofiber/fiber/v3 v3.0.0
 	github.com/gofiber/template/html/v3 v3.0.2
-	github.com/gofiber/utils/v2 v2.0.0
+	github.com/gofiber/utils/v2 v2.0.2
 	github.com/gookit/validate v1.5.6
 	github.com/goravel/framework v1.17.1
 	github.com/spf13/cast v1.10.0
