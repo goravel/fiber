@@ -684,14 +684,14 @@ func (r *CreateUser) Authorize(ctx contractshttp.Context) error {
 	return nil
 }
 
-func (r *CreateUser) Filters(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *CreateUser) Filters(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name": "trim",
 	}
 }
 
-func (r *CreateUser) Rules(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *CreateUser) Rules(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name": "required",
 	}
 }
@@ -721,14 +721,14 @@ func (r *Unauthorize) Authorize(ctx contractshttp.Context) error {
 	return errors.New("error")
 }
 
-func (r *Unauthorize) Rules(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *Unauthorize) Rules(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name": "required",
 	}
 }
 
-func (r *Unauthorize) Filters(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *Unauthorize) Filters(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name": "trim",
 	}
 }
@@ -756,14 +756,14 @@ func (r *FileImageJson) Authorize(ctx contractshttp.Context) error {
 	return nil
 }
 
-func (r *FileImageJson) Filters(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *FileImageJson) Filters(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name": "trim",
 	}
 }
 
-func (r *FileImageJson) Rules(ctx contractshttp.Context) map[string]string {
-	return map[string]string{
+func (r *FileImageJson) Rules(ctx contractshttp.Context) map[string]any {
+	return map[string]any{
 		"name":  "required",
 		"file":  "file",
 		"image": "image",

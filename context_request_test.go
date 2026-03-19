@@ -1561,10 +1561,10 @@ func (s *ContextRequestSuite) TestSession_NotSet() {
 
 func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 	s.route.Get("/validate/get-success/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
-		validator, err := ctx.Request().Validate(map[string]string{
+		validator, err := ctx.Request().Validate(map[string]any{
 			"uuid": "min_len:2",
 			"name": "required",
-		}, validation.Filters(map[string]string{
+		}, validation.Filters(map[string]any{
 			"uuid": "trim",
 			"name": "trim",
 		}))
@@ -1601,10 +1601,10 @@ func (s *ContextRequestSuite) TestValidate_GetSuccess() {
 
 func (s *ContextRequestSuite) TestValidate_GetFail() {
 	s.route.Get("/validate/get-fail/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
-		validator, err := ctx.Request().Validate(map[string]string{
+		validator, err := ctx.Request().Validate(map[string]any{
 			"uuid": "min_len:4",
 			"name": "required",
-		}, validation.Filters(map[string]string{
+		}, validation.Filters(map[string]any{
 			"uuid": "trim",
 			"name": "trim",
 		}))
@@ -1629,12 +1629,12 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 
 func (s *ContextRequestSuite) TestValidate_PostSuccess() {
 	s.route.Post("/validate/post-success/{id}/{uuid}", func(ctx contractshttp.Context) contractshttp.Response {
-		validator, err := ctx.Request().Validate(map[string]string{
+		validator, err := ctx.Request().Validate(map[string]any{
 			"id":   "required",
 			"uuid": "required",
 			"age":  "required",
 			"name": "required",
-		}, validation.Filters(map[string]string{
+		}, validation.Filters(map[string]any{
 			"id":   "trim",
 			"uuid": "trim",
 			"age":  "trim",
@@ -1682,9 +1682,9 @@ func (s *ContextRequestSuite) TestValidate_PostSuccess() {
 
 func (s *ContextRequestSuite) TestValidate_PostFail() {
 	s.route.Post("/validate/post-fail", func(ctx contractshttp.Context) contractshttp.Response {
-		validator, err := ctx.Request().Validate(map[string]string{
+		validator, err := ctx.Request().Validate(map[string]any{
 			"name1": "required",
-		}, validation.Filters(map[string]string{
+		}, validation.Filters(map[string]any{
 			"name1": "trim",
 		}))
 		if err != nil {
