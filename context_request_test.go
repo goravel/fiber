@@ -1623,7 +1623,7 @@ func (s *ContextRequestSuite) TestValidate_GetFail() {
 
 	code, body, _, _ := s.request(req)
 
-	s.Equal("Validate fail: map[uuid:map[min_len:uuid min length is 4]]", body)
+	s.Equal("Validate fail: map[uuid:map[min_len:The uuid field must be at least 4 characters.]]", body)
 	s.Equal(http.StatusBadRequest, code)
 }
 
@@ -1708,7 +1708,7 @@ func (s *ContextRequestSuite) TestValidate_PostFail() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("Validate fail: map[name1:map[required:name1 is required to not be empty]]", body)
+	s.Equal("Validate fail: map[name1:map[required:The name1 field is required.]]", body)
 	s.Equal(http.StatusBadRequest, code)
 }
 
@@ -1786,7 +1786,7 @@ func (s *ContextRequestSuite) TestValidateRequest_GetFail() {
 
 	code, body, _, _ := s.request(req)
 
-	s.Equal("Validate fail: map[name:map[required:name is required to not be empty]]", body)
+	s.Equal("Validate fail: map[name:map[required:The name field is required.]]", body)
 	s.Equal(http.StatusBadRequest, code)
 }
 
@@ -1916,7 +1916,7 @@ func (s *ContextRequestSuite) TestValidateRequest_FormFail() {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	code, body, _, _ := s.request(req)
 
-	s.Equal("Validate fail: map[image:map[image:image value must be an image] json:map[json:json value should be a json string]]", body)
+	s.Equal("Validate fail: map[image:map[image:The image field must be an image.] json:map[json:The json field must be a valid JSON string.]]", body)
 	s.Equal(http.StatusBadRequest, code)
 }
 
@@ -1974,7 +1974,7 @@ func (s *ContextRequestSuite) TestValidateRequest_JsonFail() {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("Validate fail: map[name:map[required:name is required to not be empty]]", body)
+	s.Equal("Validate fail: map[name:map[required:The name field is required.]]", body)
 	s.Equal(http.StatusBadRequest, code)
 }
 
