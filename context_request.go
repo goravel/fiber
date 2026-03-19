@@ -97,7 +97,11 @@ func (r *ContextRequest) All() map[string]any {
 	}
 
 	for k, v := range keyToSlice {
-		data[k] = strings.Join(v, ",")
+		if len(v) > 1 {
+			data[k] = v
+		} else if len(v) == 1 {
+			data[k] = v[0]
+		}
 	}
 
 	for k, v := range r.httpBody {
