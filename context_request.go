@@ -13,7 +13,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
-	"github.com/gookit/validate"
 	contractsfilesystem "github.com/goravel/framework/contracts/filesystem"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/log"
@@ -98,7 +97,11 @@ func (r *ContextRequest) All() map[string]any {
 	}
 
 	for k, v := range keyToSlice {
-		data[k] = strings.Join(v, ",")
+		if len(v) > 1 {
+			data[k] = v
+		} else if len(v) == 1 {
+			data[k] = v[0]
+		}
 	}
 
 	for k, v := range r.httpBody {
@@ -540,35 +543,12 @@ func (r *ContextRequest) Url() string {
 	return r.instance.OriginalURL()
 }
 
-func (r *ContextRequest) Validate(rules map[string]string, options ...contractsvalidate.Option) (contractsvalidate.Validator, error) {
+func (r *ContextRequest) Validate(rules map[string]any, options ...contractsvalidate.Option) (contractsvalidate.Validator, error) {
 	if len(rules) == 0 {
 		return nil, errors.New("rules can't be empty")
 	}
 
-	options = append(options, validation.Rules(rules), validation.CustomRules(r.validation.Rules()))
-
-	dataFace, err := validate.FromRequest(r.ctx.Request().Origin())
-	if err != nil {
-		return nil, err
-	}
-
-	for key, query := range r.instance.Queries() {
-		if _, exist := dataFace.Get(key); !exist {
-			if _, err := dataFace.Set(key, query); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	for key, param := range allParams(r.instance) {
-		if _, exist := dataFace.Get(key); !exist {
-			if _, err := dataFace.Set(key, param); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return r.validation.Make(r.ctx, dataFace, rules, options...)
+	return r.validation.Make(r.ctx, r.All(), rules, options...)
 }
 
 func (r *ContextRequest) ValidateRequest(request contractshttp.FormRequest) (contractsvalidate.Errors, error) {
