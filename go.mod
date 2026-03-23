@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/gofiber/template/html/v3 v3.0.2
 	github.com/gofiber/utils/v2 v2.0.2
-	github.com/goravel/framework v1.17.2-0.20260319074756-7cd523f5f1a5
+	github.com/goravel/framework v1.17.2
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.69.0
@@ -53,6 +53,9 @@ require (
 	github.com/goforj/godump v1.9.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.6.0 // indirect
+	github.com/gookit/filter v1.2.3 // indirect
+	github.com/gookit/goutil v0.7.1 // indirect
+	github.com/gookit/validate v1.5.6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
