@@ -51,7 +51,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 	t.Run("timeout", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
 		require.NoError(t, err)
-
+		req.Host = "example.com"
 		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
@@ -66,7 +66,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/normal", nil)
 		require.NoError(t, err)
-
+		req.Host = "example.com"
 		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		assert.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
-
+		req.Host = "example.com"
 		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 
@@ -120,7 +120,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		req, err := http.NewRequest("GET", "/panic", nil)
 		require.NoError(t, err)
-
+		req.Host = "example.com"
 		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 

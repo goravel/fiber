@@ -236,6 +236,7 @@ func TestView_Make(t *testing.T) {
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
@@ -397,6 +398,7 @@ func TestView_First(t *testing.T) {
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
@@ -458,6 +460,7 @@ csrf_token={{ .csrf_token }}
 		})
 		req, err := http.NewRequest("GET", "/csrf", nil)
 		assert.Nil(t, err)
+		req.Host = "example.com"
 		resp, err := route.Test(req)
 		body, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)

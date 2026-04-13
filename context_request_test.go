@@ -647,7 +647,7 @@ func (s *ContextRequestSuite) TestHeaders() {
 	req.Header.Set("Hello", "Goravel")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"Content-Length\":[\"0\"],\"Hello\":[\"Goravel\"]}", body)
+	s.Equal("{\"Content-Length\":[\"0\"],\"Hello\":[\"Goravel\"],\"Host\":[\"example.com\"]}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -673,7 +673,7 @@ func (s *ContextRequestSuite) TestMethods() {
 	req.Header.Set("X-Forwarded-For", "1.1.1.1")
 	code, body, _, _ := s.request(req)
 
-	s.Equal("{\"full_url\":\"\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"0.0.0.0\",\"method\":\"GET\",\"name\":\"Goravel\",\"origin_path\":\"/methods/{id}\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
+	s.Equal("{\"full_url\":\"http://example.com/methods/1?name=Goravel\",\"header\":\"Goravel\",\"id\":\"1\",\"ip\":\"0.0.0.0\",\"method\":\"GET\",\"name\":\"Goravel\",\"origin_path\":\"/methods/{id}\",\"path\":\"/methods/1\",\"url\":\"/methods/1?name=Goravel\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -2037,6 +2037,9 @@ func (s *ContextRequestSuite) TestValidateRequest_Unauthorize() {
 }
 
 func (s *ContextRequestSuite) request(req *http.Request) (int, string, http.Header, []*http.Cookie) {
+	if req.Host == "" {
+		req.Host = "example.com"
+	}
 	resp, err := s.route.Test(req)
 	s.NoError(err)
 
