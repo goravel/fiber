@@ -405,6 +405,7 @@ func TestResponse(t *testing.T) {
 			err = test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
@@ -555,6 +556,7 @@ func TestResponse_Success(t *testing.T) {
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
@@ -693,6 +695,7 @@ func TestResponse_Status(t *testing.T) {
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			resp, err := route.Test(req)
 			assert.NoError(t, err)
 
@@ -763,6 +766,7 @@ func TestResponse_Stream(t *testing.T) {
 	req, err := http.NewRequest("GET", "/stream", nil)
 	assert.Nil(t, err)
 
+	req.Host = "example.com"
 	resp, err := route.Test(req)
 	assert.NoError(t, err)
 

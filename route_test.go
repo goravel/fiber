@@ -73,6 +73,7 @@ func (s *RouteTestSuite) TestRecover() {
 		})
 
 		req := httptest.NewRequest("GET", "/recover", nil)
+		req.Host = "example.com"
 		resp, err := s.route.Test(req)
 		s.NoError(err)
 
@@ -105,6 +106,7 @@ func (s *RouteTestSuite) TestRecover() {
 		})
 
 		req := httptest.NewRequest("GET", "/recover", nil)
+		req.Host = "example.com"
 		resp, err := s.route.Test(req)
 		s.NoError(err)
 
@@ -127,6 +129,7 @@ func (s *RouteTestSuite) TestFallback() {
 
 	req, err := http.NewRequest("GET", "/test", nil)
 	s.NoError(err)
+	req.Host = "example.com"
 	resp, err := s.route.Test(req)
 	s.NoError(err)
 
@@ -137,7 +140,7 @@ func (s *RouteTestSuite) TestFallback() {
 
 	req, err = http.NewRequest("GET", "/not-found", nil)
 	s.NoError(err)
-
+	req.Host = "example.com"
 	resp, err = s.route.Test(req)
 	s.NoError(err)
 

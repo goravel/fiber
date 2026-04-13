@@ -211,6 +211,7 @@ func TestCors(t *testing.T) {
 			req, err := http.NewRequest("OPTIONS", "/any/1", nil)
 			assert.Nil(t, err)
 
+			req.Host = "example.com"
 			req.Header.Set("Origin", "https://www.goravel.dev")
 			req.Header.Set("Access-Control-Request-Method", "POST")
 

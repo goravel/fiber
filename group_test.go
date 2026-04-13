@@ -363,7 +363,7 @@ func (s *GroupTestSuite) TestIssue408() {
 func (s *GroupTestSuite) assert(method, url string, expectCode int, expectBody string) {
 	req, err := http.NewRequest(method, url, nil)
 	s.Nil(err)
-
+	req.Host = "example.com"
 	resp, err := s.route.Test(req)
 	s.NoError(err)
 
