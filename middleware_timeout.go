@@ -3,6 +3,7 @@ package fiber
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -24,11 +25,14 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		ctx.WithContext(timeoutCtx)
 
 		done := make(chan struct{})
+		var timedOut atomic.Bool
 
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					globalRecoverCallback(ctx, err)
+					if !timedOut.Load() {
+						globalRecoverCallback(ctx, err)
+					}
 				}
 
 				close(done)
@@ -39,6 +43,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		select {
 		case <-done:
 		case <-timeoutCtx.Done():
+			timedOut.Store(true)
 			if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
 				ctx.Request().Abort(contractshttp.StatusRequestTimeout)
 			}
