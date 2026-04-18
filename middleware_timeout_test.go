@@ -48,11 +48,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 		panic("test panic")
 	})
 
-	route.Middleware(Timeout(1*time.Second)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
-		time.Sleep(2 * time.Second)
-		panic("panic after timeout")
-	})
-
 	t.Run("timeout", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/timeout", nil)
 		require.NoError(t, err)
@@ -154,15 +149,18 @@ func TestTimeoutMiddleware(t *testing.T) {
 		err := route.init(nil)
 		require.NoError(t, err)
 
-		route.Middleware(Timeout(1 * time.Second)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
-			time.Sleep(2 * time.Second)
+		panicDone := make(chan struct{})
+		route.Middleware(Timeout(100 * time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
+			defer close(panicDone)
+			time.Sleep(200 * time.Millisecond)
 			panic("panic after timeout")
 		})
 
 		req, err := http.NewRequest("GET", "/panic-after-timeout", nil)
 		require.NoError(t, err)
+		req.Host = "localhost"
 
-		resp, err := route.instance.Test(req, -1)
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
@@ -172,8 +170,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "Request Timeout", string(body))
 
-		// Wait for the background goroutine to finish panicking and recovering
-		// without crashing the process.
-		time.Sleep(3 * time.Second)
+		<-panicDone
 	})
 }
