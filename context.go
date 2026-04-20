@@ -12,10 +12,12 @@ import (
 
 type sessionKeyType struct{}
 type sharedValuesKeyType struct{}
+type sharedUserCtxKeyType struct{}
 
 var (
-	sessionKey      = sessionKeyType{}
-	sharedValuesKey = sharedValuesKeyType{}
+	sessionKey         = sessionKeyType{}
+	sharedValuesKey    = sharedValuesKeyType{}
+	sharedUserCtxKey   = sharedUserCtxKeyType{}
 )
 
 func Background() http.Context {
@@ -40,7 +42,11 @@ type Context struct {
 func NewContext(c fiber.Ctx) *Context {
 	ctx := contextPool.Get().(*Context)
 	ctx.instance = c
-	ctx.userCtx = nil
+	if existing, ok := c.Locals(sharedUserCtxKey).(context.Context); ok {
+		ctx.userCtx = existing
+	} else {
+		ctx.userCtx = nil
+	}
 	if existing, ok := c.Locals(sharedValuesKey).(map[any]any); ok {
 		ctx.values = existing
 	} else {
@@ -77,6 +83,7 @@ func (c *Context) WithValue(key any, value any) {
 
 func (c *Context) WithContext(ctx context.Context) {
 	c.userCtx = ctx
+	c.instance.Locals(sharedUserCtxKey, ctx)
 }
 
 func (c *Context) Context() context.Context {
