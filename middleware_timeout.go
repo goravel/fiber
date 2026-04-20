@@ -28,7 +28,9 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					globalRecoverCallback(ctx, err)
+					if timeoutCtx.Err() == nil {
+						globalRecoverCallback(ctx, err)
+					}
 				}
 
 				close(done)
@@ -39,7 +41,7 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		select {
 		case <-done:
 		case <-timeoutCtx.Done():
-			if errors.Is(ctx.Context().Err(), context.DeadlineExceeded) {
+			if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
 				ctx.Request().Abort(contractshttp.StatusRequestTimeout)
 			}
 		}

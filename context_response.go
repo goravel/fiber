@@ -21,12 +21,14 @@ var contextResponsePool = sync.Pool{New: func() any {
 type ContextResponse struct {
 	instance fiber.Ctx
 	origin   contractshttp.ResponseOrigin
+	ctx      *Context
 }
 
-func NewContextResponse(instance fiber.Ctx, origin contractshttp.ResponseOrigin) contractshttp.ContextResponse {
+func NewContextResponse(instance fiber.Ctx, origin contractshttp.ResponseOrigin, ctx *Context) contractshttp.ContextResponse {
 	response := contextResponsePool.Get().(*ContextResponse)
 	response.instance = instance
 	response.origin = origin
+	response.ctx = ctx
 	return response
 }
 
@@ -101,7 +103,7 @@ func (r *ContextResponse) Stream(code int, step func(w contractshttp.StreamWrite
 }
 
 func (r *ContextResponse) View() contractshttp.ResponseView {
-	return NewView(r.instance)
+	return NewView(r.instance, r.ctx)
 }
 
 func (r *ContextResponse) Flush() {

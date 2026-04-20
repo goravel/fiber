@@ -11,20 +11,21 @@ import (
 
 type View struct {
 	instance fiber.Ctx
+	ctx      *Context
 }
 
-func NewView(instance fiber.Ctx) *View {
-	return &View{instance: instance}
+func NewView(instance fiber.Ctx, ctx *Context) *View {
+	return &View{instance: instance, ctx: ctx}
 }
 
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
-	if contextValues := receive.instance.Value(contextKey); contextValues != nil {
-		contextValuesMap := contextValues.(map[any]any)
-		if session := contextValuesMap[sessionKey]; session != nil {
-			sessionValue := session.(contractsession.Session)
-			token := sessionValue.Token()
-			shared["csrf_token"] = token
+	if receive.ctx != nil {
+		if session, ok := receive.ctx.values[sessionKey]; ok && session != nil {
+			if sessionValue, ok := session.(contractsession.Session); ok {
+				token := sessionValue.Token()
+				shared["csrf_token"] = token
+			}
 		}
 	}
 	if len(data) == 0 {

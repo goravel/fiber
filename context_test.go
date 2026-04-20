@@ -31,7 +31,6 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "one", httpCtx.Value(1))
 	assert.Equal(t, "two point two", httpCtx.Value(2.2))
 	assert.Equal(t, "session", httpCtx.Value(sessionKey))
-	assert.NotNil(t, httpCtx.Value(contextKey))
 
 	// The value of UserContext can't be covered.
 	assert.Equal(t, "b", httpCtx.Value("user_a"))
@@ -44,5 +43,4 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "one", ctx.Value(1))
 	assert.Equal(t, "two point two", ctx.Value(2.2))
 	assert.Nil(t, ctx.Value(sessionKey))
-	assert.Nil(t, ctx.Value(contextKey))
 }

@@ -35,9 +35,9 @@ func main() {
 	httpConfigPath := path.Config("http.go")
 	routeContract := "github.com/goravel/framework/contracts/route"
 	fiberFacade := "github.com/goravel/fiber/facades"
-	html := "github.com/gofiber/template/html/v2"
+	html := "github.com/gofiber/template/html/v3"
 	supportPath := "github.com/goravel/framework/support/path"
-	fiber := "github.com/gofiber/fiber/v2"
+	fiber := "github.com/gofiber/fiber/v3"
 	httpDriversConfig := match.Config("http.drivers")
 	httpConfig := match.Config("http")
 
