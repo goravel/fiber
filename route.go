@@ -370,8 +370,11 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 // outputRoutes 输出所有路由
 func (r *Route) outputRoutes() {
 	if r.config.GetBool("app.debug") && support.RuntimeMode != support.RuntimeArtisan && support.RuntimeMode != support.RuntimeTest {
-		if err := App.MakeArtisan().Call("route:list"); err != nil {
-			color.Errorln(fmt.Errorf("print route list failed: %w", err))
+		artisan := App.MakeArtisan()
+		if artisan != nil {
+			if err := artisan.Call("route:list"); err != nil {
+				color.Errorln(fmt.Errorf("print route list failed: %w", err))
+			}
 		}
 	}
 }
