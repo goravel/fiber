@@ -2,14 +2,13 @@ package fiber
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 // Timeout creates middleware to set a timeout for a request.
-// NOTICE: It does not cancel long running executions. Underlying executions must handle timeout by using context.Context parameter.
+// NOTICE: It does not interrupt long running executions. Underlying executions must observe ctx.Done() / ctx.Err() and stop cooperatively.
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
 	return func(ctx contractshttp.Context) {
@@ -22,28 +21,6 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		defer cancel()
 
 		ctx.WithContext(timeoutCtx)
-
-		done := make(chan struct{})
-
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					if timeoutCtx.Err() == nil {
-						globalRecoverCallback(ctx, err)
-					}
-				}
-
-				close(done)
-			}()
-			ctx.Request().Next()
-		}()
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-			if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
-				ctx.Request().Abort(contractshttp.StatusRequestTimeout)
-			}
-		}
+		ctx.Request().Next()
 	}
 }

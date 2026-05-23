@@ -35,9 +35,13 @@ func TestTimeoutMiddleware(t *testing.T) {
 	err := route.init(nil)
 	require.Nil(t, err)
 
-	route.Middleware(Timeout(1*time.Second)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
-		time.Sleep(2 * time.Second)
-		return nil
+	route.Middleware(Timeout(100 * time.Millisecond)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
+		select {
+		case <-time.After(2 * time.Second):
+			return nil
+		case <-ctx.Done():
+			return ctx.Response().Status(contractshttp.StatusRequestTimeout).String("Request Timeout")
+		}
 	})
 
 	route.Middleware(Timeout(1*time.Second)).Get("/normal", func(ctx contractshttp.Context) contractshttp.Response {
@@ -75,6 +79,34 @@ func TestTimeoutMiddleware(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 		assert.Equal(t, "normal", string(body))
+	})
+
+	t.Run("timed out request should not leak stale response into next request", func(t *testing.T) {
+		timeoutReq, err := http.NewRequest("GET", "/timeout", nil)
+		require.NoError(t, err)
+		timeoutReq.Host = "example.com"
+
+		timeoutResp, err := route.instance.Test(timeoutReq, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, timeoutResp)
+		assert.Equal(t, contractshttp.StatusRequestTimeout, timeoutResp.StatusCode)
+
+		timeoutBody, err := io.ReadAll(timeoutResp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(timeoutBody))
+
+		normalReq, err := http.NewRequest("GET", "/normal", nil)
+		require.NoError(t, err)
+		normalReq.Host = "example.com"
+
+		normalResp, err := route.instance.Test(normalReq, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, normalResp)
+		assert.Equal(t, http.StatusOK, normalResp.StatusCode)
+
+		normalBody, err := io.ReadAll(normalResp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "normal", string(normalBody))
 	})
 
 	t.Run("panic with default recover", func(t *testing.T) {
@@ -131,45 +163,5 @@ func TestTimeoutMiddleware(t *testing.T) {
 		assert.Equal(t, "Bad Request", string(body))
 
 		globalRecoverCallback = defaultRecoverCallback
-	})
-
-	t.Run("panic after timeout should not panic on recycled context", func(t *testing.T) {
-		mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
-		mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
-		mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
-		mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
-		mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
-		mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
-		mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
-		mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
-		mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
-		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
-
-		globalRecoverCallback = defaultRecoverCallback
-		err := route.init(nil)
-		require.NoError(t, err)
-
-		panicDone := make(chan struct{})
-		route.Middleware(Timeout(100 * time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
-			defer close(panicDone)
-			time.Sleep(200 * time.Millisecond)
-			panic("panic after timeout")
-		})
-
-		req, err := http.NewRequest("GET", "/panic-after-timeout", nil)
-		require.NoError(t, err)
-		req.Host = "localhost"
-
-		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-
-		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
-
-		body, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err)
-		assert.Equal(t, "Request Timeout", string(body))
-
-		<-panicDone
 	})
 }
