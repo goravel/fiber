@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 
@@ -38,13 +39,7 @@ func fiberHandlerArgs(handlers []fiber.Handler) (first any, rest []any) {
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		context := NewContext(c)
-		defer func() {
-			contextRequestPool.Put(context.request)
-			contextResponsePool.Put(context.response)
-			context.request = nil
-			context.response = nil
-			contextPool.Put(context)
-		}()
+		defer releaseContext(context)
 
 		if response := handler(context); response != nil {
 			return response.Render()
@@ -56,17 +51,30 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		context := NewContext(c)
-		defer func() {
-			contextRequestPool.Put(context.request)
-			contextResponsePool.Put(context.response)
-			context.request = nil
-			context.response = nil
-			contextPool.Put(context)
-		}()
+		defer releaseContext(context)
 
 		middleware(context)
 		return nil
 	}
+}
+
+func releaseContext(context *Context) {
+	contextRequestPool.Put(context.request)
+	contextResponsePool.Put(context.response)
+	context.request = nil
+	context.response = nil
+	contextPool.Put(context)
+}
+
+func renderFiberError(instance fiber.Ctx, err error) error {
+	var fiberErr *fiber.Error
+	if errors.As(err, &fiberErr) {
+		if sendErr := instance.Status(fiberErr.Code).SendString(fiberErr.Message); sendErr == nil {
+			return nil
+		}
+	}
+
+	return err
 }
 
 func colonToBracket(relativePath string) string {
