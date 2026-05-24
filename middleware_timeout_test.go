@@ -39,18 +39,17 @@ func TestTimeoutMiddleware(t *testing.T) {
 	err := route.init(nil)
 	require.Nil(t, err)
 
-	route.Middleware(Timeout(100 * time.Millisecond)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
 		time.Sleep(200 * time.Millisecond)
 		return nil
 	})
 
-	route.Middleware(Timeout(100 * time.Millisecond)).Get("/timeout-context", func(ctx contractshttp.Context) contractshttp.Response {
-		select {
-		case <-time.After(2 * time.Second):
-			return nil
-		case <-ctx.Done():
-			return ctx.Response().Status(contractshttp.StatusRequestTimeout).String("Request Timeout")
-		}
+	timeoutContextFired := make(chan bool, 1)
+
+	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout-context", func(ctx contractshttp.Context) contractshttp.Response {
+		timeoutContextFired <- true
+		<-ctx.Done()
+		return nil
 	})
 
 	timeoutContextValue := make(chan string, 1)
@@ -158,6 +157,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 		assert.Equal(t, "Request Timeout", string(body))
+		assert.Equal(t, true, <-timeoutContextFired)
 	})
 
 	t.Run("panic with default recover", func(t *testing.T) {
@@ -233,7 +233,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 
 		panicDone := make(chan struct{})
-		route.Middleware(Timeout(100 * time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
+		route.Middleware(Timeout(100*time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
 			defer close(panicDone)
 			time.Sleep(200 * time.Millisecond)
 			panic("panic after timeout")
