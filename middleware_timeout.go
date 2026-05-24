@@ -6,43 +6,49 @@ import (
 	"time"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
+	"github.com/gofiber/fiber/v3"
+	fibertimeout "github.com/gofiber/fiber/v3/middleware/timeout"
 )
 
 // Timeout creates middleware to set a timeout for a request.
-// NOTICE: It does not cancel long running executions. Underlying executions must handle timeout by using context.Context parameter.
+// NOTICE: It relies on Fiber's timeout middleware so timed-out requests get a 408 response
+// without recycling the underlying request context into a later request.
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
+	handler := fibertimeout.New(func(c fiber.Ctx) (err error) {
+		// Mirror Fiber's timeout-aware context into Goravel's request context so
+		// downstream handlers observe the same deadline and cancellation signal.
+		c.Locals(sharedUserCtxKey, c.Context())
+
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				if !errors.Is(c.Context().Err(), context.DeadlineExceeded) {
+					recoverCtx := NewContext(c)
+					defer releaseContext(recoverCtx)
+					globalRecoverCallback(recoverCtx, recovered)
+				}
+				err = nil
+			}
+		}()
+
+		return c.Next()
+	}, fibertimeout.Config{Timeout: timeout})
+
 	return func(ctx contractshttp.Context) {
 		if timeout <= 0 {
 			ctx.Request().Next()
 			return
 		}
 
-		timeoutCtx, cancel := context.WithTimeout(ctx.Context(), timeout)
-		defer cancel()
+		fiberCtx := ctx.(*Context)
+		// Seed Fiber with the current Goravel context before timeout.New wraps it,
+		// otherwise upstream WithContext values would be lost when Fiber derives
+		// the timeout-aware context exposed through c.Context().
+		fiberCtx.Instance().SetContext(fiberCtx.Context())
 
-		ctx.WithContext(timeoutCtx)
-
-		done := make(chan struct{})
-
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					if timeoutCtx.Err() == nil {
-						globalRecoverCallback(ctx, err)
-					}
-				}
-
-				close(done)
-			}()
-			ctx.Request().Next()
-		}()
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-			if errors.Is(timeoutCtx.Err(), context.DeadlineExceeded) {
-				ctx.Request().Abort(contractshttp.StatusRequestTimeout)
+		if err := handler(fiberCtx.Instance()); err != nil && !errors.Is(err, fiber.ErrRequestTimeout) {
+			if err := renderFiberError(fiberCtx.Instance(), err); err != nil {
+				panic(err)
 			}
 		}
 	}

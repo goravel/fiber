@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -16,6 +17,9 @@ import (
 )
 
 func TestTimeoutMiddleware(t *testing.T) {
+	type contextKey string
+	const requestIDKey contextKey = "request-id"
+
 	mockConfig := mocksconfig.NewConfig(t)
 	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
@@ -35,8 +39,27 @@ func TestTimeoutMiddleware(t *testing.T) {
 	err := route.init(nil)
 	require.Nil(t, err)
 
-	route.Middleware(Timeout(1*time.Second)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
-		time.Sleep(2 * time.Second)
+	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
+		time.Sleep(200 * time.Millisecond)
+		return nil
+	})
+
+	timeoutContextFired := make(chan bool, 1)
+
+	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout-context", func(ctx contractshttp.Context) contractshttp.Response {
+		timeoutContextFired <- true
+		<-ctx.Done()
+		return nil
+	})
+
+	timeoutContextValue := make(chan string, 1)
+
+	route.Middleware(func(ctx contractshttp.Context) {
+		ctx.WithContext(context.WithValue(ctx.Context(), requestIDKey, "goravel-timeout"))
+		ctx.Request().Next()
+	}, Timeout(100*time.Millisecond)).Get("/timeout-context-value", func(ctx contractshttp.Context) contractshttp.Response {
+		timeoutContextValue <- ctx.Value(requestIDKey).(string)
+		<-ctx.Done()
 		return nil
 	})
 
@@ -63,6 +86,22 @@ func TestTimeoutMiddleware(t *testing.T) {
 		assert.Equal(t, "Request Timeout", string(body))
 	})
 
+	t.Run("timeout preserves upstream context values", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/timeout-context-value", nil)
+		require.NoError(t, err)
+		req.Host = "example.com"
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(body))
+		assert.Equal(t, "goravel-timeout", <-timeoutContextValue)
+	})
+
 	t.Run("normal", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/normal", nil)
 		require.NoError(t, err)
@@ -75,6 +114,50 @@ func TestTimeoutMiddleware(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 		assert.Equal(t, "normal", string(body))
+	})
+
+	t.Run("timed out request should not leak stale response into next request", func(t *testing.T) {
+		timeoutReq, err := http.NewRequest("GET", "/timeout", nil)
+		require.NoError(t, err)
+		timeoutReq.Host = "example.com"
+
+		timeoutResp, err := route.instance.Test(timeoutReq, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, timeoutResp)
+		assert.Equal(t, contractshttp.StatusRequestTimeout, timeoutResp.StatusCode)
+
+		timeoutBody, err := io.ReadAll(timeoutResp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(timeoutBody))
+
+		normalReq, err := http.NewRequest("GET", "/normal", nil)
+		require.NoError(t, err)
+		normalReq.Host = "example.com"
+
+		normalResp, err := route.instance.Test(normalReq, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, normalResp)
+		assert.Equal(t, http.StatusOK, normalResp.StatusCode)
+
+		normalBody, err := io.ReadAll(normalResp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "normal", string(normalBody))
+	})
+
+	t.Run("timeout context is exposed to goravel handlers", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/timeout-context", nil)
+		require.NoError(t, err)
+		req.Host = "example.com"
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(body))
+		assert.Equal(t, true, <-timeoutContextFired)
 	})
 
 	t.Run("panic with default recover", func(t *testing.T) {
@@ -150,7 +233,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		require.NoError(t, err)
 
 		panicDone := make(chan struct{})
-		route.Middleware(Timeout(100 * time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
+		route.Middleware(Timeout(100*time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {
 			defer close(panicDone)
 			time.Sleep(200 * time.Millisecond)
 			panic("panic after timeout")
