@@ -69,9 +69,11 @@ func releaseContext(context *Context) {
 func renderFiberError(instance fiber.Ctx, err error) error {
 	var fiberErr *fiber.Error
 	if errors.As(err, &fiberErr) {
-		if sendErr := instance.Status(fiberErr.Code).SendString(fiberErr.Message); sendErr == nil {
-			return nil
+		if sendErr := instance.Status(fiberErr.Code).SendString(fiberErr.Message); sendErr != nil {
+			return sendErr
 		}
+
+		return nil
 	}
 
 	return err

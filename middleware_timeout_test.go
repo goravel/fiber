@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -16,6 +17,9 @@ import (
 )
 
 func TestTimeoutMiddleware(t *testing.T) {
+	type contextKey string
+	const requestIDKey contextKey = "request-id"
+
 	mockConfig := mocksconfig.NewConfig(t)
 	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
 	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
@@ -49,6 +53,17 @@ func TestTimeoutMiddleware(t *testing.T) {
 		}
 	})
 
+	timeoutContextValue := make(chan string, 1)
+
+	route.Middleware(func(ctx contractshttp.Context) {
+		ctx.WithContext(context.WithValue(ctx.Context(), requestIDKey, "goravel-timeout"))
+		ctx.Request().Next()
+	}, Timeout(100*time.Millisecond)).Get("/timeout-context-value", func(ctx contractshttp.Context) contractshttp.Response {
+		timeoutContextValue <- ctx.Value(requestIDKey).(string)
+		<-ctx.Done()
+		return nil
+	})
+
 	route.Middleware(Timeout(1*time.Second)).Get("/normal", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().String("normal")
 	})
@@ -70,6 +85,22 @@ func TestTimeoutMiddleware(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 		assert.Equal(t, "Request Timeout", string(body))
+	})
+
+	t.Run("timeout preserves upstream context values", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/timeout-context-value", nil)
+		require.NoError(t, err)
+		req.Host = "example.com"
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(body))
+		assert.Equal(t, "goravel-timeout", <-timeoutContextValue)
 	})
 
 	t.Run("normal", func(t *testing.T) {
