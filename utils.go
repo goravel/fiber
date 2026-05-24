@@ -1,8 +1,10 @@
 package fiber
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
+	"unsafe"
 
 	"github.com/gofiber/fiber/v2"
 	httpcontract "github.com/goravel/framework/contracts/http"
@@ -24,13 +26,7 @@ func middlewaresToFiberHandlers(middlewares []httpcontract.Middleware) []fiber.H
 func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		context := NewContext(c)
-		defer func() {
-			contextRequestPool.Put(context.request)
-			contextResponsePool.Put(context.response)
-			context.request = nil
-			context.response = nil
-			contextPool.Put(context)
-		}()
+		defer releaseContext(context)
 
 		if response := handler(context); response != nil {
 			return response.Render()
@@ -42,17 +38,48 @@ func handlerToFiberHandler(handler httpcontract.HandlerFunc) fiber.Handler {
 func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		context := NewContext(c)
-		defer func() {
-			contextRequestPool.Put(context.request)
-			contextResponsePool.Put(context.response)
-			context.request = nil
-			context.response = nil
-			contextPool.Put(context)
-		}()
+		defer releaseContext(context)
 
 		middleware(context)
 		return nil
 	}
+}
+
+func cloneFiberContext(context *Context) *Context {
+	instance := context.Instance()
+	clone := instance.App().AcquireCtx(instance.Context())
+
+	source := reflect.ValueOf(instance).Elem()
+	target := reflect.ValueOf(clone).Elem()
+	typeOfCtx := source.Type()
+
+	for i := 0; i < source.NumField(); i++ {
+		field := typeOfCtx.Field(i)
+		if field.Name == "viewBindMap" {
+			continue
+		}
+
+		targetField := target.Field(i)
+		sourceField := source.Field(i)
+		reflect.NewAt(targetField.Type(), unsafe.Pointer(targetField.UnsafeAddr())).Elem().Set(
+			reflect.NewAt(sourceField.Type(), unsafe.Pointer(sourceField.UnsafeAddr())).Elem(),
+		)
+	}
+
+	return NewContext(clone)
+}
+
+func releaseContext(context *Context) {
+	if context.request != nil {
+		contextRequestPool.Put(context.request)
+	}
+	if context.response != nil {
+		contextResponsePool.Put(context.response)
+	}
+	context.request = nil
+	context.response = nil
+	context.instance = nil
+	contextPool.Put(context)
 }
 
 func colonToBracket(relativePath string) string {
