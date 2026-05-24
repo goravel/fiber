@@ -41,6 +41,9 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		}
 
 		fiberCtx := ctx.(*Context)
+		// Seed Fiber with the current Goravel context before timeout.New wraps it,
+		// otherwise upstream WithContext values would be lost when Fiber derives
+		// the timeout-aware context exposed through c.Context().
 		fiberCtx.Instance().SetContext(fiberCtx.Context())
 
 		if err := handler(fiberCtx.Instance()); err != nil && !errors.Is(err, fiber.ErrRequestTimeout) {
