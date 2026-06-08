@@ -6,8 +6,8 @@ toolchain go1.26.3
 
 require (
 	github.com/gofiber/fiber/v3 v3.3.0
-	github.com/gofiber/template/html/v3 v3.0.4
-	github.com/gofiber/utils/v2 v2.0.6
+	github.com/gofiber/template/html/v3 v3.0.5
+	github.com/gofiber/utils/v2 v2.1.0
 	github.com/goravel/framework v1.17.2-0.20260319074756-7cd523f5f1a5
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
