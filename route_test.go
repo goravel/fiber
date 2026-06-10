@@ -188,6 +188,26 @@ func (s *RouteTestSuite) TestGlobalMiddleware() {
 	s.Equal(uint32(4), s.route.instance.HandlersCount())
 }
 
+func (s *RouteTestSuite) TestNewRouteDefaultGlobalMiddleware() {
+	mockConfig := mocksconfig.NewConfig(s.T())
+	mockConfig.EXPECT().GetInt("http.request_timeout", 3).Return(3).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+
+	route, err := NewRoute(mockConfig, map[string]any{"driver": "fiber"})
+	s.Require().NoError(err)
+	s.Len(route.GetGlobalMiddleware(), 3)
+	s.Equal(uint32(6), route.instance.HandlersCount())
+}
+
 func (s *RouteTestSuite) TestListen() {
 	host := "127.0.0.1:3100"
 
