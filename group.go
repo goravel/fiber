@@ -182,7 +182,7 @@ func (r *Group) getHandlerName(handler any) string {
 			prefix string
 			t      = reflect.TypeOf(res)
 		)
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			prefix = "*"
 			t = t.Elem()
 		}
