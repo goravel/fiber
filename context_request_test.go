@@ -1092,6 +1092,31 @@ func (s *ContextRequestSuite) TestInputArray_Form() {
 	s.Equal(http.StatusOK, code)
 }
 
+func (s *ContextRequestSuite) TestInputArray_FormSingleValueWithSpaces() {
+	s.route.Post("/input-array/form-single/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"prompt_content_text": ctx.Request().InputArray("prompt_content_text[]"),
+		})
+	})
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	err := writer.WriteField("prompt_content_text[]", "123 456 789")
+	s.Require().Nil(err)
+
+	err = writer.Close()
+	s.Require().Nil(err)
+
+	req, err := http.NewRequest("POST", "/input-array/form-single/1", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"prompt_content_text\":[\"123 456 789\"]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
 func (s *ContextRequestSuite) TestInputArray_Url() {
 	s.route.Post("/input-array/url/{id}", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().Json(contractshttp.Json{
@@ -1110,6 +1135,26 @@ func (s *ContextRequestSuite) TestInputArray_Url() {
 	code, body, _, _ := s.request(req)
 
 	s.Equal("{\"string\":[\"string 0\",\"string 1\"],\"string1\":[\"string 0\",\"string 1\"]}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestInputArray_UrlSingleValueWithSpaces() {
+	s.route.Post("/input-array/url-single/{id}", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"prompt_content_text": ctx.Request().InputArray("prompt_content_text[]"),
+		})
+	})
+
+	form := neturl.Values{
+		"prompt_content_text[]": {"123 456 789"},
+	}
+	req, err := http.NewRequest("POST", "/input-array/url-single/1", strings.NewReader(form.Encode()))
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"prompt_content_text\":[\"123 456 789\"]}", body)
 	s.Equal(http.StatusOK, code)
 }
 

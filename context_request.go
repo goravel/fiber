@@ -395,6 +395,14 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 
 func (r *ContextRequest) InputArray(key string, defaultValue ...[]string) []string {
 	if valueFromHttpBody := r.getValueFromHttpBody(key); valueFromHttpBody != nil {
+		if value, ok := valueFromHttpBody.(string); ok {
+			if value == "" {
+				return []string{}
+			}
+
+			return []string{value}
+		}
+
 		if value := cast.ToStringSlice(valueFromHttpBody); value == nil {
 			return []string{}
 		} else {
