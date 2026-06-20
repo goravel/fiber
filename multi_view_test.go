@@ -10,7 +10,6 @@ import (
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,9 +107,12 @@ func TestMultiView_PackageCollision(t *testing.T) {
 	assert.Nil(t, file.PutContent(filepath.Join(pkgDir1, "collide.tmpl"), `{{ define "collide" }}First{{ end }}`))
 	assert.Nil(t, file.PutContent(filepath.Join(pkgDir2, "collide.tmpl"), `{{ define "collide" }}Second{{ end }}`))
 
-	mockLog := &mockslog.Log{}
+	collide1Path := filepath.Join(pkgDir1, "collide.tmpl")
+	collide2Path := filepath.Join(pkgDir2, "collide.tmpl")
+
+	mockLog := mockslog.NewLog(t)
 	LogFacade = mockLog
-	mockLog.EXPECT().Warningf("view collision: %q defined in %q and %q, using first", "collide", mock.Anything, mock.Anything).Once()
+	mockLog.EXPECT().Warningf("view collision: %q defined in %q and %q, using first", "collide", collide1Path, collide2Path).Once()
 
 	mv := NewMultiView([]string{pkgDir1, pkgDir2})
 	err = mv.Load()
@@ -120,8 +122,6 @@ func TestMultiView_PackageCollision(t *testing.T) {
 	err = mv.Render(&buf, "collide", nil)
 	require.Nil(t, err)
 	assert.Equal(t, "First", buf.String())
-
-	mockLog.AssertExpectations(t)
 }
 
 func TestMultiView_NoTemplates(t *testing.T) {

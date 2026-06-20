@@ -80,7 +80,7 @@ func (m *MultiView) Load() error {
 	return nil
 }
 
-func (m *MultiView) Render(w io.Writer, name string, data interface{}, layouts ...string) error {
+func (m *MultiView) Render(w io.Writer, name string, data any, layouts ...string) error {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
