@@ -30,6 +30,35 @@ Run the command below in your project to install the package automatically:
 
 Or check [the setup file](./setup/setup.go) to install the package manually.
 
+## Configuration
+
+You can define the `template` configuration. If omitted, `DefaultTemplate()` is used automatically as a fallback, which loads views from `resources/views` and any registered package views.
+
+You can provide a custom template configuration in two forms:
+
+- **`func() (fiber.Views, error)`** — a callback that returns a custom template engine (e.g. to configure custom delimiters or a FuncMap).
+- **`fiber.Views`** — a pre-built template engine instance.
+
+**Custom example:**
+
+```go
+import (
+    "html/template"
+
+    "github.com/gofiber/fiber/v3"
+    goravelfiber "github.com/goravel/fiber"
+)
+
+"template": func() (fiber.Views, error) {
+    return goravelfiber.NewTemplate(goravelfiber.RenderOptions{
+        Delims: &goravelfiber.Delims{Left: "{[", Right: "]}"},
+        FuncMap: template.FuncMap{
+            "upper": strings.ToUpper,
+        },
+    })
+},
+```
+
 ## Testing
 
 Run command below to run test:

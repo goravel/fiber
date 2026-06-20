@@ -18,15 +18,10 @@ func main() {
         "immutable": true,
         // prefork mode, see https://docs.gofiber.io/api/fiber/#config
         "prefork": false,
-        // Optional, default is 4096 KB
         "body_limit": 4096,
         "header_limit": 4096,
         "route": func() (route.Route, error) {
             return fiberfacades.Route("fiber"), nil
-        },
-        // Optional, default is "html/template"
-        "template": func() (fiber.Views, error) {
-            return html.New(path.Resource("views"), ".tmpl"), nil
         },
     }`
 	moduleImport := setup.Paths().Module().Import()
@@ -35,9 +30,6 @@ func main() {
 	httpConfigPath := path.Config("http.go")
 	routeContract := "github.com/goravel/framework/contracts/route"
 	fiberFacade := "github.com/goravel/fiber/facades"
-	html := "github.com/gofiber/template/html/v3"
-	supportPath := "github.com/goravel/framework/support/path"
-	fiber := "github.com/gofiber/fiber/v3"
 	httpDriversConfig := match.Config("http.drivers")
 	httpConfig := match.Config("http")
 
@@ -59,8 +51,7 @@ func main() {
 			Find(match.Imports()).
 			Modify(
 				modify.AddImport(routeContract),
-				modify.AddImport(fiberFacade, "fiberfacades"), modify.AddImport(supportPath),
-				modify.AddImport(html), modify.AddImport(fiber),
+				modify.AddImport(fiberFacade, "fiberfacades"),
 			).
 			Find(httpDriversConfig).Modify(modify.AddConfig("fiber", config)).
 			Find(httpConfig).Modify(modify.AddConfig("default", `"fiber"`)),
@@ -72,8 +63,7 @@ func main() {
 			Find(match.Imports()).
 			Modify(
 				modify.RemoveImport(routeContract),
-				modify.RemoveImport(fiberFacade, "fiberfacades"), modify.RemoveImport(supportPath),
-				modify.RemoveImport(html), modify.RemoveImport(fiber),
+				modify.RemoveImport(fiberFacade, "fiberfacades"),
 			),
 
 		// Remove fiber service provider from app.go if not using bootstrap setup
