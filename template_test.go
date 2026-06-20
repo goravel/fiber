@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMultiView_AppViewsOnly(t *testing.T) {
+func TestTemplate_AppViewsOnly(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "hello.tmpl"), `{{ define "hello" }}Hello World{{ end }}`))
 	defer func() {
 		assert.Nil(t, file.Remove(path.Resource("views")))
@@ -29,7 +29,7 @@ func TestMultiView_AppViewsOnly(t *testing.T) {
 	assert.Equal(t, "Hello World", buf.String())
 }
 
-func TestMultiView_LoadIdempotent(t *testing.T) {
+func TestTemplate_LoadIdempotent(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "idem.tmpl"), `{{ define "idem" }}Idempotent{{ end }}`))
 	defer func() {
 		assert.Nil(t, file.Remove(path.Resource("views")))
@@ -47,7 +47,7 @@ func TestMultiView_LoadIdempotent(t *testing.T) {
 	assert.Equal(t, "Idempotent", buf.String())
 }
 
-func TestMultiView_PackageViews(t *testing.T) {
+func TestTemplate_PackageViews(t *testing.T) {
 	pkgDir, err := os.MkdirTemp("", "goravel-fiber-pkgviews-*")
 	require.Nil(t, err)
 	defer func() {
@@ -65,7 +65,7 @@ func TestMultiView_PackageViews(t *testing.T) {
 	assert.Equal(t, "Package View", buf.String())
 }
 
-func TestMultiView_AppOverridesPackage(t *testing.T) {
+func TestTemplate_AppOverridesPackage(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "override.tmpl"), `{{ define "override" }}App Version{{ end }}`))
 	defer func() {
 		assert.Nil(t, file.Remove(path.Resource("views")))
@@ -88,7 +88,7 @@ func TestMultiView_AppOverridesPackage(t *testing.T) {
 	assert.Equal(t, "App Version", buf.String())
 }
 
-func TestMultiView_PackageCollision(t *testing.T) {
+func TestTemplate_PackageCollision(t *testing.T) {
 	pkgDir1, err := os.MkdirTemp("", "goravel-fiber-collision1-*")
 	require.Nil(t, err)
 	defer func() {
@@ -120,7 +120,7 @@ func TestMultiView_PackageCollision(t *testing.T) {
 	assert.Equal(t, "First", buf.String())
 }
 
-func TestMultiView_NoTemplates(t *testing.T) {
+func TestTemplate_NoTemplates(t *testing.T) {
 	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
@@ -129,7 +129,7 @@ func TestMultiView_NoTemplates(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMultiView_TemplateWithData(t *testing.T) {
+func TestTemplate_TemplateWithData(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "data.tmpl"), `{{ define "data" }}{{ .Name }} is {{ .Age }}{{ end }}`))
 	defer func() {
 		assert.Nil(t, file.Remove(path.Resource("views")))
@@ -147,13 +147,13 @@ func TestMultiView_TemplateWithData(t *testing.T) {
 	assert.Equal(t, "Alice is 30", buf.String())
 }
 
-func TestMultiView_LoadErrorOnInvalidDir(t *testing.T) {
+func TestTemplate_NonexistentDirIgnored(t *testing.T) {
 	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{"/nonexistent/dir/that/should/not/exist"}})
 	require.Nil(t, err)
 	require.NotNil(t, mv)
 }
 
-func TestMultiView_RenderNonexistentTemplate(t *testing.T) {
+func TestTemplate_RenderNonexistentTemplate(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "exists.tmpl"), `{{ define "exists" }}I exist{{ end }}`))
 	defer func() {
 		assert.Nil(t, file.Remove(path.Resource("views")))
