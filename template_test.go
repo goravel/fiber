@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"bytes"
+	"html/template"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,8 +20,7 @@ func TestMultiView_AppViewsOnly(t *testing.T) {
 		assert.Nil(t, file.Remove(path.Resource("views")))
 	}()
 
-	mv := NewMultiView(nil)
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -35,8 +35,7 @@ func TestMultiView_LoadIdempotent(t *testing.T) {
 		assert.Nil(t, file.Remove(path.Resource("views")))
 	}()
 
-	mv := NewMultiView(nil)
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
 	err = mv.Load()
@@ -57,8 +56,7 @@ func TestMultiView_PackageViews(t *testing.T) {
 
 	assert.Nil(t, file.PutContent(filepath.Join(pkgDir, "pkg.tmpl"), `{{ define "pkg" }}Package View{{ end }}`))
 
-	mv := NewMultiView([]string{pkgDir})
-	err = mv.Load()
+	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{pkgDir}})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -81,8 +79,7 @@ func TestMultiView_AppOverridesPackage(t *testing.T) {
 
 	assert.Nil(t, file.PutContent(filepath.Join(pkgDir, "override.tmpl"), `{{ define "override" }}Package Version{{ end }}`))
 
-	mv := NewMultiView([]string{pkgDir})
-	err = mv.Load()
+	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{pkgDir}})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -114,8 +111,7 @@ func TestMultiView_PackageCollision(t *testing.T) {
 	LogFacade = mockLog
 	mockLog.EXPECT().Warningf("view collision: %q defined in %q and %q, using first", "collide", collide1Path, collide2Path).Once()
 
-	mv := NewMultiView([]string{pkgDir1, pkgDir2})
-	err = mv.Load()
+	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{pkgDir1, pkgDir2}})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -125,8 +121,7 @@ func TestMultiView_PackageCollision(t *testing.T) {
 }
 
 func TestMultiView_NoTemplates(t *testing.T) {
-	mv := NewMultiView(nil)
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -140,8 +135,7 @@ func TestMultiView_TemplateWithData(t *testing.T) {
 		assert.Nil(t, file.Remove(path.Resource("views")))
 	}()
 
-	mv := NewMultiView(nil)
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -154,9 +148,9 @@ func TestMultiView_TemplateWithData(t *testing.T) {
 }
 
 func TestMultiView_LoadErrorOnInvalidDir(t *testing.T) {
-	mv := NewMultiView([]string{"/nonexistent/dir/that/should/not/exist"})
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{"/nonexistent/dir/that/should/not/exist"}})
 	require.Nil(t, err)
+	require.NotNil(t, mv)
 }
 
 func TestMultiView_RenderNonexistentTemplate(t *testing.T) {
@@ -165,8 +159,7 @@ func TestMultiView_RenderNonexistentTemplate(t *testing.T) {
 		assert.Nil(t, file.Remove(path.Resource("views")))
 	}()
 
-	mv := NewMultiView(nil)
-	err := mv.Load()
+	mv, err := NewTemplate(RenderOptions{})
 	require.Nil(t, err)
 
 	var buf bytes.Buffer
@@ -176,4 +169,56 @@ func TestMultiView_RenderNonexistentTemplate(t *testing.T) {
 	err = mv.Render(&buf, "exists", nil)
 	require.Nil(t, err)
 	assert.Equal(t, "I exist", buf.String())
+}
+
+func TestNewTemplate_CustomDelimiters(t *testing.T) {
+	assert.Nil(t, file.PutContent(path.Resource("views", "custom.tmpl"), `{[ define "custom" ]}Custom Delimiters{[ end ]}`))
+	defer func() {
+		assert.Nil(t, file.Remove(path.Resource("views")))
+	}()
+
+	mv, err := NewTemplate(RenderOptions{
+		Delims: &Delims{Left: "{[", Right: "]}"},
+	})
+	require.Nil(t, err)
+
+	var buf bytes.Buffer
+	err = mv.Render(&buf, "custom", nil)
+	require.Nil(t, err)
+	assert.Equal(t, "Custom Delimiters", buf.String())
+}
+
+func TestNewTemplate_FuncMap(t *testing.T) {
+	assert.Nil(t, file.PutContent(path.Resource("views", "funcmap.tmpl"), `{{ define "funcmap" }}{{ upper . }}{{ end }}`))
+	defer func() {
+		assert.Nil(t, file.Remove(path.Resource("views")))
+	}()
+
+	mv, err := NewTemplate(RenderOptions{
+		FuncMap: template.FuncMap{
+			"upper": func(s string) string { return s + "!" },
+		},
+	})
+	require.Nil(t, err)
+
+	var buf bytes.Buffer
+	err = mv.Render(&buf, "funcmap", "hello")
+	require.Nil(t, err)
+	assert.Equal(t, "hello!", buf.String())
+}
+
+func TestNewTemplate_Layouts(t *testing.T) {
+	assert.Nil(t, file.PutContent(path.Resource("views", "layout.tmpl"), `{{ define "layout" }}<html>{{ template "content" . }}</html>{{ end }}`))
+	assert.Nil(t, file.PutContent(path.Resource("views", "content.tmpl"), `{{ define "content" }}<p>{{ . }}</p>{{ end }}`))
+	defer func() {
+		assert.Nil(t, file.Remove(path.Resource("views")))
+	}()
+
+	mv, err := NewTemplate(RenderOptions{})
+	require.Nil(t, err)
+
+	var buf bytes.Buffer
+	err = mv.Render(&buf, "content", "Hello Layout", "layout")
+	require.Nil(t, err)
+	assert.Equal(t, "<html><p>Hello Layout</p></html>", buf.String())
 }
