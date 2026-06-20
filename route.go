@@ -13,7 +13,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/gofiber/template/html/v3"
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
@@ -291,8 +290,18 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 	}
 
 	dir := path.Resource("views")
-	if views == nil && file.Exists(dir) {
-		views = html.New(dir, ".tmpl")
+	if views == nil {
+		var extraPaths []string
+		if ViewFacade != nil {
+			extraPaths = ViewFacade.RegisteredViews()
+		}
+		if len(extraPaths) > 0 || file.Exists(dir) {
+			v := NewMultiView(extraPaths)
+			if err := v.Load(); err != nil {
+				return err
+			}
+			views = v
+		}
 	}
 
 	immutable := r.config.GetBool(fmt.Sprintf("http.drivers.%s.immutable", r.driver), true)
