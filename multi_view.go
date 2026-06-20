@@ -27,6 +27,18 @@ func NewMultiView(extraPaths []string) *MultiView {
 	}
 }
 
+func DefaultTemplate() (fiber.Views, error) {
+	var extraPaths []string
+	if ViewFacade != nil {
+		extraPaths = ViewFacade.RegisteredViews()
+	}
+	mv := NewMultiView(extraPaths)
+	if err := mv.Load(); err != nil {
+		return nil, err
+	}
+	return mv, nil
+}
+
 func (m *MultiView) Load() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -58,7 +70,9 @@ func (m *MultiView) Load() error {
 				return
 			}
 			if existing, ok := pkgDefines[name]; ok {
-				LogFacade.Warningf("view collision: %q defined in %q and %q, using first", name, existing, filePath)
+				if LogFacade != nil {
+					LogFacade.Warningf("view collision: %q defined in %q and %q, using first", name, existing, filePath)
+				}
 				return
 			}
 			pkgDefines[name] = filePath

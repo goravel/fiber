@@ -19,9 +19,7 @@ import (
 	frameworkmiddleware "github.com/goravel/framework/http/middleware"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
-	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/json"
-	"github.com/goravel/framework/support/path"
 	"github.com/goravel/framework/support/str"
 	"github.com/spf13/cast"
 )
@@ -289,19 +287,12 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		}
 	}
 
-	dir := path.Resource("views")
 	if views == nil {
-		var extraPaths []string
-		if ViewFacade != nil {
-			extraPaths = ViewFacade.RegisteredViews()
+		v, err := DefaultTemplate()
+		if err != nil {
+			return err
 		}
-		if len(extraPaths) > 0 || file.Exists(dir) {
-			v := NewMultiView(extraPaths)
-			if err := v.Load(); err != nil {
-				return err
-			}
-			views = v
-		}
+		views = v
 	}
 
 	immutable := r.config.GetBool(fmt.Sprintf("http.drivers.%s.immutable", r.driver), true)

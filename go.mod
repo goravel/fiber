@@ -5,7 +5,6 @@ go 1.25.0
 toolchain go1.25.6
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/gofiber/fiber/v3 v3.3.0
 	github.com/gofiber/utils/v2 v2.1.0
 	github.com/goravel/framework v1.17.2-0.20260620091942-4f2585d35807
