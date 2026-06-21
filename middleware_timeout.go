@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/gofiber/fiber/v3"
 	fibertimeout "github.com/gofiber/fiber/v3/middleware/timeout"
+	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
 // Timeout creates middleware to set a timeout for a request.

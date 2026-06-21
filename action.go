@@ -38,3 +38,11 @@ func (r *Action) Name(name string) contractsroute.Action {
 
 	return r
 }
+
+func (r *Action) WithoutMiddleware(middleware ...contractshttp.Middleware) contractsroute.Action {
+	info := routes[r.path][r.method]
+	info.ExcludedMiddleware = append(info.ExcludedMiddleware, middleware...)
+	routes[r.path][r.method] = info
+
+	return r
+}

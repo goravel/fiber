@@ -18,11 +18,12 @@ import (
 )
 
 type Group struct {
-	config          config.Config
-	instance        *fiber.App
-	prefix          string
-	middlewares     []contractshttp.Middleware
-	lastMiddlewares []contractshttp.Middleware
+	config              config.Config
+	instance            *fiber.App
+	prefix              string
+	middlewares         []contractshttp.Middleware
+	lastMiddlewares     []contractshttp.Middleware
+	excludedMiddlewares []contractshttp.Middleware
 }
 
 func NewGroup(config config.Config, instance *fiber.App, prefix string, middlewares []contractshttp.Middleware, lastMiddlewares []contractshttp.Middleware) contractsroute.Router {
@@ -36,15 +37,47 @@ func NewGroup(config config.Config, instance *fiber.App, prefix string, middlewa
 }
 
 func (r *Group) Group(handler contractsroute.GroupFunc) {
-	handler(NewGroup(r.config, r.instance, r.getFullPath(""), r.middlewares, r.lastMiddlewares))
+	handler(&Group{
+		config:              r.config,
+		instance:            r.instance,
+		prefix:              r.getFullPath(""),
+		middlewares:         r.middlewares,
+		lastMiddlewares:     r.lastMiddlewares,
+		excludedMiddlewares: r.excludedMiddlewares,
+	})
 }
 
 func (r *Group) Prefix(path string) contractsroute.Router {
-	return NewGroup(r.config, r.instance, r.getFullPath(path), r.middlewares, r.lastMiddlewares)
+	return &Group{
+		config:              r.config,
+		instance:            r.instance,
+		prefix:              r.getFullPath(path),
+		middlewares:         r.middlewares,
+		lastMiddlewares:     r.lastMiddlewares,
+		excludedMiddlewares: r.excludedMiddlewares,
+	}
 }
 
 func (r *Group) Middleware(middlewares ...contractshttp.Middleware) contractsroute.Router {
-	return NewGroup(r.config, r.instance, r.getFullPath(""), append(r.middlewares, middlewares...), r.lastMiddlewares)
+	return &Group{
+		config:              r.config,
+		instance:            r.instance,
+		prefix:              r.getFullPath(""),
+		middlewares:         append(r.middlewares, middlewares...),
+		lastMiddlewares:     r.lastMiddlewares,
+		excludedMiddlewares: r.excludedMiddlewares,
+	}
+}
+
+func (r *Group) WithoutMiddleware(middlewares ...contractshttp.Middleware) contractsroute.Router {
+	return &Group{
+		config:              r.config,
+		instance:            r.instance,
+		prefix:              r.getFullPath(""),
+		middlewares:         r.middlewares,
+		lastMiddlewares:     r.lastMiddlewares,
+		excludedMiddlewares: append(r.excludedMiddlewares, middlewares...),
+	}
 }
 
 func (r *Group) Any(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
@@ -157,12 +190,36 @@ func (h httpFSToFS) Open(name string) (fs.File, error) {
 
 func (r *Group) getMiddlewares(handler contractshttp.HandlerFunc) []fiber.Handler {
 	var middlewares []fiber.Handler
-	middlewares = middlewaresToFiberHandlers(append(r.middlewares, r.lastMiddlewares...))
+	middlewares = middlewaresToFiberHandlers(r.excludeMiddlewares(append(r.middlewares, r.lastMiddlewares...)))
 	if handler != nil {
 		middlewares = append(middlewares, handlerToFiberHandler(handler))
 	}
 
 	return middlewares
+}
+
+// excludeMiddlewares filters out middlewares excluded via WithoutMiddleware,
+// comparing by reflect.Type (see isSameMiddleware in utils.go).
+func (r *Group) excludeMiddlewares(middlewares []contractshttp.Middleware) []contractshttp.Middleware {
+	if len(r.excludedMiddlewares) == 0 {
+		return middlewares
+	}
+
+	var result []contractshttp.Middleware
+	for _, middleware := range middlewares {
+		excluded := false
+		for _, ex := range r.excludedMiddlewares {
+			if isSameMiddleware(ex, middleware) {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			result = append(result, middleware)
+		}
+	}
+
+	return result
 }
 
 func (r *Group) getMiddlewaresWithPath(path string, handler contractshttp.HandlerFunc) []any {
