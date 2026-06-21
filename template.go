@@ -3,6 +3,7 @@ package fiber
 import (
 	"html/template"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -140,18 +141,16 @@ func (m *Template) Render(w io.Writer, name string, data any, layouts ...string)
 }
 
 func walkTmplFiles(dir string, leftDelim string, fn func(filePath string, name string)) error {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	return filepath.WalkDir(dir, func(filePath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-		if filepath.Ext(entry.Name()) != ".tmpl" {
-			continue
+		if d.IsDir() {
+			return nil
 		}
-		filePath := filepath.Join(dir, entry.Name())
+		if filepath.Ext(d.Name()) != ".tmpl" {
+			return nil
+		}
 		content, err := os.ReadFile(filePath)
 		if err != nil {
 			return err
@@ -160,8 +159,8 @@ func walkTmplFiles(dir string, leftDelim string, fn func(filePath string, name s
 		if name != "" {
 			fn(filePath, name)
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func extractDefineName(content string, leftDelim string) string {
