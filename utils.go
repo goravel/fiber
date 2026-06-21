@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"errors"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -107,4 +108,23 @@ func mergeSlashForPath(path string) string {
 	path = strings.ReplaceAll(path, "//", "/")
 
 	return strings.ReplaceAll(path, "//", "/")
+}
+
+// isSameMiddleware reports whether two middleware values have the same concrete
+// type (dereferencing pointers). This lets WithoutMiddleware match struct-based
+// middleware across different instances. Closure-based middleware (func(Context))
+// share a single reflect.Type and cannot be told apart — a documented limitation.
+func isSameMiddleware(a, b any) bool {
+	tA := reflect.TypeOf(a)
+	tB := reflect.TypeOf(b)
+	if tA == nil || tB == nil {
+		return false
+	}
+	if tA.Kind() == reflect.Pointer {
+		tA = tA.Elem()
+	}
+	if tB.Kind() == reflect.Pointer {
+		tB = tB.Elem()
+	}
+	return tA == tB
 }

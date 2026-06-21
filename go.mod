@@ -7,7 +7,7 @@ toolchain go1.25.6
 require (
 	github.com/gofiber/fiber/v3 v3.3.0
 	github.com/gofiber/utils/v2 v2.1.0
-	github.com/goravel/framework v1.17.2-0.20260620091942-4f2585d35807
+	github.com/goravel/framework v1.17.2-0.20260621064957-8c973e865adb
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.71.0
@@ -126,3 +126,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/gorm v1.31.1 // indirect
 )
+
+// TODO: remove after framework PR is merged
+replace github.com/goravel/framework => github.com/u-wlkjyy/framework v1.17.2-0.20260621064957-8c973e865adb
