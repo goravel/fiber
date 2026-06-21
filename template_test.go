@@ -207,6 +207,29 @@ func TestNewTemplate_FuncMap(t *testing.T) {
 	assert.Equal(t, "hello!", buf.String())
 }
 
+func TestTemplate_SubdirectoryViews(t *testing.T) {
+	assert.Nil(t, file.PutContent(path.Resource("views", "admin", "index.tmpl"), `{{ define "admin/index.tmpl" }}{{ .greeting }}, {{ .name }}{{ end }}`))
+	assert.Nil(t, file.PutContent(path.Resource("views", "admin", "sidebar.tmpl"), `{{ define "admin/sidebar" }}{{ .greeting }}, {{ .name }}{{ end }}`))
+	defer func() {
+		assert.Nil(t, file.Remove(path.Resource("views")))
+	}()
+
+	mv, err := NewTemplate(RenderOptions{})
+	require.Nil(t, err)
+
+	data := map[string]any{"greeting": "Hello", "name": "Bowen"}
+
+	var buf bytes.Buffer
+	err = mv.Render(&buf, "admin/index.tmpl", data)
+	require.Nil(t, err)
+	assert.Equal(t, "Hello, Bowen", buf.String())
+
+	buf.Reset()
+	err = mv.Render(&buf, "admin/sidebar", data)
+	require.Nil(t, err)
+	assert.Equal(t, "Hello, Bowen", buf.String())
+}
+
 func TestNewTemplate_Layouts(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "layout.tmpl"), `{{ define "layout" }}<html>{{ template "content" . }}</html>{{ end }}`))
 	assert.Nil(t, file.PutContent(path.Resource("views", "content.tmpl"), `{{ define "content" }}<p>{{ . }}</p>{{ end }}`))
