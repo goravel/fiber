@@ -183,7 +183,7 @@ func (s *RouteTestSuite) TestGlobalMiddleware() {
 	s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
 	s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
-	middleware := func(ctx contractshttp.Context) {}
+	middleware := contractshttp.Middleware(&globalMwTestType{})
 	s.route.GlobalMiddleware(middleware)
 	s.Equal(uint32(4), s.route.instance.HandlersCount())
 }
@@ -698,6 +698,12 @@ func assertHttpNormal(t *testing.T, addr string, expectNormal bool) {
 		}
 	}
 }
+
+type globalMwTestType struct{}
+
+func (m *globalMwTestType) Handle(contractshttp.Context) {}
+
+func (m *globalMwTestType) Signature() string { return "test_global_mw" }
 
 type CreateUser struct {
 	Name string `form:"name" json:"name"`

@@ -2,7 +2,6 @@ package fiber
 
 import (
 	"errors"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -61,7 +60,7 @@ func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler 
 			}
 		}
 
-		middleware(context)
+		middleware.Handle(context)
 		return nil
 	}
 }
@@ -117,21 +116,14 @@ func mergeSlashForPath(path string) string {
 	return strings.ReplaceAll(path, "//", "/")
 }
 
-// isSameMiddleware reports whether two middleware values have the same concrete
-// type (dereferencing pointers). This lets WithoutMiddleware match struct-based
-// middleware across different instances. Closure-based middleware (func(Context))
-// share a single reflect.Type and cannot be told apart — a documented limitation.
+// isSameMiddleware reports whether two middleware values identify the same
+// middleware by comparing their Signature() strings. This gives every middleware
+// a stable, comparable identity, even parameterized ones like Throttle("api").
 func isSameMiddleware(a, b any) bool {
-	tA := reflect.TypeOf(a)
-	tB := reflect.TypeOf(b)
-	if tA == nil || tB == nil {
+	mA, okA := a.(httpcontract.Middleware)
+	mB, okB := b.(httpcontract.Middleware)
+	if !okA || !okB {
 		return false
 	}
-	if tA.Kind() == reflect.Pointer {
-		tA = tA.Elem()
-	}
-	if tB.Kind() == reflect.Pointer {
-		tB = tB.Elem()
-	}
-	return tA == tB
+	return mA.Signature() == mB.Signature()
 }

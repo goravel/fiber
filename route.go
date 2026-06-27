@@ -344,15 +344,7 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		}))
 	}
 
-	recoverMiddleware := func(ctx contractshttp.Context) {
-		defer func() {
-			if err := recover(); err != nil {
-				globalRecoverCallback(ctx, err)
-			}
-		}()
-		ctx.Request().Next()
-	}
-	globalMiddleware = append([]contractshttp.Middleware{recoverMiddleware}, globalMiddleware...)
+	globalMiddleware = append([]contractshttp.Middleware{&recoverMiddleware{}}, globalMiddleware...)
 	handlers = append(handlers, middlewaresToFiberHandlers(globalMiddleware)...)
 
 	for _, handler := range handlers {
@@ -406,4 +398,19 @@ func (r *Route) setMiddlewares(middlewares []fiber.Handler) {
 func defaultRecoverCallback(ctx contractshttp.Context, err any) {
 	LogFacade.WithContext(ctx).Request(ctx.Request()).Error(err)
 	ctx.Request().Abort(contractshttp.StatusInternalServerError)
+}
+
+type recoverMiddleware struct{}
+
+func (m *recoverMiddleware) Signature() string {
+	return "goravel_fiber_recover"
+}
+
+func (m *recoverMiddleware) Handle(ctx contractshttp.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			globalRecoverCallback(ctx, err)
+		}
+	}()
+	ctx.Request().Next()
 }

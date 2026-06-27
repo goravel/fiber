@@ -274,15 +274,7 @@ func TestResponse(t *testing.T) {
 			url:    "/origin",
 			setup: func(method, url string) error {
 				route.setMiddlewares([]fiber.Handler{
-					middlewareToFiberHandler(func(ctx contractshttp.Context) {
-						ctx.Response().Header("global", "goravel")
-						ctx.Request().Next()
-
-						assert.Equal(t, "Goravel", ctx.Response().Origin().Body().String())
-						assert.Equal(t, "goravel", ctx.Response().Origin().Header().Get("global"))
-						assert.Equal(t, 7, ctx.Response().Origin().Size())
-						assert.Equal(t, 200, ctx.Response().Origin().Status())
-					}),
+				middlewareToFiberHandler(&headerOriginMwType{t: t}),
 				})
 				route.Get("/origin", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().String(http.StatusOK, "Goravel")
@@ -778,4 +770,19 @@ func TestResponse_Stream(t *testing.T) {
 
 	assert.Equal(t, []string{"a", "b", "c"}, output)
 
+}
+
+type headerOriginMwType struct {
+	t *testing.T
+}
+
+func (m *headerOriginMwType) Signature() string { return "test_header_origin_mw" }
+
+func (m *headerOriginMwType) Handle(ctx contractshttp.Context) {
+	ctx.Response().Header("global", "goravel")
+	ctx.Request().Next()
+	assert.Equal(m.t, "Goravel", ctx.Response().Origin().Body().String())
+	assert.Equal(m.t, "goravel", ctx.Response().Origin().Header().Get("global"))
+	assert.Equal(m.t, 7, ctx.Response().Origin().Size())
+	assert.Equal(m.t, 200, ctx.Response().Origin().Status())
 }

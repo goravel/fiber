@@ -199,7 +199,7 @@ func (r *Group) getMiddlewares(handler contractshttp.HandlerFunc) []fiber.Handle
 }
 
 // excludeMiddlewares filters out middlewares excluded via WithoutMiddleware,
-// comparing by reflect.Type (see isSameMiddleware in utils.go).
+// comparing by Signature() (see isSameMiddleware in utils.go).
 func (r *Group) excludeMiddlewares(middlewares []contractshttp.Middleware) []contractshttp.Middleware {
 	if len(r.excludedMiddlewares) == 0 {
 		return middlewares

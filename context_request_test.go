@@ -2226,12 +2226,16 @@ func TestGetValueFromHttpBody(t *testing.T) {
 	}
 }
 
-// Timeout creates middleware to set a timeout for a request
-func testAllMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		all := ctx.Request().All()
-		ctx.WithValue("all", all)
+type testAllMiddlewareType struct{}
 
-		ctx.Request().Next()
-	}
+func (m *testAllMiddlewareType) Signature() string { return "test_all_middleware" }
+
+func (m *testAllMiddlewareType) Handle(ctx contractshttp.Context) {
+	all := ctx.Request().All()
+	ctx.WithValue("all", all)
+	ctx.Request().Next()
+}
+
+func testAllMiddleware() contractshttp.Middleware {
+	return &testAllMiddlewareType{}
 }

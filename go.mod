@@ -7,7 +7,6 @@ toolchain go1.25.6
 require (
 	github.com/gofiber/fiber/v3 v3.3.0
 	github.com/gofiber/utils/v2 v2.1.0
-	github.com/goravel/framework v1.17.2-0.20260621064957-8c973e865adb
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.71.0
@@ -53,6 +52,7 @@ require (
 	github.com/goforj/godump v1.9.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.6.0 // indirect
+	github.com/goravel/framework v1.17.2-0.20260627084235-9e93358bfb27
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -126,6 +126,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/gorm v1.31.1 // indirect
 )
-
-// TODO: remove after framework PR is merged
-replace github.com/goravel/framework => github.com/u-wlkjyy/framework v1.17.2-0.20260621064957-8c973e865adb

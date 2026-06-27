@@ -164,10 +164,7 @@ func (s *GroupTestSuite) TestAny() {
 
 func (s *GroupTestSuite) TestResource() {
 	s.route.setMiddlewares([]fiber.Handler{
-		middlewareToFiberHandler(func(ctx contractshttp.Context) {
-			ctx.WithValue("action", ctx.Request().Origin().Method)
-			ctx.Request().Next()
-		}),
+		middlewareToFiberHandler(&actionMiddlewareType{}),
 	})
 	s.route.Resource("/resource", resourceController{}).Name("resource")
 
@@ -307,10 +304,7 @@ func (s *GroupTestSuite) TestGlobalMiddleware() {
 	s.mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
 	s.mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
-	s.route.GlobalMiddleware(func(ctx contractshttp.Context) {
-		ctx.WithValue("global", "goravel")
-		ctx.Request().Next()
-	})
+	s.route.GlobalMiddleware(&globalMiddlewareTestType{})
 	s.route.Get("/global-middleware", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
 			"global": ctx.Value("global"),
@@ -361,10 +355,7 @@ func (s *GroupTestSuite) TestIssue408() {
 }
 
 func (s *GroupTestSuite) TestWithoutMiddleware() {
-	mw := func(ctx contractshttp.Context) {
-		ctx.WithValue("mw", "applied")
-		ctx.Request().Next()
-	}
+	mw := contractshttp.Middleware(&withoutMiddlewareType{})
 
 	s.route.Middleware(mw).WithoutMiddleware(mw).Get("/without", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
@@ -376,10 +367,7 @@ func (s *GroupTestSuite) TestWithoutMiddleware() {
 }
 
 func (s *GroupTestSuite) TestActionWithoutMiddleware() {
-	mw := func(ctx contractshttp.Context) {
-		ctx.WithValue("mw", "applied")
-		ctx.Request().Next()
-	}
+	mw := contractshttp.Middleware(&withoutMiddlewareType{})
 
 	s.route.Middleware(mw).Get("/without-action", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
@@ -415,34 +403,74 @@ func (s *GroupTestSuite) assert(method, url string, expectCode int, expectBody s
 	}
 }
 
-func abortMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.Request().Abort(http.StatusNonAuthoritativeInfo)
-	}
+type abortMiddlewareType struct{}
+
+func (m *abortMiddlewareType) Signature() string { return "test_abort_middleware" }
+
+func (m *abortMiddlewareType) Handle(ctx contractshttp.Context) {
+	ctx.Request().Abort(http.StatusNonAuthoritativeInfo)
 }
 
-func contextMiddleware() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx", "Goravel")
+func abortMiddleware() contractshttp.Middleware { return &abortMiddlewareType{} }
 
-		ctx.Request().Next()
-	}
+type contextMiddlewareType struct{}
+
+func (m *contextMiddlewareType) Signature() string { return "test_context_middleware" }
+
+func (m *contextMiddlewareType) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("ctx", "Goravel")
+	ctx.Request().Next()
 }
 
-func contextMiddleware1() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx1", "Hello")
+func contextMiddleware() contractshttp.Middleware { return &contextMiddlewareType{} }
 
-		ctx.Request().Next()
-	}
+type contextMiddleware1Type struct{}
+
+func (m *contextMiddleware1Type) Signature() string { return "test_context_middleware_1" }
+
+func (m *contextMiddleware1Type) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("ctx1", "Hello")
+	ctx.Request().Next()
 }
 
-func contextMiddleware2() contractshttp.Middleware {
-	return func(ctx contractshttp.Context) {
-		ctx.WithValue("ctx2", "World")
+func contextMiddleware1() contractshttp.Middleware { return &contextMiddleware1Type{} }
 
-		ctx.Request().Next()
-	}
+type contextMiddleware2Type struct{}
+
+func (m *contextMiddleware2Type) Signature() string { return "test_context_middleware_2" }
+
+func (m *contextMiddleware2Type) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("ctx2", "World")
+	ctx.Request().Next()
+}
+
+func contextMiddleware2() contractshttp.Middleware { return &contextMiddleware2Type{} }
+
+type globalMiddlewareTestType struct{}
+
+func (m *globalMiddlewareTestType) Signature() string { return "test_global_middleware" }
+
+func (m *globalMiddlewareTestType) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("global", "goravel")
+	ctx.Request().Next()
+}
+
+type withoutMiddlewareType struct{}
+
+func (m *withoutMiddlewareType) Signature() string { return "test_without_mw" }
+
+func (m *withoutMiddlewareType) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("mw", "applied")
+	ctx.Request().Next()
+}
+
+type actionMiddlewareType struct{}
+
+func (m *actionMiddlewareType) Signature() string { return "test_action_mw" }
+
+func (m *actionMiddlewareType) Handle(ctx contractshttp.Context) {
+	ctx.WithValue("action", ctx.Request().Origin().Method)
+	ctx.Request().Next()
 }
 
 type resourceController struct{}
