@@ -375,6 +375,21 @@ func (s *GroupTestSuite) TestWithoutMiddleware() {
 	s.assert("GET", "/without", http.StatusOK, `{"mw":null}`)
 }
 
+func (s *GroupTestSuite) TestActionWithoutMiddleware() {
+	mw := func(ctx contractshttp.Context) {
+		ctx.WithValue("mw", "applied")
+		ctx.Request().Next()
+	}
+
+	s.route.Middleware(mw).Get("/without-action", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().Json(http.StatusOK, contractshttp.Json{
+			"mw": ctx.Value("mw"),
+		})
+	}).WithoutMiddleware(mw)
+
+	s.assert("GET", "/without-action", http.StatusOK, `{"mw":null}`)
+}
+
 func (s *GroupTestSuite) assert(method, url string, expectCode int, expectBody string) {
 	req, err := http.NewRequest(method, url, nil)
 	s.Nil(err)

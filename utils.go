@@ -54,6 +54,13 @@ func middlewareToFiberHandler(middleware httpcontract.Middleware) fiber.Handler 
 		context := NewContext(c)
 		defer releaseContext(context)
 
+		routeInfo := context.Request().Info()
+		for _, excluded := range routeInfo.ExcludedMiddleware {
+			if isSameMiddleware(excluded, middleware) {
+				return c.Next()
+			}
+		}
+
 		middleware(context)
 		return nil
 	}
