@@ -10,11 +10,36 @@ import (
 	contractshttp "github.com/goravel/framework/contracts/http"
 )
 
+type timeoutMiddleware struct {
+	handler fiber.Handler
+}
+
+func (m *timeoutMiddleware) Signature() string {
+	return "goravel:timeout"
+}
+
+func (m *timeoutMiddleware) Handle(ctx contractshttp.Context) {
+	fiberCtx := ctx.(*Context)
+	fiberCtx.Instance().SetContext(fiberCtx.Context())
+
+	if err := m.handler(fiberCtx.Instance()); err != nil && !errors.Is(err, fiber.ErrRequestTimeout) {
+		if err := renderFiberError(fiberCtx.Instance(), err); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // Timeout creates middleware to set a timeout for a request.
 // NOTICE: It relies on Fiber's timeout middleware so timed-out requests get a 408 response
 // without recycling the underlying request context into a later request.
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
+	if timeout <= 0 {
+		return &timeoutMiddleware{handler: func(c fiber.Ctx) error {
+			return c.Next()
+		}}
+	}
+
 	handler := fibertimeout.New(func(c fiber.Ctx) (err error) {
 		// Mirror Fiber's timeout-aware context into Goravel's request context so
 		// downstream handlers observe the same deadline and cancellation signal.
@@ -34,22 +59,5 @@ func Timeout(timeout time.Duration) contractshttp.Middleware {
 		return c.Next()
 	}, fibertimeout.Config{Timeout: timeout})
 
-	return func(ctx contractshttp.Context) {
-		if timeout <= 0 {
-			ctx.Request().Next()
-			return
-		}
-
-		fiberCtx := ctx.(*Context)
-		// Seed Fiber with the current Goravel context before timeout.New wraps it,
-		// otherwise upstream WithContext values would be lost when Fiber derives
-		// the timeout-aware context exposed through c.Context().
-		fiberCtx.Instance().SetContext(fiberCtx.Context())
-
-		if err := handler(fiberCtx.Instance()); err != nil && !errors.Is(err, fiber.ErrRequestTimeout) {
-			if err := renderFiberError(fiberCtx.Instance(), err); err != nil {
-				panic(err)
-			}
-		}
-	}
+	return &timeoutMiddleware{handler: handler}
 }

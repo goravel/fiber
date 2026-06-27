@@ -54,10 +54,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 	timeoutContextValue := make(chan string, 1)
 
-	route.Middleware(func(ctx contractshttp.Context) {
-		ctx.WithContext(context.WithValue(ctx.Context(), requestIDKey, "goravel-timeout"))
-		ctx.Request().Next()
-	}, Timeout(100*time.Millisecond)).Get("/timeout-context-value", func(ctx contractshttp.Context) contractshttp.Response {
+	route.Middleware(&timeoutContextMwType{requestIDKey: requestIDKey}, Timeout(100*time.Millisecond)).Get("/timeout-context-value", func(ctx contractshttp.Context) contractshttp.Response {
 		timeoutContextValue <- ctx.Value(requestIDKey).(string)
 		<-ctx.Done()
 		return nil
@@ -255,4 +252,15 @@ func TestTimeoutMiddleware(t *testing.T) {
 
 		<-panicDone
 	})
+}
+
+type timeoutContextMwType struct {
+	requestIDKey any
+}
+
+func (m *timeoutContextMwType) Signature() string { return "test_timeout_context_mw" }
+
+func (m *timeoutContextMwType) Handle(ctx contractshttp.Context) {
+	ctx.WithContext(context.WithValue(ctx.Context(), m.requestIDKey, "goravel-timeout"))
+	ctx.Request().Next()
 }

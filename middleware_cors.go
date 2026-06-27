@@ -7,50 +7,58 @@ import (
 	"github.com/goravel/framework/contracts/http"
 )
 
-func Cors() http.Middleware {
-	return func(ctx http.Context) {
-		path := ctx.Request().Path()
-		corsPaths, ok := ConfigFacade.Get("cors.paths").([]string)
-		if !ok {
-			ctx.Request().Next()
-			return
-		}
+type corsMiddleware struct{}
 
-		needCors := false
-		for _, corsPath := range corsPaths {
-			corsPath = pathToFiberPath(corsPath)
-			if strings.HasSuffix(corsPath, "*") {
-				corsPath = strings.ReplaceAll(corsPath, "*", "")
-				if corsPath == "" || strings.HasPrefix(strings.TrimPrefix(path, "/"), strings.TrimPrefix(corsPath, "/")) {
-					needCors = true
-					break
-				}
-			} else {
-				if strings.TrimPrefix(path, "/") == strings.TrimPrefix(corsPath, "/") {
-					needCors = true
-					break
-				}
+func (m *corsMiddleware) Signature() string {
+	return "goravel:cors"
+}
+
+func (m *corsMiddleware) Handle(ctx http.Context) {
+	path := ctx.Request().Path()
+	corsPaths, ok := ConfigFacade.Get("cors.paths").([]string)
+	if !ok {
+		ctx.Request().Next()
+		return
+	}
+
+	needCors := false
+	for _, corsPath := range corsPaths {
+		corsPath = pathToFiberPath(corsPath)
+		if strings.HasSuffix(corsPath, "*") {
+			corsPath = strings.ReplaceAll(corsPath, "*", "")
+			if corsPath == "" || strings.HasPrefix(strings.TrimPrefix(path, "/"), strings.TrimPrefix(corsPath, "/")) {
+				needCors = true
+				break
+			}
+		} else {
+			if strings.TrimPrefix(path, "/") == strings.TrimPrefix(corsPath, "/") {
+				needCors = true
+				break
 			}
 		}
-
-		if !needCors {
-			ctx.Request().Next()
-			return
-		}
-
-		fiberCtx := ctx.(*Context)
-		handler := cors.New(cors.Config{
-			AllowMethods:     allowedMethods(),
-			AllowOrigins:     allowedOrigins(),
-			AllowHeaders:     allowedHeaders(),
-			ExposeHeaders:    exposedHeaders(),
-			MaxAge:           ConfigFacade.GetInt("cors.max_age"),
-			AllowCredentials: ConfigFacade.GetBool("cors.supports_credentials"),
-		})
-		if err := handler(fiberCtx.Instance()); err != nil {
-			panic(err)
-		}
 	}
+
+	if !needCors {
+		ctx.Request().Next()
+		return
+	}
+
+	fiberCtx := ctx.(*Context)
+	handler := cors.New(cors.Config{
+		AllowMethods:     allowedMethods(),
+		AllowOrigins:     allowedOrigins(),
+		AllowHeaders:     allowedHeaders(),
+		ExposeHeaders:    exposedHeaders(),
+		MaxAge:           ConfigFacade.GetInt("cors.max_age"),
+		AllowCredentials: ConfigFacade.GetBool("cors.supports_credentials"),
+	})
+	if err := handler(fiberCtx.Instance()); err != nil {
+		panic(err)
+	}
+}
+
+func Cors() http.Middleware {
+	return &corsMiddleware{}
 }
 
 func allowedMethods() []string {
