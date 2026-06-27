@@ -403,7 +403,7 @@ func defaultRecoverCallback(ctx contractshttp.Context, err any) {
 type recoverMiddleware struct{}
 
 func (m *recoverMiddleware) Signature() string {
-	return "goravel_fiber_recover"
+	return "goravel:recover"
 }
 
 func (m *recoverMiddleware) Handle(ctx contractshttp.Context) {

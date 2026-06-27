@@ -226,7 +226,7 @@ func (r *Status) Stream(step func(w contractshttp.StreamWriter) error) contracts
 type responseMiddleware struct{}
 
 func (m *responseMiddleware) Signature() string {
-	return "goravel_fiber_response"
+	return "goravel:response"
 }
 
 func (m *responseMiddleware) Handle(ctx contractshttp.Context) {

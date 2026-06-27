@@ -10,7 +10,7 @@ import (
 type corsMiddleware struct{}
 
 func (m *corsMiddleware) Signature() string {
-	return "goravel_fiber_cors"
+	return "goravel:cors"
 }
 
 func (m *corsMiddleware) Handle(ctx http.Context) {
