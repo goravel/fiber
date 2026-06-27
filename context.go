@@ -15,9 +15,9 @@ type sharedValuesKeyType struct{}
 type sharedUserCtxKeyType struct{}
 
 var (
-	sessionKey         = sessionKeyType{}
-	sharedValuesKey    = sharedValuesKeyType{}
-	sharedUserCtxKey   = sharedUserCtxKeyType{}
+	sessionKey       = sessionKeyType{}
+	sharedValuesKey  = sharedValuesKeyType{}
+	sharedUserCtxKey = sharedUserCtxKeyType{}
 )
 
 func Background() http.Context {
