@@ -10,16 +10,6 @@
 
 Fiber http driver for Goravel.
 
-## Version
-
-| goravel/fiber | goravel/framework |
-|---------------|-------------------|
-| v1.17.x       | v1.17.x           |
-| v1.4.x        | v1.16.x           |
-| v1.3.x        | v1.15.x           |
-| v1.2.x        | v1.14.x           |
-| v1.1.x        | v1.13.x           |
-
 ## Install
 
 Run the command below in your project to install the package automatically:
