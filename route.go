@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -39,6 +40,8 @@ type Route struct {
 	globalMiddleware []contractshttp.Middleware
 	instance         *fiber.App
 	listenConfig     fiber.ListenConfig
+	templateOnce     sync.Once
+	templateHolder   *viewsHolder
 }
 
 // NewRoute creates new fiber route instance
@@ -113,6 +116,10 @@ func (r *Route) GlobalMiddleware(middleware ...contractshttp.Middleware) {
 // Listen listen server
 // Listen 监听服务器
 func (r *Route) Listen(l net.Listener) error {
+	if err := r.ensureTemplate(); err != nil {
+		return err
+	}
+
 	r.registerFallback()
 	r.outputRoutes()
 	color.Green().Println("[HTTP] Listening on: " + str.Of(l.Addr().String()).Start("http://").String())
@@ -125,12 +132,17 @@ func (r *Route) Listen(l net.Listener) error {
 // ListenTLS listen TLS server
 // ListenTLS 监听 TLS 服务器
 func (r *Route) ListenTLS(l net.Listener) error {
+	// ensureTemplate() is handled by ListenTLSWithCert.
 	return r.ListenTLSWithCert(l, r.config.GetString("http.tls.ssl.cert"), r.config.GetString("http.tls.ssl.key"))
 }
 
 // ListenTLSWithCert listen TLS server with cert file and key file
 // ListenTLSWithCert 使用证书文件和密钥文件监听 TLS 服务器
 func (r *Route) ListenTLSWithCert(l net.Listener, certFile, keyFile string) error {
+	if err := r.ensureTemplate(); err != nil {
+		return err
+	}
+
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return err
@@ -178,6 +190,10 @@ func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 // Run run server
 // Run 运行服务器
 func (r *Route) Run(host ...string) error {
+	if err := r.ensureTemplate(); err != nil {
+		return err
+	}
+
 	if len(host) == 0 {
 		defaultHost := r.config.GetString("http.host")
 		defaultPort := r.config.GetString("http.port")
@@ -213,12 +229,17 @@ func (r *Route) RunTLS(host ...string) error {
 	certFile := r.config.GetString("http.tls.ssl.cert")
 	keyFile := r.config.GetString("http.tls.ssl.key")
 
+	// ensureTemplate() is handled by RunTLSWithCert.
 	return r.RunTLSWithCert(host[0], certFile, keyFile)
 }
 
 // RunTLSWithCert run TLS server with cert file and key file
 // RunTLSWithCert 使用证书文件和密钥文件运行 TLS 服务器
 func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
+	if err := r.ensureTemplate(); err != nil {
+		return err
+	}
+
 	if host == "" {
 		return errors.New("host can't be empty")
 	}
@@ -265,6 +286,10 @@ func (r *Route) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 // Test for unit test
 // Test 用于单元测试
 func (r *Route) Test(request *http.Request) (*http.Response, error) {
+	if err := r.ensureTemplate(); err != nil {
+		return nil, err
+	}
+
 	r.registerFallback()
 
 	return r.instance.Test(request, fiber.TestConfig{Timeout: 0})
@@ -288,11 +313,22 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 	}
 
 	if views == nil {
-		v, err := DefaultTemplate()
-		if err != nil {
-			return err
+		// The built-in DefaultTemplate() is intentionally NOT compiled here. It
+		// is deferred to ensureTemplate(), which runs on the first
+		// Listen/Run/Test call — after all providers have booted — so that views
+		// registered via View.LoadViewsFrom() in a provider's Boot() are picked
+		// up (see goravel/goravel#989).
+		//
+		// fiber v3 reads Config.Views from its internal config copy at render
+		// time and app.Config() returns a copy, so the binding passed to
+		// fiber.New() cannot be replaced later. A lazily-bound viewsHolder is
+		// passed instead; ensureTemplate() fills it in before the first request.
+		// The holder is reused across init() re-runs so that views compiled by a
+		// previous ensureTemplate() survive an engine rebuild.
+		if r.templateHolder == nil {
+			r.templateHolder = &viewsHolder{}
 		}
-		views = v
+		views = r.templateHolder
 	}
 
 	immutable := r.config.GetBool(fmt.Sprintf("http.drivers.%s.immutable", r.driver), true)
@@ -359,6 +395,37 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		[]contractshttp.Middleware{},
 	)
 	r.instance = instance
+
+	return nil
+}
+
+// ensureTemplate lazily compiles the default template set on first use. It must
+// run after all service providers have booted so that ViewFacade is set and any
+// LoadViewsFrom()-registered directories are included. The compiled views are
+// bound into the viewsHolder that was passed to fiber.New().
+//
+// A template compile failure is terminal for the process lifetime: sync.Once
+// marks the once as done even when err != nil, so the same error is returned on
+// every subsequent call with no retry (matching the previous eager fail-fast
+// behavior, which aborted route construction in init()).
+func (r *Route) ensureTemplate() error {
+	if r.templateHolder == nil {
+		return nil
+	}
+
+	var err error
+	r.templateOnce.Do(func() {
+		var views fiber.Views
+		views, err = DefaultTemplate()
+		if err != nil {
+			return
+		}
+		r.templateHolder.set(views)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to compile default template set: %w", err)
+	}
 
 	return nil
 }
