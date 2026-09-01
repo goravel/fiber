@@ -3,6 +3,8 @@ package fiber
 import (
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	contractshttp "github.com/goravel/framework/contracts/http"
@@ -253,6 +255,160 @@ func TestView_Make(t *testing.T) {
 			mockView.AssertExpectations(t)
 		})
 	}
+}
+
+func TestView_LoadViewsFrom(t *testing.T) {
+	// A package/module view directory registered via View.LoadViewsFrom() in a
+	// provider's Boot(), i.e. after the route engine is built. The default
+	// template set must be compiled lazily (on the first serve/Test call) so
+	// that this directory is picked up. See goravel/goravel#989.
+	pkgDir, err := os.MkdirTemp("", "goravel-fiber-loadviews-*")
+	require.Nil(t, err)
+	defer func() {
+		assert.Nil(t, os.RemoveAll(pkgDir))
+	}()
+
+	assert.Nil(t, file.PutContent(filepath.Join(pkgDir, "auth.tmpl"), `{{ define "auth.tmpl" }}Hello {{ .name }} from module{{ end }}`))
+
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+	ConfigFacade = mockConfig
+
+	mockView := mocksview.NewView(t)
+	ViewFacade = mockView
+
+	// The route engine is built (init()) before providers boot, and at that
+	// point no LoadViewsFrom() call has happened yet. No RegisteredViews()
+	// expectation is set before init(): if the default template set were still
+	// compiled eagerly inside init(), the mock would be called unexpectedly and
+	// the test would fail.
+	//
+	// Note on fidelity: unlike production (where ViewFacade is nil during init
+	// because Boot() runs later), ViewFacade is set before init() here. This is
+	// deliberate — it makes the old eager code fail loudly (unexpected
+	// RegisteredViews() mock call) instead of silently compiling app views only,
+	// which the test would otherwise mistake for success.
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err = route.init(nil)
+	require.Nil(t, err)
+
+	// Provider Boot() registers its module view directory.
+	mockView.On("LoadViewsFrom", pkgDir).Once()
+	mockView.LoadViewsFrom(pkgDir)
+	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
+	mockView.On("GetShared").Return(map[string]any{"name": "goravel"}).Once()
+
+	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("auth.tmpl")
+	})
+
+	req, err := http.NewRequest("GET", "/auth", nil)
+	require.Nil(t, err)
+	req.Host = "example.com"
+
+	resp, err := route.Test(req)
+	require.NoError(t, err)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "Hello goravel from module", string(body))
+
+	mockConfig.AssertExpectations(t)
+	mockView.AssertExpectations(t)
+}
+
+func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
+	// After ensureTemplate() has compiled the default views, a re-init() (e.g.
+	// Recover/SetGlobalMiddleware triggering an engine rebuild) must not lose
+	// them: the lazily-bound holder is reused across rebuilds.
+	pkgDir, err := os.MkdirTemp("", "goravel-fiber-loadviews-*")
+	require.Nil(t, err)
+	defer func() {
+		assert.Nil(t, os.RemoveAll(pkgDir))
+	}()
+
+	assert.Nil(t, file.PutContent(filepath.Join(pkgDir, "auth.tmpl"), `{{ define "auth.tmpl" }}Hello {{ .name }} from module{{ end }}`))
+
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Times(4)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Times(2)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Times(2)
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Times(2)
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Times(2)
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Times(2)
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Times(2)
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Times(2)
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Times(2)
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Times(2)
+	ConfigFacade = mockConfig
+
+	mockView := mocksview.NewView(t)
+	ViewFacade = mockView
+
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err = route.init(nil)
+	require.Nil(t, err)
+
+	// Provider Boot() registers its module view directory.
+	mockView.On("LoadViewsFrom", pkgDir).Once()
+	mockView.LoadViewsFrom(pkgDir)
+	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
+	mockView.On("GetShared").Return(map[string]any{"name": "goravel"}).Times(2)
+
+	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("auth.tmpl")
+	})
+
+	request := func() {
+		req, err := http.NewRequest("GET", "/auth", nil)
+		require.Nil(t, err)
+		req.Host = "example.com"
+
+		resp, err := route.Test(req)
+		require.NoError(t, err)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "Hello goravel from module", string(body))
+	}
+
+	// First serve: ensureTemplate() compiles the default template set once.
+	request()
+
+	// Engine rebuild: init() runs again, the lazily-bound holder is reused.
+	// Routes are registered on the rebuilt engine before serving again.
+	//
+	// Recover() also reassigns the package-level globalRecoverCallback; restore
+	// the previous value so this test leaves no lasting global side effect.
+	previousRecoverCallback := globalRecoverCallback
+	defer func() {
+		globalRecoverCallback = previousRecoverCallback
+	}()
+	route.Recover(defaultRecoverCallback)
+	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("auth.tmpl")
+	})
+	request()
+
+	mockConfig.AssertExpectations(t)
+	mockView.AssertExpectations(t)
 }
 
 func TestView_First(t *testing.T) {
