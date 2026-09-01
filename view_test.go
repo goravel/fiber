@@ -305,10 +305,10 @@ func TestView_LoadViewsFrom(t *testing.T) {
 	require.Nil(t, err)
 
 	// Provider Boot() registers its module view directory.
-	mockView.On("LoadViewsFrom", pkgDir).Once()
+	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
-	mockView.On("GetShared").Return(map[string]any{"name": "goravel"}).Once()
+	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Once()
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().View().Make("auth.tmpl")
@@ -325,9 +325,6 @@ func TestView_LoadViewsFrom(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "Hello goravel from module", string(body))
-
-	mockConfig.AssertExpectations(t)
-	mockView.AssertExpectations(t)
 }
 
 func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
@@ -366,10 +363,10 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 	require.Nil(t, err)
 
 	// Provider Boot() registers its module view directory.
-	mockView.On("LoadViewsFrom", pkgDir).Once()
+	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
-	mockView.On("GetShared").Return(map[string]any{"name": "goravel"}).Times(2)
+	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Times(2)
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().View().Make("auth.tmpl")
@@ -406,9 +403,6 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 		return ctx.Response().View().Make("auth.tmpl")
 	})
 	request()
-
-	mockConfig.AssertExpectations(t)
-	mockView.AssertExpectations(t)
 }
 
 func TestView_First(t *testing.T) {
