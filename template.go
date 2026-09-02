@@ -109,10 +109,61 @@ func NewTemplate(options RenderOptions) (*Template, error) {
 // are no template files.
 func DefaultTemplate() (fiber.Views, error) {
 	options := RenderOptions{}
-	if ViewFacade != nil {
-		options.ExtraPaths = ViewFacade.RegisteredViews()
+	viewFacade := ViewFacade
+	// Defensive net only: in normal operation ViewFacade is set by the driver's
+	// ServiceProvider.Boot() before the first Run/Listen/Test, so this fallback
+	// is not exercised. It exists purely so a mis-wired app (view provider never
+	// booted) degrades to "compile app views only" instead of panicking.
+	if viewFacade == nil && App != nil {
+		viewFacade = App.MakeView()
+	}
+	if viewFacade != nil {
+		options.ExtraPaths = viewFacade.RegisteredViews()
 	}
 	return NewTemplate(options)
+}
+
+// Compile-time assertion that viewsHolder satisfies fiber.Views.
+var _ fiber.Views = (*viewsHolder)(nil)
+
+// viewsHolder is a lazily-bound fiber.Views. fiber v3 reads Config.Views from
+// its internal config copy at render time and app.Config() returns a copy, so
+// the value bound at fiber.New() time cannot be swapped afterwards. This
+// indirection lets the default template set be compiled later — after all
+// providers have booted — and handed to the already-created fiber app (see
+// goravel/goravel#989).
+type viewsHolder struct {
+	mu    sync.RWMutex
+	views fiber.Views
+}
+
+// set binds the compiled views. Called by ensureTemplate() before the first
+// request is served.
+func (h *viewsHolder) set(views fiber.Views) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.views = views
+}
+
+// Load is a no-op until the default views have been compiled.
+func (h *viewsHolder) Load() error {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.views == nil {
+		return nil
+	}
+	return h.views.Load()
+}
+
+// Render delegates to the compiled views. Returns fiber.ErrInternalServerError
+// if ensureTemplate() has not run yet.
+func (h *viewsHolder) Render(w io.Writer, name string, binding any, layouts ...string) error {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.views == nil {
+		return fiber.ErrInternalServerError
+	}
+	return h.views.Render(w, name, binding, layouts...)
 }
 
 // Load is a no-op because template parsing happens eagerly in NewTemplate.
