@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -406,6 +407,65 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 		return ctx.Response().View().Make("auth.tmpl")
 	})
 	request()
+}
+
+func TestView_LoadViewsFromFS(t *testing.T) {
+	// The goravel/goravel#989 counterpart for embedded views: a provider
+	// registers an embed.FS via View.LoadViewsFromFS() during Boot(), after the
+	// route engine is built, and the template set compiled on the first
+	// serve/Test call must include it.
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+	ConfigFacade = mockConfig
+
+	mockView := mocksview.NewView(t)
+	ViewFacade = mockView
+
+	// As in TestView_LoadViewsFrom, ViewFacade is set before init() and no
+	// RegisteredViews()/RegisteredViewFS() expectation exists yet, so an eager
+	// compile inside init() would fail loudly on an unexpected mock call.
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err := route.init(nil)
+	require.Nil(t, err)
+
+	// Provider Boot() registers its embedded views.
+	mockView.EXPECT().LoadViewsFromFS(embeddedViews, "testdata/views").Once()
+	mockView.LoadViewsFromFS(embeddedViews, "testdata/views")
+	mockView.EXPECT().RegisteredViews().Return(nil).Once()
+	mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{subFS(t, embeddedViews, "testdata/views")}).Once()
+	// Two requests, but the view sources are read only once: the template set is
+	// compiled on the first serve and reused afterwards.
+	mockView.EXPECT().GetShared().Return(nil).Twice()
+
+	route.Get("/embedded", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("pages/home.tmpl", map[string]any{"Title": "Home", "Nav": "Menu"})
+	})
+
+	for range 2 {
+		req, err := http.NewRequest("GET", "/embedded", nil)
+		require.Nil(t, err)
+		req.Host = "example.com"
+
+		resp, err := route.Test(req)
+		require.NoError(t, err)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "<html><body><nav>Menu</nav><main><h1>Home</h1></main></body></html>", string(body))
+	}
 }
 
 func TestView_First(t *testing.T) {
