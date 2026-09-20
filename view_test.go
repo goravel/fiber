@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,6 +59,7 @@ func TestView_Make(t *testing.T) {
 		mockView = mocksview.NewView(t)
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
+		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -308,6 +310,7 @@ func TestView_LoadViewsFrom(t *testing.T) {
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Once()
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -366,6 +369,7 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Times(2)
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -445,6 +449,7 @@ func TestView_First(t *testing.T) {
 		mockView = mocksview.NewView(t)
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
+		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -594,6 +599,7 @@ csrf_token={{ .csrf_token }}
 	mockView := mocksview.NewView(t)
 	ViewFacade = mockView
 	mockView.EXPECT().RegisteredViews().Return(nil).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
 
 	t.Run("CSRF token", func(t *testing.T) {
@@ -673,4 +679,55 @@ func TestFillShared(t *testing.T) {
 	fillShared(data, shared)
 	assert.Equal(t, "test1", data["Name"])
 	assert.Equal(t, 18, data["Age"])
+}
+
+func TestView_LoadViewsFromFS(t *testing.T) {
+	// An embedded package filesystem registered via View.LoadViewsFromFS() in a
+	// provider's Boot() must be picked up by the lazily-compiled default
+	// template set, just like directories registered via LoadViewsFrom().
+	mockConfig := mocksconfig.NewConfig(t)
+	mockConfig.EXPECT().Get("http.drivers.fiber.template").Return(nil).Twice()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.immutable", true).Return(true).Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.prefork", false).Return(false).Once()
+	mockConfig.EXPECT().Get("http.drivers.fiber.trusted_proxies").Return(nil).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.body_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetInt("http.drivers.fiber.header_limit", 4096).Return(4096).Once()
+	mockConfig.EXPECT().GetString("http.drivers.fiber.proxy_header", "").Return("X-Forwarded-For").Once()
+	mockConfig.EXPECT().GetBool("http.drivers.fiber.enable_trusted_proxy_check", false).Return(false).Once()
+	mockConfig.EXPECT().GetBool("app.debug", false).Return(true).Once()
+	mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
+	ConfigFacade = mockConfig
+
+	mockView := mocksview.NewView(t)
+	ViewFacade = mockView
+
+	route := &Route{
+		config: mockConfig,
+		driver: "fiber",
+	}
+	err := route.init(nil)
+	require.Nil(t, err)
+
+	// Provider Boot() registers its embedded package views.
+	mockView.EXPECT().RegisteredViews().Return(nil).Once()
+	mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{subFS(t, embeddedViews, "testdata/views")}).Once()
+	mockView.EXPECT().GetShared().Return(nil).Twice()
+
+	route.Get("/embedded", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("pages/home.tmpl", map[string]any{"Title": "Home", "Nav": "Menu"})
+	})
+
+	// Serve twice: the template set is compiled once and reused.
+	for i := 0; i < 2; i++ {
+		req, err := http.NewRequest("GET", "/embedded", nil)
+		require.NoError(t, err)
+		req.Host = "example.com"
+
+		resp, err := route.Test(req)
+		require.NoError(t, err)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "<html><body><nav>Menu</nav><main><h1>Home</h1></main></body></html>", string(body))
+	}
 }

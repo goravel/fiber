@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -10,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 )
 
@@ -25,24 +25,187 @@ type Delims struct {
 
 // RenderOptions configures template parsing and rendering.
 type RenderOptions struct {
-	Delims     *Delims
-	FuncMap    template.FuncMap
-	ExtraPaths []string
+	Delims      *Delims
+	FuncMap     template.FuncMap
+	ExtraPaths  []string
+	ExtraViewFS []fs.FS
 }
 
 // Template implements fiber.Views for multi-directory template loading.
 // Templates are loaded from the app's resources/views first, then from
-// registered package directories. App-defined templates take priority;
-// collisions between packages log a warning.
+// registered package directories, then from registered embedded filesystems.
+// App-defined templates take priority; collisions between packages log a
+// warning.
+//
+// Precedence is applied per file, keyed on that file's first {{ define }} block
+// (see extractDefineName): a package file is only skipped when that first name
+// is already claimed, so any additional {{ define }} blocks in the same file
+// still register and may replace templates from higher-priority sources. This
+// preserves the existing on-disk behavior.
 type Template struct {
 	mu     sync.RWMutex
 	engine *template.Template
 }
 
+// viewTier is the precedence class of a view source. Lower-numbered tiers take
+// precedence, in the order tierApp, tierDir, tierFS.
+type viewTier int
+
+const (
+	tierApp viewTier = iota
+	tierDir
+	tierFS
+)
+
+// viewSource is a filesystem that contributes templates at a given precedence tier.
+type viewSource struct {
+	fsys fs.FS
+	tier viewTier
+	// label identifies the source in warnings: the directory path for tierApp
+	// and tierDir, "fs[i]" (i being the LoadViewsFromFS registration index) for
+	// tierFS.
+	label string
+}
+
+// pathOf renders name, a slash-separated path inside the source, for display.
+func (s viewSource) pathOf(name string) string {
+	if s.tier == tierFS {
+		return s.label + "/" + name
+	}
+	return filepath.Join(s.label, filepath.FromSlash(name))
+}
+
+// viewDefines tracks the template name each precedence tier has already claimed,
+// so the first source to define a name wins. Only a file's first {{ define }}
+// block is claimed (see extractDefineName), so precedence is enforced per file,
+// not per define block.
+type viewDefines struct {
+	app map[string]string
+	pkg map[string]string
+}
+
+// claim records templateName for source and reports whether source may contribute
+// it. A name already claimed by the application is dropped silently; one already
+// claimed by an earlier package source is dropped with a warning.
+func (d *viewDefines) claim(source viewSource, name, templateName string) bool {
+	fullPath := source.pathOf(name)
+
+	if source.tier == tierApp {
+		d.app[templateName] = fullPath
+		return true
+	}
+	if _, ok := d.app[templateName]; ok {
+		return false
+	}
+	if prevFile, ok := d.pkg[templateName]; ok {
+		if LogFacade != nil {
+			LogFacade.Warningf("view collision: %q defined in %q and %q, using first", templateName, prevFile, fullPath)
+		}
+		return false
+	}
+
+	d.pkg[templateName] = fullPath
+	return true
+}
+
+// isDir reports whether dir exists and is a directory. Non-directory paths
+// (regular files, missing paths) are ignored: a real directory is required
+// because wrapping a regular file in os.DirFS would make the walk fail. As a
+// deliberate consequence, a direct .tmpl file passed as the app views path or an
+// ExtraPaths entry is no longer parsed, whereas the previous filepath.WalkDir
+// code parsed such a file; non-.tmpl regular files were already ignored.
+func isDir(dir string) bool {
+	info, err := os.Stat(dir)
+	return err == nil && info.IsDir()
+}
+
+// viewSources returns every existing template source in precedence order: the
+// application's resources/views, then directories in options.ExtraPaths, then
+// filesystems in options.ExtraViewFS, each in registration/argument order.
+func viewSources(options RenderOptions) []viewSource {
+	sources := make([]viewSource, 0, 1+len(options.ExtraPaths)+len(options.ExtraViewFS))
+
+	if dir := path.Resource("views"); isDir(dir) {
+		sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierApp, label: dir})
+	}
+
+	for _, dir := range options.ExtraPaths {
+		if isDir(dir) {
+			sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierDir, label: dir})
+		}
+	}
+
+	// Labels keep the registration index, so a skipped filesystem still consumes
+	// its slot and warnings point at the position the package registered.
+	for i, fsys := range options.ExtraViewFS {
+		if fsys == nil {
+			if LogFacade != nil {
+				LogFacade.Warningf("view source fs[%d] is nil, skipping", i)
+			}
+			continue
+		}
+		if _, err := fs.Stat(fsys, "."); err != nil {
+			if LogFacade != nil {
+				LogFacade.Warningf("view source fs[%d] is unreadable, skipping: %v", i, err)
+			}
+			continue
+		}
+		sources = append(sources, viewSource{fsys: fsys, tier: tierFS, label: fmt.Sprintf("fs[%d]", i)})
+	}
+
+	return sources
+}
+
+// loadSource walks source and parses every .tmpl template it contributes into
+// instance, reporting whether it contributed any. A file with no {{ define }}
+// block is skipped, preserving the existing on-disk behavior.
+func loadSource(instance *template.Template, source viewSource, leftDelim string, defines *viewDefines) (bool, error) {
+	contributed := false
+
+	err := fs.WalkDir(source.fsys, ".", func(name string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("%s: %w", source.pathOf(name), err)
+		}
+		if d.IsDir() || filepath.Ext(d.Name()) != ".tmpl" {
+			return nil
+		}
+
+		content, err := fs.ReadFile(source.fsys, name)
+		if err != nil {
+			return fmt.Errorf("%s: %w", source.pathOf(name), err)
+		}
+		text := string(content)
+
+		templateName := extractDefineName(text, leftDelim)
+		if templateName == "" {
+			return nil
+		}
+		if !defines.claim(source, name, templateName) {
+			return nil
+		}
+
+		// Mirror ParseFiles: associate the file under its base name while any
+		// {{ define }} blocks register their own names. Content is parsed directly
+		// instead of via ParseFS, which resolves names through fs.Glob and would
+		// mangle or fail on names containing "[", "*" or "?".
+		if _, err := instance.New(d.Name()).Parse(text); err != nil {
+			return fmt.Errorf("%s: %w", source.pathOf(name), err)
+		}
+		contributed = true
+
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return contributed, nil
+}
+
 // NewTemplate creates a Template by parsing .tmpl files from the app views
-// directory and any extra paths. Templates without a {{ define }} block are
-// skipped. If no files are found, the Template is still valid but Render
-// will return an error for any template name.
+// directory, any extra paths and any extra filesystems. Templates without a
+// {{ define }} block are skipped. If no files are found, the Template is still
+// valid but Render will return an error for any template name.
 func NewTemplate(options RenderOptions) (*Template, error) {
 	instance := template.New("")
 	if options.Delims != nil {
@@ -57,56 +220,27 @@ func NewTemplate(options RenderOptions) (*Template, error) {
 		leftDelim = options.Delims.Left
 	}
 
-	appDefines := make(map[string]string)
-	pkgDefines := make(map[string]string)
-	var files []string
-
-	appDir := path.Resource("views")
-	if file.Exists(appDir) {
-		if err := walkTmplFiles(appDir, leftDelim, func(filePath string, name string) {
-			appDefines[name] = filePath
-			files = append(files, filePath)
-		}); err != nil {
+	defines := &viewDefines{app: make(map[string]string), pkg: make(map[string]string)}
+	loaded := false
+	for _, source := range viewSources(options) {
+		contributed, err := loadSource(instance, source, leftDelim, defines)
+		if err != nil {
 			return nil, err
 		}
+		loaded = loaded || contributed
 	}
 
-	for _, dir := range options.ExtraPaths {
-		if !file.Exists(dir) {
-			continue
-		}
-		if err := walkTmplFiles(dir, leftDelim, func(filePath string, name string) {
-			if _, ok := appDefines[name]; ok {
-				return
-			}
-			if existing, ok := pkgDefines[name]; ok {
-				if LogFacade != nil {
-					LogFacade.Warningf("view collision: %q defined in %q and %q, using first", name, existing, filePath)
-				}
-				return
-			}
-			pkgDefines[name] = filePath
-			files = append(files, filePath)
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if len(files) == 0 {
+	if !loaded {
 		return &Template{}, nil
 	}
 
-	tmpl, err := instance.ParseFiles(files...)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Template{engine: tmpl}, nil
+	return &Template{engine: instance}, nil
 }
 
-// DefaultTemplate creates a Template with package view directories from
-// ViewFacade.RegisteredViews(). Returns a valid fiber.Views even when there
-// are no template files.
+// DefaultTemplate creates a Template from the app views plus the package view
+// directories returned by ViewFacade.RegisteredViews() and the package view
+// filesystems returned by ViewFacade.RegisteredViewFS(). Returns a valid
+// fiber.Views even when there are no template files.
 func DefaultTemplate() (fiber.Views, error) {
 	options := RenderOptions{}
 	viewFacade := ViewFacade
@@ -119,6 +253,7 @@ func DefaultTemplate() (fiber.Views, error) {
 	}
 	if viewFacade != nil {
 		options.ExtraPaths = viewFacade.RegisteredViews()
+		options.ExtraViewFS = viewFacade.RegisteredViewFS()
 	}
 	return NewTemplate(options)
 }
@@ -189,29 +324,6 @@ func (m *Template) Render(w io.Writer, name string, data any, layouts ...string)
 	}
 
 	return m.engine.ExecuteTemplate(w, name, data)
-}
-
-func walkTmplFiles(dir string, leftDelim string, fn func(filePath string, name string)) error {
-	return filepath.WalkDir(dir, func(filePath string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(d.Name()) != ".tmpl" {
-			return nil
-		}
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return err
-		}
-		name := extractDefineName(string(content), leftDelim)
-		if name != "" {
-			fn(filePath, name)
-		}
-		return nil
-	})
 }
 
 func extractDefineName(content string, leftDelim string) string {

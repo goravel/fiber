@@ -274,7 +274,7 @@ func TestResponse(t *testing.T) {
 			url:    "/origin",
 			setup: func(method, url string) error {
 				route.setMiddlewares([]fiber.Handler{
-				middlewareToFiberHandler(&headerOriginMwType{t: t}),
+					middlewareToFiberHandler(&headerOriginMwType{t: t}),
 				})
 				route.Get("/origin", func(ctx contractshttp.Context) contractshttp.Response {
 					return ctx.Response().String(http.StatusOK, "Goravel")

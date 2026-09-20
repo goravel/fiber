@@ -22,7 +22,7 @@ Or check [the setup file](./setup/setup.go) to install the package manually.
 
 ## Configuration
 
-You can define the `template` configuration. If omitted, `DefaultTemplate()` is used automatically as a fallback, which loads views from `resources/views` and any registered package views.
+You can define the `template` configuration. If omitted, `DefaultTemplate()` is used automatically as a fallback, which loads views from `resources/views`, any registered package view directories (`View.LoadViewsFrom`), and any embedded filesystems registered with `View.LoadViewsFromFS`.
 
 You can provide a custom template configuration in two forms:
 
