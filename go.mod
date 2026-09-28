@@ -6,7 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/gofiber/fiber/v3 v3.5.0
-	github.com/gofiber/utils/v2 v2.5.2
+	github.com/gofiber/utils/v2 v2.6.1
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.12.1
 	github.com/valyala/fasthttp v1.74.0
