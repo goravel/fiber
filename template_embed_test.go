@@ -271,28 +271,57 @@ func TestTemplate_EmbeddedViews(t *testing.T) {
 		}
 	})
 
-	t.Run("walk errors are propagated", func(t *testing.T) {
+	t.Run("regular file as a view path is skipped", func(t *testing.T) {
+		// LoadViewsFrom() does not validate what it is given, and nothing stops
+		// resources/views from being a file. Walking a file through os.DirFS
+		// fails with "not a directory", which must not take the compile down.
+		pkgDir, err := os.MkdirTemp("", "goravel-fiber-embed-file-*")
+		require.NoError(t, err)
+		defer func() {
+			assert.Nil(t, os.RemoveAll(pkgDir))
+		}()
+		single := filepath.Join(pkgDir, "single.tmpl")
+		require.NoError(t, file.PutContent(single, `{{ define "single.tmpl" }}Single{{ end }}`))
+
+		appViews := path.Resource("views")
+		require.NoError(t, file.PutContent(appViews, `{{ define "page.tmpl" }}App File{{ end }}`))
+		defer func() {
+			assert.Nil(t, file.Remove(appViews))
+		}()
+
+		mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{single}, ExtraFS: []fs.FS{pkg}})
+		require.NoError(t, err)
+
+		assert.Equal(t, "Embedded Content", renderView(t, mv, "page.tmpl", nil))
+		assert.Nil(t, mv.engine.Lookup("single.tmpl"))
+	})
+
+	t.Run("walk errors are propagated with the source path", func(t *testing.T) {
 		base := fstest.MapFS{
 			"page.tmpl":     {Data: []byte(`{{ define "page.tmpl" }}Page{{ end }}`)},
 			"sub/deep.tmpl": {Data: []byte(`{{ define "sub/deep.tmpl" }}Deep{{ end }}`)},
 		}
 
-		for _, failPath := range []string{"sub", "page.tmpl"} {
+		for failPath, expected := range map[string]string{
+			"sub":       "failed to walk view source fs[0]/sub: ",
+			"page.tmpl": "failed to read view fs[0]/page.tmpl: ",
+		} {
 			t.Run(failPath, func(t *testing.T) {
 				mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{failingFS{base: base, failPath: failPath}}})
+				assert.ErrorContains(t, err, expected)
 				assert.ErrorContains(t, err, "permission denied")
 				assert.Nil(t, mv)
 			})
 		}
 	})
 
-	t.Run("invalid template returns parse error", func(t *testing.T) {
+	t.Run("invalid template returns parse error with the source path", func(t *testing.T) {
 		broken := fstest.MapFS{
 			"broken.tmpl": {Data: []byte(`{{ define "broken.tmpl" }}{{ .Unclosed`)},
 		}
 
 		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{broken}})
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, "failed to parse view fs[0]/broken.tmpl: ")
 		assert.Nil(t, mv)
 	})
 }

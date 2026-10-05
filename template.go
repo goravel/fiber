@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 )
 
@@ -53,7 +52,7 @@ type viewSource struct {
 // pathOf renders name, a slash-separated path inside the source, for display.
 func (s viewSource) pathOf(name string) string {
 	if s.tier == tierFS {
-		return s.label + "/" + name
+		return stdpath.Join(s.label, name)
 	}
 	return filepath.Join(s.label, filepath.FromSlash(name))
 }
@@ -226,16 +225,18 @@ func (m *Template) Render(w io.Writer, name string, data any, layouts ...string)
 // viewSources returns every existing template source in precedence order: the
 // application's resources/views, then options.ExtraPaths (directories registered
 // via LoadViewsFrom), then options.ExtraFS (filesystems registered via
-// LoadViewsFromFS), each in registration order.
+// LoadViewsFromFS), each in registration order. A path that is missing or is
+// not a directory is skipped: walking it through os.DirFS would fail the whole
+// compile.
 func viewSources(options RenderOptions) []viewSource {
 	var sources []viewSource
 
-	if dir := path.Resource("views"); file.Exists(dir) {
+	if dir := path.Resource("views"); isDir(dir) {
 		sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierApp, label: dir})
 	}
 
 	for _, dir := range options.ExtraPaths {
-		if file.Exists(dir) {
+		if isDir(dir) {
 			sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierDir, label: dir})
 		}
 	}
@@ -261,16 +262,23 @@ func viewSources(options RenderOptions) []viewSource {
 	return sources
 }
 
+func isDir(dir string) bool {
+	info, err := os.Stat(dir)
+	return err == nil && info.IsDir()
+}
+
 // loadSource walks source and parses every .tmpl file it contributes into
 // instance, reporting whether it contributed any. Each file is read once and
 // parsed immediately, so only one file's content is held at a time. Files
-// without a define block are skipped.
+// without a define block are skipped. Errors name the source they came from:
+// os.DirFS reports paths relative to the directory, and an fs.FS has no path of
+// its own.
 func loadSource(instance *template.Template, source viewSource, leftDelim string, defines *viewDefines) (bool, error) {
 	contributed := false
 
 	err := fs.WalkDir(source.fsys, ".", func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to walk view source %s: %w", source.pathOf(name), err)
 		}
 		if d.IsDir() {
 			return nil
@@ -281,7 +289,7 @@ func loadSource(instance *template.Template, source viewSource, leftDelim string
 
 		content, err := fs.ReadFile(source.fsys, name)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read view %s: %w", source.pathOf(name), err)
 		}
 		text := string(content)
 
@@ -299,7 +307,7 @@ func loadSource(instance *template.Template, source viewSource, leftDelim string
 		// resolves names through fs.Glob — mangle or fail on any name containing
 		// "[", "*" or "?".
 		if _, err := instance.New(stdpath.Base(name)).Parse(text); err != nil {
-			return err
+			return fmt.Errorf("failed to parse view %s: %w", source.pathOf(name), err)
 		}
 		contributed = true
 
