@@ -301,12 +301,13 @@ func loadSource(instance *template.Template, source viewSource, leftDelim string
 			return nil
 		}
 
-		// Mirrors html/template.ParseFiles: every file becomes an associated
-		// template named after its base. The content is parsed directly instead
-		// of going through ParseFS, which would re-read the file and — because it
-		// resolves names through fs.Glob — mangle or fail on any name containing
-		// "[", "*" or "?".
-		if _, err := instance.New(stdpath.Base(name)).Parse(text); err != nil {
+		// Unlike html/template.ParseFiles, which names each file after its base,
+		// the file is named after its slash-separated path relative to the source
+		// root, so files sharing a base name in different directories stay
+		// distinct. The content is parsed directly instead of going through
+		// ParseFS, which would re-read the file and — because it resolves names
+		// through fs.Glob — mangle or fail on any name containing "[", "*" or "?".
+		if _, err := instance.New(name).Parse(text); err != nil {
 			return fmt.Errorf("failed to parse view %s: %w", source.pathOf(name), err)
 		}
 		contributed = true
