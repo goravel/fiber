@@ -230,6 +230,30 @@ func TestTemplate_SubdirectoryViews(t *testing.T) {
 	assert.Equal(t, "Hello, Bowen", buf.String())
 }
 
+func TestTemplate_RelativePathNames(t *testing.T) {
+	// A file's own template is its content outside define blocks, named after
+	// its path relative to the view root rather than its base name.
+	assert.Nil(t, file.PutContent(path.Resource("views", "admin", "index.tmpl"), `{{ define "admin/title" }}Admin{{ end }}{{ template "admin/title" . }} page`))
+	assert.Nil(t, file.PutContent(path.Resource("views", "public", "index.tmpl"), `{{ define "public/title" }}Public{{ end }}{{ template "public/title" . }} page`))
+	defer func() {
+		assert.Nil(t, file.Remove(path.Resource("views")))
+	}()
+
+	mv, err := NewTemplate(RenderOptions{})
+	require.Nil(t, err)
+
+	for name, expected := range map[string]string{
+		"admin/index.tmpl":  "Admin page",
+		"public/index.tmpl": "Public page",
+	} {
+		var buf bytes.Buffer
+		require.Nil(t, mv.Render(&buf, name, nil), name)
+		assert.Equal(t, expected, buf.String(), name)
+	}
+
+	assert.Nil(t, mv.engine.Lookup("index.tmpl"))
+}
+
 func TestNewTemplate_Layouts(t *testing.T) {
 	assert.Nil(t, file.PutContent(path.Resource("views", "layout.tmpl"), `{{ define "layout" }}<html>{{ template "content" . }}</html>{{ end }}`))
 	assert.Nil(t, file.PutContent(path.Resource("views", "content.tmpl"), `{{ define "content" }}<p>{{ . }}</p>{{ end }}`))
