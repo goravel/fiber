@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"fmt"
+	"html/template"
 	"reflect"
 
 	"github.com/gofiber/fiber/v3"
@@ -25,6 +26,9 @@ func (receive *View) Make(view string, data ...any) contractshttp.Response {
 			if sessionValue, ok := session.(contractsession.Session); ok {
 				token := sessionValue.Token()
 				shared["csrf_token"] = token
+				shared["csrf_field"] = template.HTML(
+					fmt.Sprintf(`<input type="hidden" name="_token" value="%s" />`, template.HTMLEscapeString(token)),
+				)
 			}
 		}
 	}
