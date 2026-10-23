@@ -105,7 +105,12 @@ func fillShared(data any, shared map[string]any) {
 			}
 		}
 		if !exist {
-			dataValue.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
+			v := reflect.ValueOf(value)
+			if !v.Type().AssignableTo(dataValue.Type().Elem()) {
+				continue
+			}
+
+			dataValue.SetMapIndex(reflect.ValueOf(key), v)
 		}
 	}
 }
