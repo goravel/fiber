@@ -221,14 +221,16 @@ func TestTemplate_EmbeddedViews(t *testing.T) {
 		assert.ErrorIs(t, mv.Render(&buf, "page.tmpl", nil), fiber.ErrInternalServerError)
 	})
 
-	t.Run("non-template and define-less files in an embedded filesystem are ignored", func(t *testing.T) {
+	t.Run("non-template files in an embedded filesystem are ignored", func(t *testing.T) {
 		// //go:embed of a views directory picks up whatever else lives there. Only
-		// .tmpl files with a define block are parsed, so nothing else can break
-		// the compile or leak into the template set.
+		// .tmpl files are parsed, so other files cannot break the compile or leak
+		// into the template set. A .tmpl file without a define block is still
+		// parsed, under its relative path.
 		assets := fstest.MapFS{
 			"README.md":       {Data: []byte("# Package views {{ .Unclosed\n")},
 			"assets/site.css": {Data: []byte("body { margin: 0 }")},
-			"raw.tmpl":        {Data: []byte(`Raw {{ .Unclosed`)},
+			"raw.tmpl":        {Data: []byte(`Raw`)},
+			"nested/raw.tmpl": {Data: []byte(`Nested Raw`)},
 			"widget.tmpl":     {Data: []byte(`{{ define "widget.tmpl" }}Widget{{ end }}`)},
 		}
 
@@ -236,9 +238,128 @@ func TestTemplate_EmbeddedViews(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "Widget", renderView(t, mv, "widget.tmpl", nil))
+		assert.Equal(t, "Raw", renderView(t, mv, "raw.tmpl", nil))
+		assert.Equal(t, "Nested Raw", renderView(t, mv, "nested/raw.tmpl", nil))
 		assert.Nil(t, mv.engine.Lookup("README.md"))
 		assert.Nil(t, mv.engine.Lookup("site.css"))
-		assert.Nil(t, mv.engine.Lookup("raw.tmpl"))
+		assert.Nil(t, mv.engine.Lookup("assets/site.css"))
+	})
+
+	t.Run("app template without define overrides embedded package", func(t *testing.T) {
+		require.NoError(t, file.PutContent(path.Resource("views", "page.tmpl"), `App Raw`))
+		defer func() {
+			assert.Nil(t, file.Remove(path.Resource()))
+		}()
+
+		raw := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`Package Raw`)},
+		}
+
+		assert.Equal(t, "App Raw", renderOptions(t, RenderOptions{ExtraFS: []fs.FS{raw, pkg}}, "page.tmpl", nil))
+	})
+
+	t.Run("embedded template without define cannot override app define", func(t *testing.T) {
+		require.NoError(t, file.PutContent(path.Resource("views", "page.tmpl"), `{{ define "page.tmpl" }}App Content{{ end }}`))
+		defer func() {
+			assert.Nil(t, file.Remove(path.Resource()))
+		}()
+
+		raw := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`Package Raw`)},
+		}
+
+		assert.Equal(t, "App Content", renderOptions(t, RenderOptions{ExtraFS: []fs.FS{raw}}, "page.tmpl", nil))
+	})
+
+	t.Run("collision between package templates without define uses first", func(t *testing.T) {
+		defer func() { LogFacade = nil }()
+
+		first := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`First Raw`)},
+		}
+		second := fstest.MapFS{
+			"page.tmpl":        {Data: []byte(`Second Raw`)},
+			"nested/page.tmpl": {Data: []byte(`Second Nested Raw`)},
+		}
+
+		mockLog := mockslog.NewLog(t)
+		LogFacade = mockLog
+		mockLog.EXPECT().Warningf("view collision: %q defined in %q and %q, using first", "page.tmpl", "fs[0]/page.tmpl", "fs[1]/page.tmpl").Return().Once()
+
+		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{first, second}})
+		require.NoError(t, err)
+
+		// Only the same relative path collides; a shared base name does not.
+		for name, expected := range map[string]string{
+			"page.tmpl":        "First Raw",
+			"nested/page.tmpl": "Second Nested Raw",
+		} {
+			assert.Equal(t, expected, renderView(t, mv, name, nil), name)
+		}
+	})
+
+	t.Run("package template with a define cannot override app template at the same path", func(t *testing.T) {
+		require.NoError(t, file.PutContent(path.Resource("views", "page.tmpl"), `App Raw`))
+		defer func() {
+			assert.Nil(t, file.Remove(path.Resource()))
+		}()
+
+		// The package file claims a different define name, but its loose content
+		// is still parsed under "page.tmpl". html/template keeps one template per
+		// name, so without the path claim it would replace the app's template.
+		raw := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`{{ define "widget" }}Widget{{ end }}Package Raw`)},
+		}
+
+		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{raw}})
+		require.NoError(t, err)
+
+		assert.Equal(t, "App Raw", renderView(t, mv, "page.tmpl", nil))
+		assert.Nil(t, mv.engine.Lookup("widget"), "the whole file is skipped, not just its path template")
+	})
+
+	t.Run("collision between package templates at the same path uses first", func(t *testing.T) {
+		defer func() { LogFacade = nil }()
+
+		first := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`{{ define "first" }}First{{ end }}First Raw`)},
+		}
+		second := fstest.MapFS{
+			"page.tmpl": {Data: []byte(`{{ define "second" }}Second{{ end }}Second Raw`)},
+		}
+
+		mockLog := mockslog.NewLog(t)
+		LogFacade = mockLog
+		mockLog.EXPECT().Warningf("view collision: %q defined in %q and %q, using first", "page.tmpl", "fs[0]/page.tmpl", "fs[1]/page.tmpl").Return().Once()
+
+		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{first, second}})
+		require.NoError(t, err)
+
+		assert.Equal(t, "First Raw", renderView(t, mv, "page.tmpl", nil))
+		assert.NotNil(t, mv.engine.Lookup("first"))
+		assert.Nil(t, mv.engine.Lookup("second"))
+	})
+
+	t.Run("nested app template without define overrides embedded package", func(t *testing.T) {
+		require.NoError(t, file.PutContent(path.Resource("views", "admin", "index.tmpl"), `App Admin`))
+		defer func() {
+			assert.Nil(t, file.Remove(path.Resource()))
+		}()
+
+		raw := fstest.MapFS{
+			"admin/index.tmpl":  {Data: []byte(`Package Admin`)},
+			"public/index.tmpl": {Data: []byte(`Package Public`)},
+		}
+
+		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{raw}})
+		require.NoError(t, err)
+
+		for name, expected := range map[string]string{
+			"admin/index.tmpl":  "App Admin",
+			"public/index.tmpl": "Package Public",
+		} {
+			assert.Equal(t, expected, renderView(t, mv, name, nil), name)
+		}
 	})
 
 	t.Run("names containing glob metacharacters are loaded literally", func(t *testing.T) {

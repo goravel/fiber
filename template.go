@@ -64,27 +64,36 @@ type viewDefines struct {
 	pkg map[string]string
 }
 
-// claim records templateName for source and reports whether source may contribute
-// it. A name already claimed by the application is dropped silently; one already
-// claimed by an earlier package source is dropped with a warning.
-func (d *viewDefines) claim(source viewSource, name, templateName string) bool {
+// claim records templateNames for source and reports whether source may contribute
+// the file. A name already claimed by the application is dropped silently; one
+// already claimed by an earlier package source is dropped with a warning. Nothing
+// is recorded unless every name is free, so a skipped file never blocks a later one.
+func (d *viewDefines) claim(source viewSource, name string, templateNames ...string) bool {
 	fullPath := source.pathOf(name)
 
 	if source.tier == tierApp {
-		d.app[templateName] = fullPath
+		for _, templateName := range templateNames {
+			d.app[templateName] = fullPath
+		}
 		return true
 	}
-	if _, ok := d.app[templateName]; ok {
-		return false
-	}
-	if prevFile, ok := d.pkg[templateName]; ok {
-		if LogFacade != nil {
-			LogFacade.Warningf("view collision: %q defined in %q and %q, using first", templateName, prevFile, fullPath)
+	for _, templateName := range templateNames {
+		if _, ok := d.app[templateName]; ok {
+			return false
 		}
-		return false
+	}
+	for _, templateName := range templateNames {
+		if prevFile, ok := d.pkg[templateName]; ok {
+			if LogFacade != nil {
+				LogFacade.Warningf("view collision: %q defined in %q and %q, using first", templateName, prevFile, fullPath)
+			}
+			return false
+		}
 	}
 
-	d.pkg[templateName] = fullPath
+	for _, templateName := range templateNames {
+		d.pkg[templateName] = fullPath
+	}
 	return true
 }
 
@@ -98,9 +107,10 @@ type Template struct {
 }
 
 // NewTemplate creates a Template by parsing .tmpl files from the app views
-// directory, any extra paths and any extra filesystems. Templates without a
-// {{ define }} block are skipped. If no files are found, the Template is still
-// valid but Render will return an error for any template name.
+// directory, any extra paths and any extra filesystems. A file without a
+// {{ define }} block is registered under its path relative to the source root.
+// If no files are found, the Template is still valid but Render will return an
+// error for any template name.
 func NewTemplate(options RenderOptions) (*Template, error) {
 	instance := template.New("")
 	if options.Delims != nil {
@@ -269,10 +279,13 @@ func isDir(dir string) bool {
 
 // loadSource walks source and parses every .tmpl file it contributes into
 // instance, reporting whether it contributed any. Each file is read once and
-// parsed immediately, so only one file's content is held at a time. Files
-// without a define block are skipped. Errors name the source they came from:
-// os.DirFS reports paths relative to the directory, and an fs.FS has no path of
-// its own.
+// parsed immediately, so only one file's content is held at a time. Every file is
+// parsed under its slash-separated path relative to the source root, so files
+// sharing a base name in different directories stay distinct. A file with no
+// define block is claimed under that path, so it cannot override a template of
+// the same path from a higher-precedence source. Errors name the source they came
+// from: os.DirFS reports paths relative to the directory, and an fs.FS has no
+// path of its own.
 func loadSource(instance *template.Template, source viewSource, leftDelim string, defines *viewDefines) (bool, error) {
 	contributed := false
 
@@ -293,11 +306,19 @@ func loadSource(instance *template.Template, source viewSource, leftDelim string
 		}
 		text := string(content)
 
-		templateName := extractDefineName(text, leftDelim)
-		if templateName == "" {
-			return nil
+		// A file contributes two names: the one its define block declares, if any,
+		// and its own, the slash-separated path relative to the source root. Both
+		// must be free in every higher-precedence source, otherwise the whole file
+		// is skipped: html/template keeps one template per name, so parsing the
+		// file would replace the template already registered under its path. The
+		// define name is checked first so a collision is reported by the name
+		// templates are rendered with.
+		var templateNames []string
+		if defineName := extractDefineName(text, leftDelim); defineName != "" && defineName != name {
+			templateNames = append(templateNames, defineName)
 		}
-		if !defines.claim(source, name, templateName) {
+		templateNames = append(templateNames, name)
+		if !defines.claim(source, name, templateNames...) {
 			return nil
 		}
 
