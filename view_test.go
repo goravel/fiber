@@ -60,6 +60,7 @@ func TestView_Make(t *testing.T) {
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -311,6 +312,7 @@ func TestView_LoadViewsFrom(t *testing.T) {
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Once()
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -370,6 +372,7 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Times(2)
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -445,6 +448,7 @@ func TestView_LoadViewsFromFS(t *testing.T) {
 	mockView.LoadViewsFromFS(embeddedViews, "testdata/views")
 	mockView.EXPECT().RegisteredViews().Return(nil).Once()
 	mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{subFS(t, embeddedViews, "testdata/views")}).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	// Two requests, but the view sources are read only once: the template set is
 	// compiled on the first serve and reused afterwards.
 	mockView.EXPECT().GetShared().Return(nil).Twice()
@@ -509,6 +513,7 @@ func TestView_First(t *testing.T) {
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -659,6 +664,7 @@ csrf_token={{ .csrf_token }}
 	ViewFacade = mockView
 	mockView.EXPECT().RegisteredViews().Return(nil).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
 
 	t.Run("CSRF token", func(t *testing.T) {
