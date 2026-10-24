@@ -460,6 +460,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 		ViewFacade = mockView
 
 		views, err := DefaultTemplate()
@@ -480,6 +481,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 		ViewFacade = mockView
 
 		views, err := DefaultTemplate()
@@ -500,6 +502,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 
 		mockApp := mocksfoundation.NewApplication(t)
 		mockApp.EXPECT().MakeView().Return(mockView).Once()

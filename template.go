@@ -144,9 +144,10 @@ func NewTemplate(options RenderOptions) (*Template, error) {
 }
 
 // DefaultTemplate creates a Template with package view directories from
-// ViewFacade.RegisteredViews() and package view filesystems from
-// ViewFacade.RegisteredViewFS(). Returns a valid fiber.Views even when there
-// are no template files.
+// ViewFacade.RegisteredViews(), package view filesystems from
+// ViewFacade.RegisteredViewFS() and the functions registered through
+// View.AddFuncs (where ApplicationBuilder.WithViewFuncs puts the application's).
+// Returns a valid fiber.Views even when there are no template files.
 func DefaultTemplate() (fiber.Views, error) {
 	options := RenderOptions{}
 	viewFacade := ViewFacade
@@ -160,6 +161,7 @@ func DefaultTemplate() (fiber.Views, error) {
 	if viewFacade != nil {
 		options.ExtraPaths = viewFacade.RegisteredViews()
 		options.ExtraFS = viewFacade.RegisteredViewFS()
+		options.FuncMap = viewFacade.Funcs()
 	}
 	return NewTemplate(options)
 }
