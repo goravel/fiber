@@ -2,17 +2,17 @@ module github.com/goravel/fiber
 
 go 1.26.0
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/utils/v2 v2.6.2
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.12.1
-	github.com/valyala/fasthttp v1.74.0
+	github.com/valyala/fasthttp v1.76.0
 )
 
-require github.com/molecule-man/go-brrr v1.0.1 // indirect
+require github.com/molecule-man/go-brrr v1.3.0 // indirect
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
