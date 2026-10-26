@@ -92,12 +92,10 @@ func TestRoute_TemplateCallbackDeferred(t *testing.T) {
 	callback := func() (fiber.Views, error) {
 		calls++
 
-		// The callback reads the registry the way an application would, so it
-		// only works if it runs after the package registered its views.
+		// NewTemplate reads the registry itself, so the callback only works if it
+		// runs after the package registered its views.
 		return NewTemplate(RenderOptions{
-			FuncMap:    template.FuncMap{"upper": strings.ToUpper},
-			ExtraPaths: ViewFacade.RegisteredViews(),
-			ExtraFS:    ViewFacade.RegisteredViewFS(),
+			FuncMap: template.FuncMap{"upper": strings.ToUpper},
 		})
 	}
 
@@ -110,6 +108,7 @@ func TestRoute_TemplateCallbackDeferred(t *testing.T) {
 	mockView := mocksview.NewView(t)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(nil).Times(3)
 	ViewFacade = mockView
 
@@ -145,6 +144,7 @@ func TestRoute_TemplateCallbackDeferred(t *testing.T) {
 	})
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	status, body = serve(t, route2, "/shout")
 	assert.Equal(t, http.StatusOK, status)
 	assert.Equal(t, "LATE", body)

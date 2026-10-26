@@ -3,11 +3,13 @@ package fiber
 import (
 	"bytes"
 	"html/template"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
 	mockslog "github.com/goravel/framework/mocks/log"
+	mocksview "github.com/goravel/framework/mocks/view"
 	"github.com/goravel/framework/support/file"
 	"github.com/goravel/framework/support/path"
 	"github.com/stretchr/testify/assert"
@@ -268,4 +270,80 @@ func TestNewTemplate_Layouts(t *testing.T) {
 	err = mv.Render(&buf, "content", "Hello Layout", "layout")
 	require.Nil(t, err)
 	assert.Equal(t, "<html><p>Hello Layout</p></html>", buf.String())
+}
+
+func TestNewTemplate_DefaultsToRegisteredSources(t *testing.T) {
+	pkgDir := path.Resource("pkg_registered")
+	require.NoError(t, os.MkdirAll(pkgDir, os.ModePerm))
+	require.NoError(t, file.PutContent(filepath.Join(pkgDir, "page.tmpl"), `{{ define "page.tmpl" }}Registered{{ end }}`))
+	defer func() {
+		ViewFacade = nil
+		assert.Nil(t, file.Remove(path.Resource()))
+	}()
+
+	mockView := mocksview.NewView(t)
+	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
+	ViewFacade = mockView
+
+	// A template callback that passes no sources still compiles the package views.
+	mv, err := NewTemplate(RenderOptions{})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	require.NoError(t, mv.Render(&buf, "page.tmpl", nil))
+	assert.Equal(t, "Registered", buf.String())
+}
+
+func TestNewTemplate_ExplicitSourcesReplaceRegistered(t *testing.T) {
+	pkgDir := path.Resource("pkg_registered")
+	require.NoError(t, os.MkdirAll(pkgDir, os.ModePerm))
+	require.NoError(t, file.PutContent(filepath.Join(pkgDir, "page.tmpl"), `{{ define "page.tmpl" }}Registered{{ end }}`))
+	defer func() {
+		ViewFacade = nil
+		assert.Nil(t, file.Remove(path.Resource()))
+	}()
+
+	// Non-nil, even empty, sources are taken as given: the registry is not read.
+	mockView := mocksview.NewView(t)
+	mockView.EXPECT().Funcs().Return(nil).Once()
+	ViewFacade = mockView
+
+	mv, err := NewTemplate(RenderOptions{ExtraPaths: []string{}, ExtraFS: []fs.FS{}})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	assert.Error(t, mv.Render(&buf, "page.tmpl", nil))
+}
+
+func TestNewTemplate_FacadeFuncsMergedWithOptions(t *testing.T) {
+	require.NoError(t, file.PutContent(path.Resource("views", "merged.tmpl"), `{{ define "merged.tmpl" }}{{ shout "hey" }} {{ greet "User" }}{{ end }}`))
+	defer func() {
+		ViewFacade = nil
+		assert.Nil(t, file.Remove(path.Resource()))
+	}()
+
+	mockView := mocksview.NewView(t)
+	mockView.EXPECT().RegisteredViews().Return(nil).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(template.FuncMap{
+		"shout": func(s string) string { return s + "!" },
+		"greet": func(name string) string { return "registered " + name },
+	}).Once()
+	ViewFacade = mockView
+
+	// The callback's FuncMap is applied on top of the registered functions, so a
+	// custom-delimiter callback keeps WithViewFuncs and package functions while an
+	// explicit entry still wins by name.
+	mv, err := NewTemplate(RenderOptions{
+		FuncMap: template.FuncMap{
+			"greet": func(name string) string { return "Hello, " + name + "!" },
+		},
+	})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	require.NoError(t, mv.Render(&buf, "merged.tmpl", nil))
+	assert.Equal(t, "hey! Hello, User!", buf.String())
 }

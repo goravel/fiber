@@ -4,9 +4,11 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"maps"
 	"sync"
 
 	"github.com/gofiber/fiber/v3"
+	contractsview "github.com/goravel/framework/contracts/view"
 	frameworkview "github.com/goravel/framework/view"
 )
 
@@ -18,10 +20,14 @@ type Delims struct {
 
 // RenderOptions configures template parsing and rendering.
 type RenderOptions struct {
-	Delims     *Delims
-	FuncMap    template.FuncMap
+	Delims  *Delims
+	FuncMap template.FuncMap
+	// ExtraPaths are package view directories in precedence order. nil means the
+	// view facade's RegisteredViews(); pass an empty slice to compile none.
 	ExtraPaths []string
-	ExtraFS    []fs.FS
+	// ExtraFS are package view filesystems in precedence order. nil means the
+	// view facade's RegisteredViewFS(); pass an empty slice to compile none.
+	ExtraFS []fs.FS
 }
 
 // Template implements fiber.Views for multi-directory template loading.
@@ -34,12 +40,15 @@ type Template struct {
 }
 
 // NewTemplate creates a Template by parsing .tmpl files from the app views
-// directory, any extra paths and any extra filesystems. Precedence, naming and
-// collision handling are those of view.Compile. If no files are found, the
-// Template is still valid but Render will return an error for any template name.
+// directory, the package directories and the package filesystems. The sources
+// default to the ones registered on the view facade, and the registered
+// functions are installed first with options.FuncMap on top, so a
+// http.drivers.<driver>.template callback keeps package views and
+// WithViewFuncs without passing them. Precedence, naming and collision handling
+// are those of view.Compile. If no files are found, the Template is still valid
+// but Render will return an error for any template name.
 func NewTemplate(options RenderOptions) (*Template, error) {
 	compileOptions := frameworkview.CompileOptions{
-		FuncMap:    options.FuncMap,
 		Paths:      options.ExtraPaths,
 		FS:         options.ExtraFS,
 		Extensions: []string{".tmpl"},
@@ -47,6 +56,21 @@ func NewTemplate(options RenderOptions) (*Template, error) {
 	}
 	if options.Delims != nil {
 		compileOptions.Delims = &frameworkview.Delims{Left: options.Delims.Left, Right: options.Delims.Right}
+	}
+	if viewFacade := resolveViewFacade(); viewFacade != nil {
+		if compileOptions.Paths == nil {
+			compileOptions.Paths = viewFacade.RegisteredViews()
+		}
+		if compileOptions.FS == nil {
+			compileOptions.FS = viewFacade.RegisteredViewFS()
+		}
+		compileOptions.FuncMap = viewFacade.Funcs()
+	}
+	if len(options.FuncMap) > 0 {
+		if compileOptions.FuncMap == nil {
+			compileOptions.FuncMap = make(template.FuncMap, len(options.FuncMap))
+		}
+		maps.Copy(compileOptions.FuncMap, options.FuncMap)
 	}
 
 	instance, err := frameworkview.Compile(compileOptions)
@@ -60,27 +84,25 @@ func NewTemplate(options RenderOptions) (*Template, error) {
 	return &Template{engine: instance}, nil
 }
 
-// DefaultTemplate creates a Template with package view directories from
-// ViewFacade.RegisteredViews(), package view filesystems from
-// ViewFacade.RegisteredViewFS() and the functions registered through
-// View.AddFuncs (where ApplicationBuilder.WithViewFuncs puts the application's).
-// Returns a valid fiber.Views even when there are no template files.
+// DefaultTemplate creates a Template from every source and function registered
+// on the view facade. Returns a valid fiber.Views even when there are no
+// template files.
 func DefaultTemplate() (fiber.Views, error) {
-	options := RenderOptions{}
-	viewFacade := ViewFacade
-	// Defensive net only: in normal operation ViewFacade is set by the driver's
-	// ServiceProvider.Boot() before the first Run/Listen/Test, so this fallback
-	// is not exercised. It exists purely so a mis-wired app (view provider never
-	// booted) degrades to "compile app views only" instead of panicking.
-	if viewFacade == nil && App != nil {
-		viewFacade = App.MakeView()
+	return NewTemplate(RenderOptions{})
+}
+
+// resolveViewFacade returns the view facade ServiceProvider.Boot assigned, or
+// resolves it from the container when the driver is used before Boot. nil when
+// neither is available, in which case only the application's views compile.
+func resolveViewFacade() contractsview.View {
+	if ViewFacade != nil {
+		return ViewFacade
 	}
-	if viewFacade != nil {
-		options.ExtraPaths = viewFacade.RegisteredViews()
-		options.ExtraFS = viewFacade.RegisteredViewFS()
-		options.FuncMap = viewFacade.Funcs()
+	if App != nil {
+		return App.MakeView()
 	}
-	return NewTemplate(options)
+
+	return nil
 }
 
 // Compile-time assertion that viewsHolder satisfies fiber.Views.
