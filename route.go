@@ -412,7 +412,7 @@ func (r *Route) ensureTemplate() error {
 			views, err = DefaultTemplate()
 		}
 		if err != nil {
-			r.templateErr = fmt.Errorf("failed to compile template set: %w", err)
+			r.templateErr = err
 			return
 		}
 		if views != nil {

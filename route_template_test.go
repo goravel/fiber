@@ -167,7 +167,7 @@ func TestRoute_TemplateCallbackError(t *testing.T) {
 	})
 
 	err := route.CompileViews()
-	require.EqualError(t, err, "failed to compile template set: callback failed")
+	require.EqualError(t, err, "callback failed")
 	assert.Equal(t, 1, calls)
 
 	// Sticky: later calls report the same error without invoking the callback again.
@@ -202,7 +202,7 @@ func TestRoute_DefaultTemplateStickyError(t *testing.T) {
 
 	first := route.CompileViews()
 	require.Error(t, first)
-	assert.Contains(t, first.Error(), "failed to compile template set")
+	assert.Contains(t, first.Error(), "failed to parse view")
 	assert.Equal(t, first, route.ensureTemplate())
 
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
