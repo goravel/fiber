@@ -22,7 +22,22 @@ func (m *timeoutMiddleware) Handle(ctx contractshttp.Context) {
 	fiberCtx := ctx.(*Context)
 	fiberCtx.Instance().SetContext(fiberCtx.Context())
 
-	if err := m.handler(fiberCtx.Instance()); err != nil && !errors.Is(err, fiber.ErrRequestTimeout) {
+	err := m.handler(fiberCtx.Instance())
+
+	// After a timeout, Fiber commits a fresh response. On v3.6 that response is 503 and
+	// Goravel's contract is 408, so rewrite the committed response rather than
+	// the live one, which the abandoned handler may still be writing.
+	if timeoutResponse := fiberCtx.Instance().RequestCtx().LastTimeoutErrorResponse(); timeoutResponse != nil {
+		timeoutResponse.SetStatusCode(contractshttp.StatusRequestTimeout)
+		timeoutResponse.SetBodyString(contractshttp.StatusText(contractshttp.StatusRequestTimeout))
+		return
+	}
+
+	if err == nil {
+		return
+	}
+
+	if !errors.Is(err, fiber.ErrRequestTimeout) {
 		if err := renderFiberError(fiberCtx.Instance(), err); err != nil {
 			panic(err)
 		}
@@ -30,8 +45,10 @@ func (m *timeoutMiddleware) Handle(ctx contractshttp.Context) {
 }
 
 // Timeout creates middleware to set a timeout for a request.
-// NOTICE: It relies on Fiber's timeout middleware so timed-out requests get a 408 response
-// without recycling the underlying request context into a later request.
+// NOTICE: Timed-out requests respond with 408 Request Timeout, pinned here because
+// Fiber v3.6 changed its timeout middleware default to 503. It relies on Fiber's
+// timeout middleware so a timed-out request does not recycle the underlying request
+// context into a later request.
 // For details, see https://github.com/valyala/fasthttp/issues/965
 func Timeout(timeout time.Duration) contractshttp.Middleware {
 	if timeout <= 0 {
