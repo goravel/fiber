@@ -60,6 +60,14 @@ func TestTimeoutMiddleware(t *testing.T) {
 		return nil
 	})
 
+	partialBodyWritten := make(chan error, 1)
+
+	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout-partial-body", func(ctx contractshttp.Context) contractshttp.Response {
+		partialBodyWritten <- ctx.(*Context).Instance().SendString("partial secret")
+		<-ctx.Done()
+		return nil
+	})
+
 	route.Middleware(Timeout(1*time.Second)).Get("/normal", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Success().String("normal")
 	})
@@ -81,6 +89,28 @@ func TestTimeoutMiddleware(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 		assert.Equal(t, "Request Timeout", string(body))
+	})
+
+	t.Run("timeout discards partial response body", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/timeout-partial-body", nil)
+		require.NoError(t, err)
+		req.Host = "example.com"
+		resp, err := route.instance.Test(req, fiber.TestConfig{Timeout: 0})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, contractshttp.StatusRequestTimeout, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "Request Timeout", string(body))
+
+		select {
+		case err := <-partialBodyWritten:
+			require.NoError(t, err)
+		case <-time.After(time.Second):
+			require.Fail(t, "handler did not write the partial body")
+		}
 	})
 
 	t.Run("timeout preserves upstream context values", func(t *testing.T) {
