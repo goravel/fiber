@@ -39,9 +39,16 @@ func expectInit(mockConfig *mocksconfig.Config, templateConfig any) {
 }
 
 // newTemplateTestRoute builds a Route the way NewRoute does, with the given
-// http.drivers.fiber.template value, without booting any facade.
+// http.drivers.fiber.template value, without booting any facade. ConfigFacade
+// and ViewFacade are restored when the test ends, so a test may set ViewFacade
+// without resetting it.
 func newTemplateTestRoute(t *testing.T, templateConfig any) (*Route, *mocksconfig.Config) {
 	t.Helper()
+
+	configFacade, viewFacade := ConfigFacade, ViewFacade
+	t.Cleanup(func() {
+		ConfigFacade, ViewFacade = configFacade, viewFacade
+	})
 
 	mockConfig := mocksconfig.NewConfig(t)
 	expectInit(mockConfig, templateConfig)
@@ -83,8 +90,6 @@ func TestRoute_TemplateCallbackDeferred(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pkgDir, os.ModePerm))
 	require.NoError(t, file.PutContent(path.Resource("pkg_deferred", "shout.tmpl"), `{{ define "shout.tmpl" }}{{ upper .word }}{{ end }}`))
 	defer func() {
-		ConfigFacade = nil
-		ViewFacade = nil
 		assert.Nil(t, file.Remove(path.Resource()))
 	}()
 
@@ -155,10 +160,6 @@ func TestRoute_TemplateCallbackDeferred(t *testing.T) {
 // driver construction, and that the error is sticky across calls instead of
 // being reported once and then forgotten.
 func TestRoute_TemplateCallbackError(t *testing.T) {
-	defer func() {
-		ConfigFacade = nil
-	}()
-
 	calls := 0
 	route, _ := newTemplateTestRoute(t, func() (fiber.Views, error) {
 		calls++
@@ -188,8 +189,6 @@ func TestRoute_TemplateCallbackNilViews(t *testing.T) {
 	require.NoError(t, os.MkdirAll(path.Resource("views"), os.ModePerm))
 	require.NoError(t, file.PutContent(path.Resource("views", "home.tmpl"), `{{ define "home.tmpl" }}Home{{ end }}`))
 	defer func() {
-		ConfigFacade = nil
-		ViewFacade = nil
 		assert.Nil(t, file.Remove(path.Resource()))
 	}()
 
@@ -226,8 +225,6 @@ func TestRoute_DefaultTemplateStickyError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(path.Resource("views"), os.ModePerm))
 	require.NoError(t, file.PutContent(path.Resource("views", "bad.tmpl"), `{{ define "bad.tmpl" }}{{`))
 	defer func() {
-		ConfigFacade = nil
-		ViewFacade = nil
 		assert.Nil(t, file.Remove(path.Resource()))
 	}()
 
@@ -257,8 +254,6 @@ func TestRoute_DefaultTemplateUsesViewFuncs(t *testing.T) {
 	require.NoError(t, os.MkdirAll(path.Resource("views"), os.ModePerm))
 	require.NoError(t, file.PutContent(path.Resource("views", "greet.tmpl"), `{{ define "greet.tmpl" }}{{ greet "Ada" }}{{ end }}`))
 	defer func() {
-		ConfigFacade = nil
-		ViewFacade = nil
 		assert.Nil(t, file.Remove(path.Resource()))
 	}()
 
@@ -289,8 +284,6 @@ func TestRoute_CompileViews(t *testing.T) {
 	require.NoError(t, os.MkdirAll(path.Resource("views"), os.ModePerm))
 	require.NoError(t, file.PutContent(path.Resource("views", "home.tmpl"), `{{ define "home.tmpl" }}Home{{ end }}`))
 	defer func() {
-		ConfigFacade = nil
-		ViewFacade = nil
 		assert.Nil(t, file.Remove(path.Resource()))
 	}()
 
@@ -329,10 +322,6 @@ func TestRoute_CompileViews(t *testing.T) {
 // TestRoute_TemplateInstance guards that a ready fiber.Views configured as an
 // instance is bound directly, without a holder, and CompileViews has nothing to do.
 func TestRoute_TemplateInstance(t *testing.T) {
-	defer func() {
-		ConfigFacade = nil
-	}()
-
 	instance, err := NewTemplate(RenderOptions{})
 	require.NoError(t, err)
 
