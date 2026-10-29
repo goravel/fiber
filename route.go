@@ -47,8 +47,7 @@ type Route struct {
 	templateHolder   *viewsHolder                // lazily bound views, filled by ensureTemplate(), reused across init() re-runs
 }
 
-// Route compiles the view set on request from the framework, which calls
-// CompileViews once every service provider has booted.
+// Compile-time assertion that Route satisfies view.Compiler.
 var _ contractsview.Compiler = (*Route)(nil)
 
 // NewRoute creates new fiber route instance
