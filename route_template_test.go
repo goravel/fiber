@@ -51,7 +51,7 @@ func newTemplateTestRoute(t *testing.T, templateConfig any) (*Route, *mocksconfi
 		config: mockConfig,
 		driver: "fiber",
 	}
-	require.NoError(t, route.init(nil))
+	route.init(nil)
 
 	return route, mockConfig
 }

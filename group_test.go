@@ -45,8 +45,7 @@ func (s *GroupTestSuite) SetupTest() {
 		config: s.mockConfig,
 		driver: "fiber",
 	}
-	err := s.route.init(nil)
-	s.Require().Nil(err)
+	s.route.init(nil)
 }
 
 func (s *GroupTestSuite) TestGet() {

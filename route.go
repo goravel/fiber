@@ -71,9 +71,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		driver:           driver,
 		globalMiddleware: globalMiddleware,
 	}
-	if err := route.init(globalMiddleware); err != nil {
-		return nil, err
-	}
+	route.init(globalMiddleware)
 
 	return route, nil
 }
@@ -115,9 +113,7 @@ func (r *Route) GetRoutes() []contractshttp.Info {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middleware ...contractshttp.Middleware) {
 	r.globalMiddleware = append(r.globalMiddleware, middleware...)
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Listen listen server
@@ -189,9 +185,7 @@ func (r *Route) Info(name string) contractshttp.Info {
 
 func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	globalRecoverCallback = callback
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Run run server
@@ -268,9 +262,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 // SetGlobalMiddleware sets global middleware
 func (r *Route) SetGlobalMiddleware(middlewares []contractshttp.Middleware) {
 	r.globalMiddleware = middlewares
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Shutdown gracefully shuts down the server
@@ -302,7 +294,7 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	return r.instance.Test(request, fiber.TestConfig{Timeout: 0})
 }
 
-func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
+func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 	var views fiber.Views
 	template, ok := r.config.Get("http.drivers." + r.driver + ".template").(fiber.Views)
 	if ok {
@@ -387,8 +379,6 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		[]contractshttp.Middleware{},
 	)
 	r.instance = instance
-
-	return nil
 }
 
 // ensureTemplate compiles the view set once, from the configured callback or

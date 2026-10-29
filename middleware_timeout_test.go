@@ -36,8 +36,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err := route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	route.Middleware(Timeout(100*time.Millisecond)).Get("/timeout", func(ctx contractshttp.Context) contractshttp.Response {
 		time.Sleep(200 * time.Millisecond)
@@ -256,8 +255,7 @@ func TestTimeoutMiddleware(t *testing.T) {
 		mockConfig.EXPECT().GetString("app.timezone", "UTC").Return("UTC").Once()
 
 		globalRecoverCallback = defaultRecoverCallback
-		err := route.init(nil)
-		require.NoError(t, err)
+		route.init(nil)
 
 		panicDone := make(chan struct{})
 		route.Middleware(Timeout(100*time.Millisecond)).Get("/panic-after-timeout", func(ctx contractshttp.Context) contractshttp.Response {

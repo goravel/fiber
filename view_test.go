@@ -21,7 +21,6 @@ import (
 
 func TestView_Make(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -236,8 +235,7 @@ func TestView_Make(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -304,8 +302,7 @@ func TestView_LoadViewsFrom(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err = route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its module view directory.
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
@@ -364,8 +361,7 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err = route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its module view directory.
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
@@ -440,8 +436,7 @@ func TestView_LoadViewsFromFS(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err := route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its embedded views.
 	mockView.EXPECT().LoadViewsFromFS(embeddedViews, "testdata/views").Once()
@@ -474,7 +469,6 @@ func TestView_LoadViewsFromFS(t *testing.T) {
 
 func TestView_First(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -613,8 +607,7 @@ func TestView_First(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -673,14 +666,13 @@ csrf_field={{ .csrf_field }}
 			config: mockConfig,
 			driver: "fiber",
 		}
-		err := route.init(nil)
-		require.Nil(t, err)
+		route.init(nil)
 
 		var expectedToken string
 		route.Get("/csrf", func(ctx contractshttp.Context) contractshttp.Response {
 			sessionData := session.NewSession("goravel_session", nil, foundationjson.New())
 			ctx.Request().SetSession(sessionData)
-			err = sessionData.Regenerate()
+			err := sessionData.Regenerate()
 			assert.Nil(t, err)
 			expectedToken = sessionData.Token()
 			return ctx.Response().View().Make("csrf.tmpl")
