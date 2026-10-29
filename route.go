@@ -392,7 +392,8 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 }
 
 // ensureTemplate compiles the view set once, from the configured callback or
-// DefaultTemplate(), into the viewsHolder bound at fiber.New(). It runs on
+// DefaultTemplate() when there is none or it returns nil views, into the
+// viewsHolder bound at fiber.New(). It runs on
 // CompileViews() or the first serve call, whichever comes first, so it sees every
 // view and func registered during provider Boot. A compile error is sticky. A
 // ready fiber.Views instance needs no holder and nothing to compile.
@@ -408,16 +409,17 @@ func (r *Route) ensureTemplate() error {
 		)
 		if r.templateCallback != nil {
 			views, err = r.templateCallback()
-		} else {
+		}
+		// A callback returning no views falls back to the default set, as it did
+		// when init() invoked the callback.
+		if err == nil && views == nil {
 			views, err = DefaultTemplate()
 		}
 		if err != nil {
 			r.templateErr = err
 			return
 		}
-		if views != nil {
-			r.templateHolder.set(views)
-		}
+		r.templateHolder.set(views)
 	})
 
 	return r.templateErr

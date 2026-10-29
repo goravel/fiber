@@ -181,6 +181,45 @@ func TestRoute_TemplateCallbackError(t *testing.T) {
 	assert.Equal(t, err, testErr)
 }
 
+// TestRoute_TemplateCallbackNilViews guards that a callback returning no views
+// falls back to the default set instead of leaving the holder empty, which would
+// fail every render after a successful CompileViews().
+func TestRoute_TemplateCallbackNilViews(t *testing.T) {
+	require.NoError(t, os.MkdirAll(path.Resource("views"), os.ModePerm))
+	require.NoError(t, file.PutContent(path.Resource("views", "home.tmpl"), `{{ define "home.tmpl" }}Home{{ end }}`))
+	defer func() {
+		ConfigFacade = nil
+		ViewFacade = nil
+		assert.Nil(t, file.Remove(path.Resource()))
+	}()
+
+	calls := 0
+	route, _ := newTemplateTestRoute(t, func() (fiber.Views, error) {
+		calls++
+
+		return nil, nil
+	})
+
+	mockView := mocksview.NewView(t)
+	mockView.EXPECT().RegisteredViews().Return(nil).Once()
+	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
+	mockView.EXPECT().GetShared().Return(nil).Once()
+	ViewFacade = mockView
+
+	require.NoError(t, route.CompileViews())
+	assert.Equal(t, 1, calls)
+	require.NotNil(t, route.templateHolder.views)
+
+	route.Get("/home", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().View().Make("home.tmpl")
+	})
+	status, body := serve(t, route, "/home")
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, "Home", body)
+	assert.Equal(t, 1, calls)
+}
+
 // TestRoute_DefaultTemplateStickyError guards that a DefaultTemplate() failure is
 // returned on every serve call, not only the first.
 func TestRoute_DefaultTemplateStickyError(t *testing.T) {
