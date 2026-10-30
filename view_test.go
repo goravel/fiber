@@ -21,7 +21,6 @@ import (
 
 func TestView_Make(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -60,6 +59,7 @@ func TestView_Make(t *testing.T) {
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -235,8 +235,7 @@ func TestView_Make(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -303,14 +302,14 @@ func TestView_LoadViewsFrom(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err = route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its module view directory.
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Once()
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -362,14 +361,14 @@ func TestView_LoadViewsFrom_Rebuild(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err = route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its module view directory.
 	mockView.EXPECT().LoadViewsFrom(pkgDir).Once()
 	mockView.LoadViewsFrom(pkgDir)
 	mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{"name": "goravel"}).Times(2)
 
 	route.Get("/auth", func(ctx contractshttp.Context) contractshttp.Response {
@@ -437,14 +436,14 @@ func TestView_LoadViewsFromFS(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err := route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	// Provider Boot() registers its embedded views.
 	mockView.EXPECT().LoadViewsFromFS(embeddedViews, "testdata/views").Once()
 	mockView.LoadViewsFromFS(embeddedViews, "testdata/views")
 	mockView.EXPECT().RegisteredViews().Return(nil).Once()
 	mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{subFS(t, embeddedViews, "testdata/views")}).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	// Two requests, but the view sources are read only once: the template set is
 	// compiled on the first serve and reused afterwards.
 	mockView.EXPECT().GetShared().Return(nil).Twice()
@@ -470,7 +469,6 @@ func TestView_LoadViewsFromFS(t *testing.T) {
 
 func TestView_First(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -509,6 +507,7 @@ func TestView_First(t *testing.T) {
 		ViewFacade = mockView
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 	}
 	tests := []struct {
 		name        string
@@ -608,8 +607,7 @@ func TestView_First(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -660,6 +658,7 @@ csrf_field={{ .csrf_field }}
 	ViewFacade = mockView
 	mockView.EXPECT().RegisteredViews().Return(nil).Once()
 	mockView.EXPECT().RegisteredViewFS().Return(nil).Once()
+	mockView.EXPECT().Funcs().Return(nil).Once()
 	mockView.EXPECT().GetShared().Return(map[string]any{}).Once()
 
 	t.Run("CSRF token", func(t *testing.T) {
@@ -667,14 +666,13 @@ csrf_field={{ .csrf_field }}
 			config: mockConfig,
 			driver: "fiber",
 		}
-		err := route.init(nil)
-		require.Nil(t, err)
+		route.init(nil)
 
 		var expectedToken string
 		route.Get("/csrf", func(ctx contractshttp.Context) contractshttp.Response {
 			sessionData := session.NewSession("goravel_session", nil, foundationjson.New())
 			ctx.Request().SetSession(sessionData)
-			err = sessionData.Regenerate()
+			err := sessionData.Regenerate()
 			assert.Nil(t, err)
 			expectedToken = sessionData.Token()
 			return ctx.Response().View().Make("csrf.tmpl")

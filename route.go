@@ -17,6 +17,7 @@ import (
 	"github.com/goravel/framework/contracts/config"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/contracts/route"
+	contractsview "github.com/goravel/framework/contracts/view"
 	frameworkmiddleware "github.com/goravel/framework/http/middleware"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
@@ -41,8 +42,13 @@ type Route struct {
 	instance         *fiber.App
 	listenConfig     fiber.ListenConfig
 	templateOnce     sync.Once
-	templateHolder   *viewsHolder
+	templateErr      error
+	templateCallback func() (fiber.Views, error) // configured callback, invoked by ensureTemplate(), not init()
+	templateHolder   *viewsHolder                // lazily bound views, filled by ensureTemplate(), reused across init() re-runs
 }
+
+// Compile-time assertion that Route satisfies view.Compiler.
+var _ contractsview.Compiler = (*Route)(nil)
 
 // NewRoute creates new fiber route instance
 // NewRoute 创建新的 fiber 路由实例
@@ -64,9 +70,7 @@ func NewRoute(config config.Config, parameters map[string]any) (*Route, error) {
 		driver:           driver,
 		globalMiddleware: globalMiddleware,
 	}
-	if err := route.init(globalMiddleware); err != nil {
-		return nil, err
-	}
+	route.init(globalMiddleware)
 
 	return route, nil
 }
@@ -108,9 +112,7 @@ func (r *Route) GetRoutes() []contractshttp.Info {
 // GlobalMiddleware 设置全局中间件
 func (r *Route) GlobalMiddleware(middleware ...contractshttp.Middleware) {
 	r.globalMiddleware = append(r.globalMiddleware, middleware...)
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Listen listen server
@@ -182,9 +184,7 @@ func (r *Route) Info(name string) contractshttp.Info {
 
 func (r *Route) Recover(callback func(ctx contractshttp.Context, err any)) {
 	globalRecoverCallback = callback
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Run run server
@@ -261,9 +261,7 @@ func (r *Route) RunTLSWithCert(host, certFile, keyFile string) error {
 // SetGlobalMiddleware sets global middleware
 func (r *Route) SetGlobalMiddleware(middlewares []contractshttp.Middleware) {
 	r.globalMiddleware = middlewares
-	if err := r.init(r.globalMiddleware); err != nil {
-		panic(err)
-	}
+	r.init(r.globalMiddleware)
 }
 
 // Shutdown gracefully shuts down the server
@@ -295,36 +293,21 @@ func (r *Route) Test(request *http.Request) (*http.Response, error) {
 	return r.instance.Test(request, fiber.TestConfig{Timeout: 0})
 }
 
-func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
+func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 	var views fiber.Views
 	template, ok := r.config.Get("http.drivers." + r.driver + ".template").(fiber.Views)
 	if ok {
 		views = template
 	} else {
-		templateCallback, ok := r.config.Get("http.drivers." + r.driver + ".template").(func() (fiber.Views, error))
-		if ok {
-			template, err := templateCallback()
-			if err != nil {
-				return err
-			}
-
-			views = template
+		if templateCallback, ok := r.config.Get("http.drivers." + r.driver + ".template").(func() (fiber.Views, error)); ok {
+			// Deferred to ensureTemplate(): init() may run before providers boot, so
+			// compiling now would miss their views and funcs (goravel/goravel#989).
+			r.templateCallback = templateCallback
 		}
-	}
 
-	if views == nil {
-		// The built-in DefaultTemplate() is intentionally NOT compiled here. It
-		// is deferred to ensureTemplate(), which runs on the first
-		// Listen/Run/Test call — after all providers have booted — so that views
-		// registered via View.LoadViewsFrom() in a provider's Boot() are picked
-		// up (see goravel/goravel#989).
-		//
-		// fiber v3 reads Config.Views from its internal config copy at render
-		// time and app.Config() returns a copy, so the binding passed to
-		// fiber.New() cannot be replaced later. A lazily-bound viewsHolder is
-		// passed instead; ensureTemplate() fills it in before the first request.
-		// The holder is reused across init() re-runs so that views compiled by a
-		// previous ensureTemplate() survive an engine rebuild.
+		// fiber v3 copies Config.Views at fiber.New(), so a lazily bound holder is
+		// passed and filled by ensureTemplate(). It is reused across init() re-runs
+		// so compiled views survive an engine rebuild.
 		if r.templateHolder == nil {
 			r.templateHolder = &viewsHolder{}
 		}
@@ -395,39 +378,46 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) error {
 		[]contractshttp.Middleware{},
 	)
 	r.instance = instance
-
-	return nil
 }
 
-// ensureTemplate lazily compiles the default template set on first use. It must
-// run after all service providers have booted so that ViewFacade is set and any
-// LoadViewsFrom()-registered directories are included. The compiled views are
-// bound into the viewsHolder that was passed to fiber.New().
-//
-// A template compile failure is terminal for the process lifetime: sync.Once
-// marks the once as done even when err != nil, so the same error is returned on
-// every subsequent call with no retry (matching the previous eager fail-fast
-// behavior, which aborted route construction in init()).
+// ensureTemplate compiles the view set once, from the configured callback or
+// DefaultTemplate() when there is none or it returns nil views, into the
+// viewsHolder bound at fiber.New(). It runs on
+// CompileViews() or the first serve call, whichever comes first, so it sees every
+// view and func registered during provider Boot. A compile error is sticky. A
+// ready fiber.Views instance needs no holder and nothing to compile.
 func (r *Route) ensureTemplate() error {
 	if r.templateHolder == nil {
 		return nil
 	}
 
-	var err error
 	r.templateOnce.Do(func() {
-		var views fiber.Views
-		views, err = DefaultTemplate()
+		var (
+			views fiber.Views
+			err   error
+		)
+		if r.templateCallback != nil {
+			views, err = r.templateCallback()
+		}
+		// A callback returning no views falls back to the default set, as it did
+		// when init() invoked the callback.
+		if err == nil && views == nil {
+			views, err = DefaultTemplate()
+		}
 		if err != nil {
+			r.templateErr = err
 			return
 		}
 		r.templateHolder.set(views)
 	})
 
-	if err != nil {
-		return fmt.Errorf("failed to compile default template set: %w", err)
-	}
+	return r.templateErr
+}
 
-	return nil
+// CompileViews implements view.Compiler; the framework calls it after every
+// provider has booted so compile errors surface at startup.
+func (r *Route) CompileViews() error {
+	return r.ensureTemplate()
 }
 
 // outputRoutes output all routes

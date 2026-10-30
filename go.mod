@@ -52,7 +52,7 @@ require (
 	github.com/goforj/godump v1.10.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.6.3 // indirect
-	github.com/goravel/framework v1.18.1-0.20261025083404-0013c70556c1
+	github.com/goravel/framework v1.18.1-0.20261026075349-ee5302da9928
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

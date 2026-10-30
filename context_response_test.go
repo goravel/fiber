@@ -13,7 +13,6 @@ import (
 	mocksconfig "github.com/goravel/framework/mocks/config"
 	"github.com/goravel/framework/support/json"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestResponse(t *testing.T) {
@@ -391,8 +390,7 @@ func TestResponse(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err = test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -442,7 +440,6 @@ func TestResponse(t *testing.T) {
 
 func TestResponse_Success(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -542,8 +539,7 @@ func TestResponse_Success(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -581,7 +577,6 @@ func TestResponse_Success(t *testing.T) {
 
 func TestResponse_Status(t *testing.T) {
 	var (
-		err        error
 		route      *Route
 		req        *http.Request
 		mockConfig *mocksconfig.Config
@@ -681,8 +676,7 @@ func TestResponse_Status(t *testing.T) {
 				config: mockConfig,
 				driver: "fiber",
 			}
-			err = route.init(nil)
-			require.Nil(t, err)
+			route.init(nil)
 
 			err := test.setup(test.method, test.url)
 			assert.Nil(t, err)
@@ -735,8 +729,7 @@ func TestResponse_Stream(t *testing.T) {
 		config: mockConfig,
 		driver: "fiber",
 	}
-	err := route.init(nil)
-	require.Nil(t, err)
+	route.init(nil)
 
 	route.Get("/stream", func(ctx contractshttp.Context) contractshttp.Response {
 		return ctx.Response().Status(http.StatusCreated).Stream(func(w contractshttp.StreamWriter) error {

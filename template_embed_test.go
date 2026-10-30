@@ -210,7 +210,7 @@ func TestTemplate_EmbeddedViews(t *testing.T) {
 
 	t.Run("only empty filesystems yields a template that cannot render", func(t *testing.T) {
 		// A readable root holding no files: the source passes the stat guard and
-		// is dropped because loadSource() finds nothing to parse.
+		// is dropped because view.Compile finds nothing to parse.
 		empty := fstest.MapFS{"sub": {Mode: fs.ModeDir}}
 
 		mv, err := NewTemplate(RenderOptions{ExtraFS: []fs.FS{empty}})
@@ -460,6 +460,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 		ViewFacade = mockView
 
 		views, err := DefaultTemplate()
@@ -480,6 +481,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return([]string{pkgDir}).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 		ViewFacade = mockView
 
 		views, err := DefaultTemplate()
@@ -500,6 +502,7 @@ func TestDefaultTemplate_EmbeddedViews(t *testing.T) {
 		mockView := mocksview.NewView(t)
 		mockView.EXPECT().RegisteredViews().Return(nil).Once()
 		mockView.EXPECT().RegisteredViewFS().Return([]fs.FS{pkg}).Once()
+		mockView.EXPECT().Funcs().Return(nil).Once()
 
 		mockApp := mocksfoundation.NewApplication(t)
 		mockApp.EXPECT().MakeView().Return(mockView).Once()

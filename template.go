@@ -1,22 +1,16 @@
 package fiber
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
-	"os"
-	stdpath "path"
-	"path/filepath"
-	"regexp"
+	"maps"
 	"sync"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/goravel/framework/support/path"
+	contractsview "github.com/goravel/framework/contracts/view"
+	frameworkview "github.com/goravel/framework/view"
 )
-
-var defineRe = regexp.MustCompile(`\{\{\s*define\s+"([^"]+)"`)
-var customDefineRes = &sync.Map{}
 
 // Delims represents custom delimiters for template actions.
 type Delims struct {
@@ -26,75 +20,14 @@ type Delims struct {
 
 // RenderOptions configures template parsing and rendering.
 type RenderOptions struct {
-	Delims     *Delims
-	FuncMap    template.FuncMap
+	Delims  *Delims
+	FuncMap template.FuncMap
+	// ExtraPaths are package view directories in precedence order. nil means the
+	// view facade's RegisteredViews(); pass an empty slice to compile none.
 	ExtraPaths []string
-	ExtraFS    []fs.FS
-}
-
-// viewTier is the precedence class of a view source. Lower-numbered tiers take
-// precedence, in the order tierApp, tierDir, tierFS.
-type viewTier int
-
-const (
-	tierApp viewTier = iota
-	tierDir
-	tierFS
-)
-
-// viewSource is a filesystem that contributes templates at a given precedence tier.
-type viewSource struct {
-	fsys  fs.FS
-	tier  viewTier
-	label string
-}
-
-// pathOf renders name, a slash-separated path inside the source, for display.
-func (s viewSource) pathOf(name string) string {
-	if s.tier == tierFS {
-		return stdpath.Join(s.label, name)
-	}
-	return filepath.Join(s.label, filepath.FromSlash(name))
-}
-
-// viewDefines tracks the template name each precedence tier has already claimed,
-// so the first source to define a name wins.
-type viewDefines struct {
-	app map[string]string
-	pkg map[string]string
-}
-
-// claim records templateNames for source and reports whether source may contribute
-// the file. A name already claimed by the application is dropped silently; one
-// already claimed by an earlier package source is dropped with a warning. Nothing
-// is recorded unless every name is free, so a skipped file never blocks a later one.
-func (d *viewDefines) claim(source viewSource, name string, templateNames ...string) bool {
-	fullPath := source.pathOf(name)
-
-	if source.tier == tierApp {
-		for _, templateName := range templateNames {
-			d.app[templateName] = fullPath
-		}
-		return true
-	}
-	for _, templateName := range templateNames {
-		if _, ok := d.app[templateName]; ok {
-			return false
-		}
-	}
-	for _, templateName := range templateNames {
-		if prevFile, ok := d.pkg[templateName]; ok {
-			if LogFacade != nil {
-				LogFacade.Warningf("view collision: %q defined in %q and %q, using first", templateName, prevFile, fullPath)
-			}
-			return false
-		}
-	}
-
-	for _, templateName := range templateNames {
-		d.pkg[templateName] = fullPath
-	}
-	return true
+	// ExtraFS are package view filesystems in precedence order. nil means the
+	// view facade's RegisteredViewFS(); pass an empty slice to compile none.
+	ExtraFS []fs.FS
 }
 
 // Template implements fiber.Views for multi-directory template loading.
@@ -107,61 +40,69 @@ type Template struct {
 }
 
 // NewTemplate creates a Template by parsing .tmpl files from the app views
-// directory, any extra paths and any extra filesystems. A file without a
-// {{ define }} block is registered under its path relative to the source root.
-// If no files are found, the Template is still valid but Render will return an
-// error for any template name.
+// directory, the package directories and the package filesystems. The sources
+// default to the ones registered on the view facade, and the registered
+// functions are installed first with options.FuncMap on top, so a
+// http.drivers.<driver>.template callback keeps package views and
+// WithViewFuncs without passing them. Precedence, naming and collision handling
+// are those of view.Compile. If no files are found, the Template is still valid
+// but Render will return an error for any template name.
 func NewTemplate(options RenderOptions) (*Template, error) {
-	instance := template.New("")
+	compileOptions := frameworkview.CompileOptions{
+		Paths:      options.ExtraPaths,
+		FS:         options.ExtraFS,
+		Extensions: []string{".tmpl"},
+		Log:        LogFacade,
+	}
 	if options.Delims != nil {
-		instance.Delims(options.Delims.Left, options.Delims.Right)
+		compileOptions.Delims = &frameworkview.Delims{Left: options.Delims.Left, Right: options.Delims.Right}
 	}
-	if options.FuncMap != nil {
-		instance.Funcs(options.FuncMap)
-	}
-
-	leftDelim := "{{"
-	if options.Delims != nil {
-		leftDelim = options.Delims.Left
-	}
-
-	defines := &viewDefines{app: make(map[string]string), pkg: make(map[string]string)}
-	loaded := false
-
-	for _, source := range viewSources(options) {
-		contributed, err := loadSource(instance, source, leftDelim, defines)
-		if err != nil {
-			return nil, err
+	if viewFacade := resolveViewFacade(); viewFacade != nil {
+		if compileOptions.Paths == nil {
+			compileOptions.Paths = viewFacade.RegisteredViews()
 		}
-		loaded = loaded || contributed
+		if compileOptions.FS == nil {
+			compileOptions.FS = viewFacade.RegisteredViewFS()
+		}
+		compileOptions.FuncMap = viewFacade.Funcs()
+	}
+	if len(options.FuncMap) > 0 {
+		if compileOptions.FuncMap == nil {
+			compileOptions.FuncMap = make(template.FuncMap, len(options.FuncMap))
+		}
+		maps.Copy(compileOptions.FuncMap, options.FuncMap)
 	}
 
-	if !loaded {
+	instance, err := frameworkview.Compile(compileOptions)
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
 		return &Template{}, nil
 	}
 
 	return &Template{engine: instance}, nil
 }
 
-// DefaultTemplate creates a Template with package view directories from
-// ViewFacade.RegisteredViews() and package view filesystems from
-// ViewFacade.RegisteredViewFS(). Returns a valid fiber.Views even when there
-// are no template files.
+// DefaultTemplate creates a Template from every source and function registered
+// on the view facade. Returns a valid fiber.Views even when there are no
+// template files.
 func DefaultTemplate() (fiber.Views, error) {
-	options := RenderOptions{}
-	viewFacade := ViewFacade
-	// Defensive net only: in normal operation ViewFacade is set by the driver's
-	// ServiceProvider.Boot() before the first Run/Listen/Test, so this fallback
-	// is not exercised. It exists purely so a mis-wired app (view provider never
-	// booted) degrades to "compile app views only" instead of panicking.
-	if viewFacade == nil && App != nil {
-		viewFacade = App.MakeView()
+	return NewTemplate(RenderOptions{})
+}
+
+// resolveViewFacade returns the view facade ServiceProvider.Boot assigned, or
+// resolves it from the container when the driver is used before Boot. nil when
+// neither is available, in which case only the application's views compile.
+func resolveViewFacade() contractsview.View {
+	if ViewFacade != nil {
+		return ViewFacade
 	}
-	if viewFacade != nil {
-		options.ExtraPaths = viewFacade.RegisteredViews()
-		options.ExtraFS = viewFacade.RegisteredViewFS()
+	if App != nil {
+		return App.MakeView()
 	}
-	return NewTemplate(options)
+
+	return nil
 }
 
 // Compile-time assertion that viewsHolder satisfies fiber.Views.
@@ -170,8 +111,8 @@ var _ fiber.Views = (*viewsHolder)(nil)
 // viewsHolder is a lazily-bound fiber.Views. fiber v3 reads Config.Views from
 // its internal config copy at render time and app.Config() returns a copy, so
 // the value bound at fiber.New() time cannot be swapped afterwards. This
-// indirection lets the default template set be compiled later — after all
-// providers have booted — and handed to the already-created fiber app (see
+// indirection lets the template set be compiled later, after all providers
+// have booted, and handed to the already-created fiber app (see
 // goravel/goravel#989).
 type viewsHolder struct {
 	mu    sync.RWMutex
@@ -186,7 +127,7 @@ func (h *viewsHolder) set(views fiber.Views) {
 	h.views = views
 }
 
-// Load is a no-op until the default views have been compiled.
+// Load is a no-op until the views have been compiled.
 func (h *viewsHolder) Load() error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -230,135 +171,4 @@ func (m *Template) Render(w io.Writer, name string, data any, layouts ...string)
 	}
 
 	return m.engine.ExecuteTemplate(w, name, data)
-}
-
-// viewSources returns every existing template source in precedence order: the
-// application's resources/views, then options.ExtraPaths (directories registered
-// via LoadViewsFrom), then options.ExtraFS (filesystems registered via
-// LoadViewsFromFS), each in registration order. A path that is missing or is
-// not a directory is skipped: walking it through os.DirFS would fail the whole
-// compile.
-func viewSources(options RenderOptions) []viewSource {
-	var sources []viewSource
-
-	if dir := path.Resource("views"); isDir(dir) {
-		sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierApp, label: dir})
-	}
-
-	for _, dir := range options.ExtraPaths {
-		if isDir(dir) {
-			sources = append(sources, viewSource{fsys: os.DirFS(dir), tier: tierDir, label: dir})
-		}
-	}
-
-	// Labels keep the registration index, so a skipped filesystem still consumes
-	// its slot and warnings point at the position the package registered.
-	for i, fsys := range options.ExtraFS {
-		if fsys == nil {
-			if LogFacade != nil {
-				LogFacade.Warningf("view source fs[%d] is nil, skipping", i)
-			}
-			continue
-		}
-		if _, err := fs.Stat(fsys, "."); err != nil {
-			if LogFacade != nil {
-				LogFacade.Warningf("view source fs[%d] is unreadable, skipping: %v", i, err)
-			}
-			continue
-		}
-		sources = append(sources, viewSource{fsys: fsys, tier: tierFS, label: fmt.Sprintf("fs[%d]", i)})
-	}
-
-	return sources
-}
-
-func isDir(dir string) bool {
-	info, err := os.Stat(dir)
-	return err == nil && info.IsDir()
-}
-
-// loadSource walks source and parses every .tmpl file it contributes into
-// instance, reporting whether it contributed any. Each file is read once and
-// parsed immediately, so only one file's content is held at a time. Every file is
-// parsed under its slash-separated path relative to the source root, so files
-// sharing a base name in different directories stay distinct. A file with no
-// define block is claimed under that path, so it cannot override a template of
-// the same path from a higher-precedence source. Errors name the source they came
-// from: os.DirFS reports paths relative to the directory, and an fs.FS has no
-// path of its own.
-func loadSource(instance *template.Template, source viewSource, leftDelim string, defines *viewDefines) (bool, error) {
-	contributed := false
-
-	err := fs.WalkDir(source.fsys, ".", func(name string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return fmt.Errorf("failed to walk view source %s: %w", source.pathOf(name), err)
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if stdpath.Ext(name) != ".tmpl" {
-			return nil
-		}
-
-		content, err := fs.ReadFile(source.fsys, name)
-		if err != nil {
-			return fmt.Errorf("failed to read view %s: %w", source.pathOf(name), err)
-		}
-		text := string(content)
-
-		// A file contributes two names: the one its define block declares, if any,
-		// and its own, the slash-separated path relative to the source root. Both
-		// must be free in every higher-precedence source, otherwise the whole file
-		// is skipped: html/template keeps one template per name, so parsing the
-		// file would replace the template already registered under its path. The
-		// define name is checked first so a collision is reported by the name
-		// templates are rendered with.
-		var templateNames []string
-		if defineName := extractDefineName(text, leftDelim); defineName != "" && defineName != name {
-			templateNames = append(templateNames, defineName)
-		}
-		templateNames = append(templateNames, name)
-		if !defines.claim(source, name, templateNames...) {
-			return nil
-		}
-
-		// Unlike html/template.ParseFiles, which names each file after its base,
-		// the file is named after its slash-separated path relative to the source
-		// root, so files sharing a base name in different directories stay
-		// distinct. The content is parsed directly instead of going through
-		// ParseFS, which would re-read the file and — because it resolves names
-		// through fs.Glob — mangle or fail on any name containing "[", "*" or "?".
-		if _, err := instance.New(name).Parse(text); err != nil {
-			return fmt.Errorf("failed to parse view %s: %w", source.pathOf(name), err)
-		}
-		contributed = true
-
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-
-	return contributed, nil
-}
-
-func extractDefineName(content string, leftDelim string) string {
-	if leftDelim == "" || leftDelim == "{{" {
-		matches := defineRe.FindStringSubmatch(content)
-		if len(matches) > 1 {
-			return matches[1]
-		}
-		return ""
-	}
-	re, ok := customDefineRes.Load(leftDelim)
-	if !ok {
-		compiled := regexp.MustCompile(regexp.QuoteMeta(leftDelim) + `\s*define\s+"([^"]+)"`)
-		customDefineRes.Store(leftDelim, compiled)
-		re = compiled
-	}
-	matches := re.(*regexp.Regexp).FindStringSubmatch(content)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-	return ""
 }
