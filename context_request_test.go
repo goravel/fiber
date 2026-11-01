@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gofiber/fiber/v3"
 	contractshttp "github.com/goravel/framework/contracts/http"
 	frameworkfilesystem "github.com/goravel/framework/filesystem"
 	foundationjson "github.com/goravel/framework/foundation/json"
@@ -24,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"github.com/valyala/fasthttp"
 )
 
 type ContextRequestSuite struct {
@@ -162,6 +164,48 @@ func (s *ContextRequestSuite) TestAll_PostWithJson() {
 	code, body, _, _ := s.request(req)
 
 	s.Equal("{\"age\":1,\"all\":{\"Age\":1,\"Name\":\"goravel\",\"a\":[\"1\",\"2\"],\"name\":\"3\"},\"name\":\"goravel\"}", body)
+	s.Equal(http.StatusOK, code)
+}
+
+func (s *ContextRequestSuite) TestAll_PostWithJsonArray() {
+	originalLog := LogFacade
+	defer func() { LogFacade = originalLog }()
+
+	mockLog := mockslog.NewLog(s.T())
+	LogFacade = mockLog
+
+	s.route.Middleware(testAllMiddleware()).Post("/all-array", func(ctx contractshttp.Context) contractshttp.Response {
+		all := ctx.Request().All()
+		nameFromInput := ctx.Request().Input("name")
+		type Test struct {
+			Name string `json:"Name"`
+			Age  int    `json:"Age"`
+		}
+		var tests []Test
+		err := ctx.Request().Bind(&tests)
+		s.NoError(err)
+
+		return ctx.Response().Success().Json(contractshttp.Json{
+			"all":        all,
+			"middleware": ctx.Value("all"),
+			"name_input": nameFromInput,
+			"items":      tests,
+		})
+	})
+
+	payload := strings.NewReader(`[
+		{
+			"Name": "goravel",
+			"Age": 1
+		}
+	]`)
+	req, err := http.NewRequest("POST", "/all-array?a=1&a=2&name=3", payload)
+	s.Require().Nil(err)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, body, _, _ := s.request(req)
+
+	s.Equal("{\"all\":{\"a\":[\"1\",\"2\"],\"name\":\"3\"},\"items\":[{\"Name\":\"goravel\",\"Age\":1}],\"middleware\":{\"a\":[\"1\",\"2\"],\"name\":\"3\"},\"name_input\":\"3\"}", body)
 	s.Equal(http.StatusOK, code)
 }
 
@@ -2224,6 +2268,55 @@ func TestGetValueFromHttpBody(t *testing.T) {
 			assert.Equal(t, test.expectValue, value)
 		})
 	}
+}
+
+func TestGetHttpBody(t *testing.T) {
+	app := fiber.New()
+
+	t.Run("JSON object payload populates map", func(t *testing.T) {
+		c := app.AcquireCtx(&fasthttp.RequestCtx{})
+		defer app.ReleaseCtx(c)
+
+		c.Request().Header.SetContentType("application/json")
+		c.Request().SetBodyString(`{"name":"goravel","age":1}`)
+
+		ctx := NewContext(c)
+		defer releaseContext(ctx)
+
+		body, err := getHttpBody(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]any{"name": "goravel", "age": float64(1)}, body)
+	})
+
+	t.Run("JSON array payload returns empty map without error", func(t *testing.T) {
+		c := app.AcquireCtx(&fasthttp.RequestCtx{})
+		defer app.ReleaseCtx(c)
+
+		c.Request().Header.SetContentType("application/json")
+		c.Request().SetBodyString(`[{"name":"goravel"},{"name":"framework"}]`)
+
+		ctx := NewContext(c)
+		defer releaseContext(ctx)
+
+		body, err := getHttpBody(ctx)
+		assert.NoError(t, err)
+		assert.Empty(t, body)
+	})
+
+	t.Run("Invalid JSON array payload returns error", func(t *testing.T) {
+		c := app.AcquireCtx(&fasthttp.RequestCtx{})
+		defer app.ReleaseCtx(c)
+
+		c.Request().Header.SetContentType("application/json")
+		c.Request().SetBodyString(`[{"name":"goravel",}]`)
+
+		ctx := NewContext(c)
+		defer releaseContext(ctx)
+
+		body, err := getHttpBody(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, body)
+	})
 }
 
 type testAllMiddlewareType struct{}

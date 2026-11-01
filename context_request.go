@@ -642,8 +642,12 @@ func getHttpBody(ctx *Context) (map[string]any, error) {
 		bodyBytes := ctx.instance.Body()
 
 		if len(bodyBytes) > 0 {
-			if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			var rawData any
+			if err := json.Unmarshal(bodyBytes, &rawData); err != nil {
 				return nil, fmt.Errorf("decode json [%v] error: %v", utils.UnsafeString(bodyBytes), err)
+			}
+			if bodyMap, ok := rawData.(map[string]any); ok {
+				data = bodyMap
 			}
 		}
 	}
