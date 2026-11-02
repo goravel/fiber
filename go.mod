@@ -52,7 +52,7 @@ require (
 	github.com/goforj/godump v1.10.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.6.3 // indirect
-	github.com/goravel/framework v1.18.1-0.20261026075349-ee5302da9928
+	github.com/goravel/framework v1.18.1-0.20261101081630-7419fac3af06
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -120,7 +120,7 @@ require (
 	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
-	google.golang.org/grpc v1.86.0-dev.0.20261016230555-3d85ab3cf6bf // indirect
+	google.golang.org/grpc v1.86.0-dev.0.20261023181330-80c1e76a540c // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gorm.io/gorm v1.31.2 // indirect
 )
