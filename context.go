@@ -31,19 +31,19 @@ var contextPool = sync.Pool{New: func() any {
 	return &Context{}
 }}
 
-// sharedValues holds the request values that every *Context wrapper of one
+// requestValues holds the request values that every *Context wrapper of one
 // fiber.Ctx shares. The mutex lives here, not in Context, because middleware
 // and handler each get their own *Context over the same map.
-type sharedValues struct {
+type requestValues struct {
 	mu     sync.RWMutex
 	values map[any]any
 }
 
-func newSharedValues() *sharedValues {
-	return &sharedValues{values: make(map[any]any)}
+func newRequestValues() *requestValues {
+	return &requestValues{}
 }
 
-func (s *sharedValues) load(key any) (any, bool) {
+func (s *requestValues) load(key any) (any, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -51,27 +51,14 @@ func (s *sharedValues) load(key any) (any, bool) {
 	return value, ok
 }
 
-func (s *sharedValues) store(key any, value any) {
+func (s *requestValues) store(key any, value any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.values == nil {
+		s.values = make(map[any]any)
+	}
 	s.values[key] = value
-}
-
-// clone returns a consistent copy so callers can iterate without holding the
-// lock, and returns nil when there is nothing to copy.
-func (s *sharedValues) clone() map[any]any {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if len(s.values) == 0 {
-		return nil
-	}
-	values := make(map[any]any, len(s.values))
-	for key, value := range s.values {
-		values[key] = value
-	}
-	return values
 }
 
 type Context struct {
@@ -79,7 +66,7 @@ type Context struct {
 	request  http.ContextRequest
 	response http.ContextResponse
 	userCtx  context.Context
-	values   *sharedValues
+	values   *requestValues
 }
 
 func NewContext(c fiber.Ctx) *Context {
@@ -90,11 +77,11 @@ func NewContext(c fiber.Ctx) *Context {
 	} else {
 		ctx.userCtx = nil
 	}
-	if existing, ok := c.Locals(sharedValuesKey).(*sharedValues); ok {
+	if existing, ok := c.Locals(sharedValuesKey).(*requestValues); ok {
 		ctx.values = existing
 	} else {
-		ctx.values = newSharedValues()
-		c.Locals(sharedValuesKey, ctx.values)
+		ctx.values = newRequestValues()
+		c.SetLocal(sharedValuesKey, ctx.values)
 	}
 	return ctx
 }
@@ -119,8 +106,9 @@ func (c *Context) Response() http.ContextResponse {
 
 func (c *Context) WithValue(key any, value any) {
 	if c.values == nil {
-		c.values = newSharedValues()
-		c.instance.Locals(sharedValuesKey, c.values)
+		// Covers a zero-value Context, which NewContext never returns.
+		c.values = newRequestValues()
+		c.instance.SetLocal(sharedValuesKey, c.values)
 	}
 	c.values.store(key, value)
 }
@@ -138,7 +126,9 @@ func (c *Context) Context() context.Context {
 	if c.values == nil {
 		return ctx
 	}
-	for key, value := range c.values.clone() {
+	c.values.mu.RLock()
+	defer c.values.mu.RUnlock()
+	for key, value := range c.values.values {
 		if key == sessionKey {
 			continue
 		}

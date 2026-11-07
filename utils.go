@@ -70,6 +70,7 @@ func releaseContext(context *Context) {
 	contextResponsePool.Put(context.response)
 	context.request = nil
 	context.response = nil
+	context.values = nil
 	contextPool.Put(context)
 }
 

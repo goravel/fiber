@@ -22,7 +22,7 @@ func NewView(instance fiber.Ctx, ctx *Context) *View {
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
 	if receive.ctx != nil {
-		if session, ok := receive.ctx.Value(sessionKey).(contractsession.Session); ok && session != nil {
+		if session, ok := receive.ctx.Value(sessionKey).(contractsession.Session); ok {
 			token := session.Token()
 			shared["csrf_token"] = token
 			shared["csrf_field"] = template.HTML(

@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +50,7 @@ func TestContext(t *testing.T) {
 func TestContext_Concurrent(t *testing.T) {
 	tests := []struct {
 		name  string
-		setup func(t *testing.T) (writer *Context, reader *Context)
+		setup func(t *testing.T) (writer, reader *Context)
 	}{
 		{
 			name: "same context",
@@ -89,47 +88,48 @@ func TestContext_Concurrent(t *testing.T) {
 // runConcurrentContext mirrors what database/sql does: one goroutine writes
 // values through WithValue while another reads through Context, Done, Err and
 // Value, exactly as database/sql.(*Rows).awaitDone does.
-func runConcurrentContext(t *testing.T, writer *Context, reader *Context) {
+func runConcurrentContext(t *testing.T, writer, reader *Context) {
 	t.Helper()
 
-	var wg sync.WaitGroup
-	done := make(chan struct{})
+	const (
+		goroutines = 10
+		iterations = 1000
+	)
 
-	for i := 0; i < 10; i++ {
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+
+	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			for {
-				select {
-				case <-done:
-					return
-				default:
-					writer.WithValue(idx, "value")
-				}
+
+			<-start
+			for j := 0; j < iterations; j++ {
+				writer.WithValue(idx, "value")
 			}
 		}(i)
 	}
 
-	for i := 0; i < 10; i++ {
+	// Key 0 is written above, so the reader asserts on a key that exists.
+	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case <-done:
-					return
-				default:
-					_ = reader.Context()
-					_ = reader.Done()
-					_ = reader.Err()
-					_, _ = reader.Deadline()
-					_ = reader.Value("someKey")
-				}
+
+			<-start
+			for j := 0; j < iterations; j++ {
+				_ = reader.Context()
+				_ = reader.Done()
+				_ = reader.Err()
+				_, _ = reader.Deadline()
+				_ = reader.Value(0)
 			}
 		}()
 	}
 
-	time.Sleep(100 * time.Millisecond)
-	close(done)
+	close(start)
 	wg.Wait()
+
+	require.Equal(t, "value", reader.Value(0))
 }
