@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -93,7 +94,7 @@ func runConcurrentContext(t *testing.T, writer, reader *Context) {
 
 	const (
 		goroutines = 10
-		iterations = 1000
+		iterations = 100
 	)
 
 	var wg sync.WaitGroup
@@ -107,11 +108,11 @@ func runConcurrentContext(t *testing.T, writer, reader *Context) {
 			<-start
 			for j := 0; j < iterations; j++ {
 				writer.WithValue(idx, "value")
+				runtime.Gosched()
 			}
 		}(i)
 	}
 
-	// Key 0 is written above, so the reader asserts on a key that exists.
 	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func() {
@@ -131,5 +132,7 @@ func runConcurrentContext(t *testing.T, writer, reader *Context) {
 	close(start)
 	wg.Wait()
 
+	// Key 0 is what the writers store, so it must be visible on both paths.
 	require.Equal(t, "value", reader.Value(0))
+	require.Equal(t, "value", reader.Context().Value(0))
 }

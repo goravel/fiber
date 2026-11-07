@@ -11,12 +11,12 @@ import (
 )
 
 type sessionKeyType struct{}
-type sharedValuesKeyType struct{}
+type requestValuesKeyType struct{}
 type sharedUserCtxKeyType struct{}
 
 var (
 	sessionKey       = sessionKeyType{}
-	sharedValuesKey  = sharedValuesKeyType{}
+	requestValuesKey = requestValuesKeyType{}
 	sharedUserCtxKey = sharedUserCtxKeyType{}
 )
 
@@ -37,6 +37,11 @@ var contextPool = sync.Pool{New: func() any {
 type requestValues struct {
 	mu     sync.RWMutex
 	values map[any]any
+}
+
+type requestValue struct {
+	key   any
+	value any
 }
 
 func newRequestValues() *requestValues {
@@ -61,6 +66,19 @@ func (s *requestValues) store(key any, value any) {
 	s.values[key] = value
 }
 
+// snapshot copies the entries under the read lock so the context chain can be
+// built without holding it.
+func (s *requestValues) snapshot() []requestValue {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	entries := make([]requestValue, 0, len(s.values))
+	for key, value := range s.values {
+		entries = append(entries, requestValue{key: key, value: value})
+	}
+	return entries
+}
+
 type Context struct {
 	instance fiber.Ctx
 	request  http.ContextRequest
@@ -77,11 +95,11 @@ func NewContext(c fiber.Ctx) *Context {
 	} else {
 		ctx.userCtx = nil
 	}
-	if existing, ok := c.Locals(sharedValuesKey).(*requestValues); ok {
+	if existing, ok := c.Locals(requestValuesKey).(*requestValues); ok {
 		ctx.values = existing
 	} else {
 		ctx.values = newRequestValues()
-		c.SetLocal(sharedValuesKey, ctx.values)
+		c.SetLocal(requestValuesKey, ctx.values)
 	}
 	return ctx
 }
@@ -106,9 +124,11 @@ func (c *Context) Response() http.ContextResponse {
 
 func (c *Context) WithValue(key any, value any) {
 	if c.values == nil {
-		// Covers a zero-value Context, which NewContext never returns.
+		// Only NewContext produces a usable Context: c.instance is nil on a zero value.
 		c.values = newRequestValues()
-		c.instance.SetLocal(sharedValuesKey, c.values)
+		if c.instance != nil {
+			c.instance.SetLocal(requestValuesKey, c.values)
+		}
 	}
 	c.values.store(key, value)
 }
@@ -123,16 +143,15 @@ func (c *Context) Context() context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if c.values == nil {
+	rv := c.values
+	if rv == nil {
 		return ctx
 	}
-	c.values.mu.RLock()
-	defer c.values.mu.RUnlock()
-	for key, value := range c.values.values {
-		if key == sessionKey {
+	for _, entry := range rv.snapshot() {
+		if entry.key == sessionKey {
 			continue
 		}
-		ctx = context.WithValue(ctx, key, value)
+		ctx = context.WithValue(ctx, entry.key, entry.value)
 	}
 	return ctx
 }
