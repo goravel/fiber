@@ -31,12 +31,55 @@ var contextPool = sync.Pool{New: func() any {
 	return &Context{}
 }}
 
+// sharedValues holds the request values that every *Context wrapper of one
+// fiber.Ctx shares. The mutex lives here, not in Context, because middleware
+// and handler each get their own *Context over the same map.
+type sharedValues struct {
+	mu     sync.RWMutex
+	values map[any]any
+}
+
+func newSharedValues() *sharedValues {
+	return &sharedValues{values: make(map[any]any)}
+}
+
+func (s *sharedValues) load(key any) (any, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	value, ok := s.values[key]
+	return value, ok
+}
+
+func (s *sharedValues) store(key any, value any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.values[key] = value
+}
+
+// clone returns a consistent copy so callers can iterate without holding the
+// lock, and returns nil when there is nothing to copy.
+func (s *sharedValues) clone() map[any]any {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if len(s.values) == 0 {
+		return nil
+	}
+	values := make(map[any]any, len(s.values))
+	for key, value := range s.values {
+		values[key] = value
+	}
+	return values
+}
+
 type Context struct {
 	instance fiber.Ctx
 	request  http.ContextRequest
 	response http.ContextResponse
 	userCtx  context.Context
-	values   map[any]any
+	values   *sharedValues
 }
 
 func NewContext(c fiber.Ctx) *Context {
@@ -47,10 +90,11 @@ func NewContext(c fiber.Ctx) *Context {
 	} else {
 		ctx.userCtx = nil
 	}
-	if existing, ok := c.Locals(sharedValuesKey).(map[any]any); ok {
+	if existing, ok := c.Locals(sharedValuesKey).(*sharedValues); ok {
 		ctx.values = existing
 	} else {
-		ctx.values = nil
+		ctx.values = newSharedValues()
+		c.Locals(sharedValuesKey, ctx.values)
 	}
 	return ctx
 }
@@ -75,10 +119,10 @@ func (c *Context) Response() http.ContextResponse {
 
 func (c *Context) WithValue(key any, value any) {
 	if c.values == nil {
-		c.values = make(map[any]any)
+		c.values = newSharedValues()
 		c.instance.Locals(sharedValuesKey, c.values)
 	}
-	c.values[key] = value
+	c.values.store(key, value)
 }
 
 func (c *Context) WithContext(ctx context.Context) {
@@ -91,7 +135,10 @@ func (c *Context) Context() context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	for key, value := range c.values {
+	if c.values == nil {
+		return ctx
+	}
+	for key, value := range c.values.clone() {
 		if key == sessionKey {
 			continue
 		}
@@ -114,8 +161,8 @@ func (c *Context) Err() error {
 
 func (c *Context) Value(key any) any {
 	if c.values != nil {
-		if v, ok := c.values[key]; ok {
-			return v
+		if value, ok := c.values.load(key); ok {
+			return value
 		}
 	}
 	return c.Context().Value(key)
