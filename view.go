@@ -21,11 +21,9 @@ func NewView(instance fiber.Ctx, ctx *Context) *View {
 func (receive *View) Make(view string, data ...any) contractshttp.Response {
 	shared := ViewFacade.GetShared()
 	if receive.ctx != nil {
-		if session, ok := receive.ctx.values[sessionKey]; ok && session != nil {
-			if sessionValue, ok := session.(contractsession.Session); ok {
-				token := sessionValue.Token()
-				shared["csrf_token"] = token
-			}
+		if session, ok := receive.ctx.Value(sessionKey).(contractsession.Session); ok {
+			token := session.Token()
+			shared["csrf_token"] = token
 		}
 	}
 	if len(data) == 0 {
