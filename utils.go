@@ -70,6 +70,7 @@ func releaseContext(context *Context) {
 	contextResponsePool.Put(context.response)
 	context.request = nil
 	context.response = nil
+	// NewContext replaces values on reuse, so leave it alone.
 	contextPool.Put(context)
 }
 
