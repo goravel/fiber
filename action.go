@@ -11,15 +11,23 @@ type Action struct {
 }
 
 func NewAction(method, path, handler string) contractsroute.Action {
-	if _, ok := routes[path]; !ok {
-		routes[path] = make(map[string]contractshttp.Info)
+	return newAction("", method, path, handler)
+}
+
+// newAction records a route on the domain, empty for any host. The routes of
+// each domain are kept apart, so the same path can be on several domains.
+func newAction(domain, method, path, handler string) contractsroute.Action {
+	key := domain + path
+	if _, ok := routes[key]; !ok {
+		routes[key] = make(map[string]contractshttp.Info)
 	}
 
 	if method == contractshttp.MethodGet {
 		method = contractshttp.MethodGet + "|" + contractshttp.MethodHead
 	}
 
-	routes[path][method] = contractshttp.Info{
+	routes[key][method] = contractshttp.Info{
+		Domain:  domain,
 		Handler: handler,
 		Method:  method,
 		Path:    path,
@@ -27,7 +35,7 @@ func NewAction(method, path, handler string) contractsroute.Action {
 
 	return &Action{
 		method: method,
-		path:   path,
+		path:   key,
 	}
 }
 

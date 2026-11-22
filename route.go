@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,7 +28,7 @@ import (
 	"github.com/spf13/cast"
 )
 
-// map[path]map[method]info
+// map[domain+path]map[method]info
 var routes = make(map[string]map[string]contractshttp.Info)
 
 var globalRecoverCallback func(ctx contractshttp.Context, err any) = defaultRecoverCallback
@@ -40,6 +42,9 @@ type Route struct {
 	fallback         contractshttp.HandlerFunc
 	globalMiddleware []contractshttp.Middleware
 	instance         *fiber.App
+	appConfig        fiber.Config
+	domains          []*domainRouter
+	routeHandlers    []fiber.Handler // what every route of a domain runs first: recover, logs and global middleware
 	listenConfig     fiber.ListenConfig
 	templateOnce     sync.Once
 	templateErr      error
@@ -329,7 +334,7 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 		trustedProxies = trustedProxiesConfig
 	}
 
-	instance := fiber.New(fiber.Config{
+	r.appConfig = fiber.Config{
 		Immutable:      immutable,
 		BodyLimit:      r.config.GetInt(fmt.Sprintf("http.drivers.%s.body_limit", r.driver), 4096) << 10,
 		ReadBufferSize: r.config.GetInt(fmt.Sprintf("http.drivers.%s.header_limit", r.driver), 4096),
@@ -341,7 +346,8 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 		TrustProxyConfig: fiber.TrustProxyConfig{
 			Proxies: trustedProxies,
 		},
-	})
+	}
+	instance := fiber.New(r.appConfig)
 
 	r.listenConfig = fiber.ListenConfig{
 		EnablePrefork:   prefork,
@@ -365,19 +371,85 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 
 	globalMiddleware = append([]contractshttp.Middleware{&recoverMiddleware{}}, globalMiddleware...)
 	handlers = append(handlers, middlewaresToFiberHandlers(globalMiddleware)...)
+	r.routeHandlers = handlers
 
+	// First, so a request on a domain runs the handlers once, in the domain's
+	// app, unless it falls back to the routes of any host.
+	instance.Use(r.serveDomain)
 	for _, handler := range handlers {
 		instance.Use(handler)
 	}
 
-	r.Router = NewGroup(
+	group := NewGroup(
 		r.config,
 		instance,
 		"",
 		[]contractshttp.Middleware{},
 		[]contractshttp.Middleware{},
-	)
+	).(*Group)
+	group.domains = r
+	r.Router = group
 	r.instance = instance
+	r.domains = nil
+}
+
+// domainApp returns the app of the domain, creating it on first use, with the
+// handlers its routes run first. A request the app has no route for falls
+// back to the routes of any host.
+func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler) {
+	var router *domainRouter
+	for _, existing := range r.domains {
+		if existing.domain == strings.ToLower(domain) {
+			router = existing
+			break
+		}
+	}
+
+	if router == nil {
+		config := r.appConfig
+		config.ErrorHandler = domainErrorHandler
+		router = newDomainRouter(domain, fiber.New(config))
+		r.domains = append(r.domains, router)
+	}
+
+	// The handlers go on each route rather than the app, so they don't run
+	// twice for a request that falls back to the routes of any host.
+	return router.app, slices.Clone(r.routeHandlers)
+}
+
+// serveDomain serves the request with the app of its domain: a domain without
+// parameters first, then the ones with parameters in the order they were
+// registered. A request on no domain, or one its domain has no route for,
+// goes on to the routes of any host.
+func (r *Route) serveDomain(ctx fiber.Ctx) error {
+	if len(r.domains) == 0 {
+		return ctx.Next()
+	}
+
+	router, params := r.domainFor(requestHost(string(ctx.RequestCtx().Host())))
+	if router == nil || !router.serve(ctx.RequestCtx(), params) {
+		return ctx.Next()
+	}
+
+	return nil
+}
+
+func (r *Route) domainFor(host string) (*domainRouter, map[string]string) {
+	for _, router := range r.domains {
+		if router.pattern == nil && router.domain == host {
+			return router, nil
+		}
+	}
+	for _, router := range r.domains {
+		if router.pattern == nil {
+			continue
+		}
+		if params, ok := router.match(host); ok {
+			return router, params
+		}
+	}
+
+	return nil, nil
 }
 
 // ensureTemplate compiles the view set once, from the configured callback or

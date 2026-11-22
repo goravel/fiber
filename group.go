@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"reflect"
+	"slices"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
@@ -17,8 +18,17 @@ import (
 	"github.com/goravel/framework/support/str"
 )
 
+// domainRegistry returns the app of a domain, creating it on first use, with
+// the handlers every route of the domain runs first.
+type domainRegistry interface {
+	domainApp(domain string) (*fiber.App, []fiber.Handler)
+}
+
 type Group struct {
 	config              config.Config
+	domain              string
+	domains             domainRegistry
+	handlers            []fiber.Handler
 	instance            *fiber.App
 	prefix              string
 	middlewares         []contractshttp.Middleware
@@ -44,7 +54,30 @@ func (r *Group) Group(handler contractsroute.GroupFunc) {
 		middlewares:         r.middlewares,
 		lastMiddlewares:     r.lastMiddlewares,
 		excludedMiddlewares: r.excludedMiddlewares,
+		domain:              r.domain,
+		domains:             r.domains,
+		handlers:            r.handlers,
 	})
+}
+
+func (r *Group) Domain(domain string) contractsroute.Router {
+	if r.domains == nil {
+		return r
+	}
+
+	app, handlers := r.domains.domainApp(domain)
+
+	return &Group{
+		config:              r.config,
+		domain:              domain,
+		domains:             r.domains,
+		handlers:            handlers,
+		instance:            app,
+		prefix:              r.prefix,
+		middlewares:         r.middlewares,
+		lastMiddlewares:     r.lastMiddlewares,
+		excludedMiddlewares: r.excludedMiddlewares,
+	}
 }
 
 func (r *Group) Prefix(path string) contractsroute.Router {
@@ -55,6 +88,9 @@ func (r *Group) Prefix(path string) contractsroute.Router {
 		middlewares:         r.middlewares,
 		lastMiddlewares:     r.lastMiddlewares,
 		excludedMiddlewares: r.excludedMiddlewares,
+		domain:              r.domain,
+		domains:             r.domains,
+		handlers:            r.handlers,
 	}
 }
 
@@ -66,6 +102,9 @@ func (r *Group) Middleware(middlewares ...contractshttp.Middleware) contractsrou
 		middlewares:         append(r.middlewares, middlewares...),
 		lastMiddlewares:     r.lastMiddlewares,
 		excludedMiddlewares: r.excludedMiddlewares,
+		domain:              r.domain,
+		domains:             r.domains,
+		handlers:            r.handlers,
 	}
 }
 
@@ -77,6 +116,9 @@ func (r *Group) WithoutMiddleware(middlewares ...contractshttp.Middleware) contr
 		middlewares:         r.middlewares,
 		lastMiddlewares:     r.lastMiddlewares,
 		excludedMiddlewares: append(r.excludedMiddlewares, middlewares...),
+		domain:              r.domain,
+		domains:             r.domains,
+		handlers:            r.handlers,
 	}
 }
 
@@ -84,49 +126,49 @@ func (r *Group) Any(path string, handler contractshttp.HandlerFunc) contractsrou
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.All(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodAny, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodAny, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Get(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Get(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodGet, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodGet, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Post(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Post(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodPost, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodPost, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Delete(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Delete(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodDelete, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodDelete, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Patch(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Patch(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodPatch, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodPatch, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Put(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Put(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodPut, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodPut, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Options(path string, handler contractshttp.HandlerFunc) contractsroute.Action {
 	first, rest := fiberHandlerArgs(r.getMiddlewares(handler))
 	r.instance.Options(r.getFiberFullPath(path), first, rest...)
 
-	return NewAction(contractshttp.MethodOptions, r.getFullPath(path), r.getHandlerName(handler))
+	return newAction(r.domain, contractshttp.MethodOptions, r.getFullPath(path), r.getHandlerName(handler))
 }
 
 func (r *Group) Resource(path string, controller contractshttp.ResourceController) contractsroute.Action {
@@ -146,14 +188,14 @@ func (r *Group) Resource(path string, controller contractshttp.ResourceControlle
 	first, rest = fiberHandlerArgs(r.getMiddlewares(controller.Destroy))
 	r.instance.Delete(fullPathWithID, first, rest...)
 
-	return NewAction(contractshttp.MethodResource, r.getFullPath(path), r.getHandlerName(controller))
+	return newAction(r.domain, contractshttp.MethodResource, r.getFullPath(path), r.getHandlerName(controller))
 }
 
 func (r *Group) Static(path, root string) contractsroute.Action {
 	fullPath := r.getFiberFullPath(path)
 	r.instance.Use(fullPath, static.New(root, static.Config{Browse: false}))
 
-	return NewAction(contractshttp.MethodStatic, r.getFullPath(path), r.getHandlerName(nil))
+	return newAction(r.domain, contractshttp.MethodStatic, r.getFullPath(path), r.getHandlerName(nil))
 }
 
 func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
@@ -166,14 +208,14 @@ func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
 		return c.SendFile(escapedPath)
 	})
 
-	return NewAction(contractshttp.MethodStaticFile, r.getFullPath(path), r.getHandlerName(nil))
+	return newAction(r.domain, contractshttp.MethodStaticFile, r.getFullPath(path), r.getHandlerName(nil))
 }
 
 func (r *Group) StaticFS(path string, fileSystem http.FileSystem) contractsroute.Action {
 	fullPath := r.getFiberFullPath(path)
 	r.instance.Use(fullPath, static.New("", static.Config{FS: httpFSToFS{fileSystem}}))
 
-	return NewAction(contractshttp.MethodStaticFS, r.getFullPath(path), r.getHandlerName(nil))
+	return newAction(r.domain, contractshttp.MethodStaticFS, r.getFullPath(path), r.getHandlerName(nil))
 }
 
 // httpFSToFS wraps an http.FileSystem to implement fs.FS for use with fiber's static middleware.
@@ -189,8 +231,8 @@ func (h httpFSToFS) Open(name string) (fs.File, error) {
 }
 
 func (r *Group) getMiddlewares(handler contractshttp.HandlerFunc) []fiber.Handler {
-	var middlewares []fiber.Handler
-	middlewares = middlewaresToFiberHandlers(r.excludeMiddlewares(append(r.middlewares, r.lastMiddlewares...)))
+	middlewares := slices.Clone(r.handlers)
+	middlewares = append(middlewares, middlewaresToFiberHandlers(r.excludeMiddlewares(append(r.middlewares, r.lastMiddlewares...)))...)
 	if handler != nil {
 		middlewares = append(middlewares, handlerToFiberHandler(handler))
 	}
