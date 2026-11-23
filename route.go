@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"slices"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	frameworkmiddleware "github.com/goravel/framework/http/middleware"
 	"github.com/goravel/framework/support"
 	"github.com/goravel/framework/support/color"
+	supporthttp "github.com/goravel/framework/support/http"
 	"github.com/goravel/framework/support/json"
 	"github.com/goravel/framework/support/str"
 	"github.com/spf13/cast"
@@ -393,13 +393,19 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 	r.domains = nil
 }
 
-// domainApp returns the app of the domain, creating it on first use, with the
-// handlers its routes run first. A request the app has no route for falls
-// back to the routes of any host.
-func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler) {
+// domainApp returns the app of the domain, creating it on first use, the
+// handlers its routes run first, and the domain as the routes record it. A
+// request the app has no route for falls back to the routes of any host. An
+// invalid domain panics, as an invalid route does.
+func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler, string) {
+	parsed, err := supporthttp.ParseDomain(domain)
+	if err != nil {
+		panic(err)
+	}
+
 	var router *domainRouter
 	for _, existing := range r.domains {
-		if existing.domain == strings.ToLower(domain) {
+		if existing.domain.String() == parsed.String() {
 			router = existing
 			break
 		}
@@ -408,13 +414,13 @@ func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler) {
 	if router == nil {
 		config := r.appConfig
 		config.ErrorHandler = domainErrorHandler
-		router = newDomainRouter(domain, fiber.New(config))
+		router = &domainRouter{domain: parsed, app: fiber.New(config)}
 		r.domains = append(r.domains, router)
 	}
 
 	// The handlers go on each route rather than the app, so they don't run
 	// twice for a request that falls back to the routes of any host.
-	return router.app, slices.Clone(r.routeHandlers)
+	return router.app, slices.Clone(r.routeHandlers), parsed.String()
 }
 
 // serveDomain serves the request with the app of its domain: a domain without
@@ -426,7 +432,7 @@ func (r *Route) serveDomain(ctx fiber.Ctx) error {
 		return ctx.Next()
 	}
 
-	router, params := r.domainFor(requestHost(string(ctx.RequestCtx().Host())))
+	router, params := r.domainFor(string(ctx.RequestCtx().Host()))
 	if router == nil || !router.serve(ctx.RequestCtx(), params) {
 		return ctx.Next()
 	}
@@ -436,15 +442,18 @@ func (r *Route) serveDomain(ctx fiber.Ctx) error {
 
 func (r *Route) domainFor(host string) (*domainRouter, map[string]string) {
 	for _, router := range r.domains {
-		if router.pattern == nil && router.domain == host {
+		if router.domain.HasParams() {
+			continue
+		}
+		if _, ok := router.domain.Match(host); ok {
 			return router, nil
 		}
 	}
 	for _, router := range r.domains {
-		if router.pattern == nil {
+		if !router.domain.HasParams() {
 			continue
 		}
-		if params, ok := router.match(host); ok {
+		if params, ok := router.domain.Match(host); ok {
 			return router, params
 		}
 	}

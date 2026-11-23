@@ -21,7 +21,7 @@ import (
 // domainRegistry returns the app of a domain, creating it on first use, with
 // the handlers every route of the domain runs first.
 type domainRegistry interface {
-	domainApp(domain string) (*fiber.App, []fiber.Handler)
+	domainApp(domain string) (*fiber.App, []fiber.Handler, string)
 }
 
 type Group struct {
@@ -65,11 +65,11 @@ func (r *Group) Domain(domain string) contractsroute.Router {
 		return r
 	}
 
-	app, handlers := r.domains.domainApp(domain)
+	app, handlers, name := r.domains.domainApp(domain)
 
 	return &Group{
 		config:              r.config,
-		domain:              domain,
+		domain:              name,
 		domains:             r.domains,
 		handlers:            handlers,
 		instance:            app,

@@ -17,7 +17,7 @@ func NewAction(method, path, handler string) contractsroute.Action {
 // newAction records a route on the domain, empty for any host. The routes of
 // each domain are kept apart, so the same path can be on several domains.
 func newAction(domain, method, path, handler string) contractsroute.Action {
-	key := domain + path
+	key := routeKey(domain, path)
 	if _, ok := routes[key]; !ok {
 		routes[key] = make(map[string]contractshttp.Info)
 	}

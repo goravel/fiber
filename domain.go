@@ -2,12 +2,10 @@ package fiber
 
 import (
 	"errors"
-	"net"
-	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/gofiber/fiber/v3"
+	supporthttp "github.com/goravel/framework/support/http"
 	"github.com/valyala/fasthttp"
 )
 
@@ -15,64 +13,21 @@ import (
 // values of the request, read like route parameters.
 const domainParamsKey = "goravel:domain_params"
 
+// routeDomainKey keeps the domain serving the request in the user values of
+// the request, so the route's Info is found among the routes of that domain.
+const routeDomainKey = "goravel:route_domain"
+
 // domainMissKey marks a request the domain has no route for, so the routes of
 // any host handle it.
 const domainMissKey = "goravel:domain_miss"
 
-// domainParamRegex matches the parameters of a domain, such as {account}.
-var domainParamRegex = regexp.MustCompile(`{([^}]+)}`)
-
 // domainRouter holds the routes of a domain in an app of their own, so the
 // same path can be registered on several domains.
 type domainRouter struct {
-	domain      string
-	pattern     *regexp.Regexp
-	params      []string
+	domain      *supporthttp.Domain
 	app         *fiber.App
 	handler     fasthttp.RequestHandler
 	handlerOnce sync.Once
-}
-
-func newDomainRouter(domain string, app *fiber.App) *domainRouter {
-	router := &domainRouter{
-		domain: strings.ToLower(domain),
-		app:    app,
-	}
-
-	if matches := domainParamRegex.FindAllStringSubmatch(router.domain, -1); len(matches) > 0 {
-		for _, match := range matches {
-			router.params = append(router.params, match[1])
-		}
-
-		// Each parameter matches one label of the host.
-		parts := domainParamRegex.Split(router.domain, -1)
-		for i := range parts {
-			parts[i] = regexp.QuoteMeta(parts[i])
-		}
-		router.pattern = regexp.MustCompile("^" + strings.Join(parts, "([^.]+)") + "$")
-	}
-
-	return router
-}
-
-// match reports whether the host belongs to the domain, with the values of its
-// parameters.
-func (r *domainRouter) match(host string) (map[string]string, bool) {
-	if r.pattern == nil {
-		return nil, host == r.domain
-	}
-
-	matches := r.pattern.FindStringSubmatch(host)
-	if matches == nil {
-		return nil, false
-	}
-
-	params := make(map[string]string, len(r.params))
-	for i, name := range r.params {
-		params[name] = matches[i+1]
-	}
-
-	return params, true
 }
 
 // serve handles the request with the routes of the domain, and reports whether
@@ -84,11 +39,13 @@ func (r *domainRouter) serve(ctx *fasthttp.RequestCtx, params map[string]string)
 	})
 
 	ctx.SetUserValue(domainParamsKey, params)
+	ctx.SetUserValue(routeDomainKey, r.domain.String())
 	r.handler(ctx)
 
 	if ctx.UserValue(domainMissKey) != nil {
 		ctx.RemoveUserValue(domainMissKey)
 		ctx.RemoveUserValue(domainParamsKey)
+		ctx.RemoveUserValue(routeDomainKey)
 
 		return false
 	}
@@ -116,11 +73,15 @@ func domainParams(ctx fiber.Ctx) map[string]string {
 	return params
 }
 
-// requestHost returns the host of the request in lower case, without its port.
-func requestHost(host string) string {
-	if parsed, _, err := net.SplitHostPort(host); err == nil {
-		host = parsed
-	}
+// routeDomain returns the domain serving the request, empty for any host.
+func routeDomain(ctx fiber.Ctx) string {
+	domain, _ := ctx.RequestCtx().UserValue(routeDomainKey).(string)
 
-	return strings.ToLower(strings.TrimSuffix(host, "."))
+	return domain
+}
+
+// routeKey returns the key of a route in the routes map: the routes of each
+// domain are kept apart, so the same path can be on several domains.
+func routeKey(domain, path string) string {
+	return domain + path
 }
