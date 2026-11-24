@@ -305,10 +305,111 @@ func TestDomainDuplicateRoute(t *testing.T) {
 	admin.Get("/", stringHandler("first")).Name("first")
 	admin.Get("/other", stringHandler("other"))
 	admin.Get("/", stringHandler("second")).Name("second").WithoutMiddleware(&authDomainMiddleware{})
+	admin.Get("/adjacent", stringHandler("first adjacent")).Name("first.adjacent")
+	admin.Get("/adjacent", stringHandler("second adjacent")).Name("second.adjacent").WithoutMiddleware(&authDomainMiddleware{})
 
-	// Fiber runs the first route, and its Info is kept.
-	code, _ := serveHost(t, route, "GET", "admin.example.com", "/")
-	assert.Equal(t, http.StatusUnauthorized, code)
-	assert.Equal(t, "/", route.Info("first").Path)
+	// Fiber runs the first route, and its Info is kept, whether the
+	// registrations are adjacent or not.
+	for path, name := range map[string]string{"/": "first", "/adjacent": "first.adjacent"} {
+		code, _ := serveHost(t, route, "GET", "admin.example.com", path)
+		assert.Equal(t, http.StatusUnauthorized, code, path)
+		assert.Equal(t, path, route.Info(name).Path)
+	}
 	assert.Empty(t, route.Info("second").Path)
+	assert.Empty(t, route.Info("second.adjacent").Path)
+}
+
+func TestDomainGroupAndPrefixInfo(t *testing.T) {
+	route := newDomainTestRoute(t)
+
+	route.Domain("admin.example.com").Group(func(router contractsroute.Router) {
+		router.Prefix("api").Get("/users", stringHandler("admin users")).Name("admin.api.users")
+	})
+	route.Domain("admin.example.com").Prefix("v2").Group(func(router contractsroute.Router) {
+		router.Get("/users", stringHandler("admin v2 users")).Name("admin.v2.users")
+	})
+
+	assert.Equal(t, "admin.example.com", route.Info("admin.api.users").Domain)
+	assert.Equal(t, "/api/users", route.Info("admin.api.users").Path)
+	assert.Equal(t, "admin.example.com", route.Info("admin.v2.users").Domain)
+	assert.Equal(t, "/v2/users", route.Info("admin.v2.users").Path)
+
+	_, body := serveHost(t, route, "GET", "admin.example.com", "/v2/users")
+	assert.Equal(t, "admin v2 users", body)
+}
+
+func TestDomainWithTwoParameters(t *testing.T) {
+	route := newDomainTestRoute(t)
+
+	route.Domain("{account}.{region}.example.com").Get("/", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(http.StatusOK, ctx.Request().Route("account")+" "+ctx.Request().Route("region"))
+	})
+
+	_, body := serveHost(t, route, "GET", "goravel.eu.example.com", "/")
+	assert.Equal(t, "goravel eu", body)
+}
+
+func TestDomainStaticOtherMethods(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("file"), 0o644))
+
+	counter := &countMiddleware{}
+	route := newDomainTestRoute(t, counter)
+
+	route.Domain("admin.example.com").Group(func(router contractsroute.Router) {
+		router.Static("/s", dir)
+		router.StaticFile("/one.txt", filepath.Join(dir, "a.txt"))
+	})
+	route.Post("/s/a.txt", stringHandler("any host post"))
+	route.Put("/s/a.txt", stringHandler("any host put"))
+	route.Options("/s/a.txt", stringHandler("any host options"))
+	route.Post("/one.txt", stringHandler("any host post one"))
+	route.Get("/one.txt/extra", stringHandler("any host extra"))
+
+	tests := []struct {
+		method     string
+		path       string
+		expectCode int
+		expectBody string
+	}{
+		{method: "POST", path: "/s/a.txt", expectCode: http.StatusOK, expectBody: "any host post"},
+		{method: "PUT", path: "/s/a.txt", expectCode: http.StatusOK, expectBody: "any host put"},
+		{method: "OPTIONS", path: "/s/a.txt", expectCode: http.StatusOK, expectBody: "any host options"},
+		{method: "POST", path: "/one.txt", expectCode: http.StatusOK, expectBody: "any host post one"},
+		{method: "GET", path: "/one.txt/extra", expectCode: http.StatusOK, expectBody: "any host extra"},
+		{method: "HEAD", path: "/s/a.txt", expectCode: http.StatusOK},
+		{method: "GET", path: "/s/missing.txt", expectCode: http.StatusNotFound},
+	}
+
+	for _, test := range tests {
+		t.Run(test.method+test.path, func(t *testing.T) {
+			counter.count = 0
+			code, body := serveHost(t, route, test.method, "admin.example.com", test.path)
+
+			assert.Equal(t, test.expectCode, code)
+			if test.expectBody != "" {
+				assert.Equal(t, test.expectBody, body)
+			}
+			assert.Equal(t, 1, counter.count)
+		})
+	}
+}
+
+func TestDomainFallbackDropsTheDomainResponse(t *testing.T) {
+	route := newDomainTestRoute(t)
+
+	route.Domain("admin.example.com").Get("/", stringHandler("admin home"))
+	route.Post("/", stringHandler("home post"))
+
+	request, err := http.NewRequest("POST", "http://admin.example.com/", nil)
+	require.NoError(t, err)
+
+	response, err := route.Test(request)
+	require.NoError(t, err)
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Empty(t, response.Header.Get("Allow"))
 }

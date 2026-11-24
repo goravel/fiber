@@ -318,7 +318,7 @@ func (s *RouteTestSuite) TestInfo() {
 
 	s.Equal(&Action{
 		method: "GET|HEAD",
-		path:   "/test",
+		key:    "/test",
 	}, action)
 
 	info := s.route.Info("test")

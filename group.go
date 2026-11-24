@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
@@ -61,10 +62,6 @@ func (r *Group) Group(handler contractsroute.GroupFunc) {
 }
 
 func (r *Group) Domain(domain string) contractsroute.Router {
-	if r.domains == nil {
-		return r
-	}
-
 	app, handlers, name := r.domains.domainApp(domain)
 
 	return &Group{
@@ -192,15 +189,13 @@ func (r *Group) Resource(path string, controller contractshttp.ResourceControlle
 }
 
 func (r *Group) Static(path, root string) contractsroute.Action {
-	fullPath := r.getFiberFullPath(path)
-	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, static.New(root, static.Config{Browse: false}))
+	r.staticRoute(r.getFiberFullPath(path), true, static.New(root, static.Config{Browse: false}))
 
 	return newAction(r.domain, contractshttp.MethodStatic, r.getFullPath(path), r.getHandlerName(nil))
 }
 
 func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
-	fullPath := r.getFiberFullPath(path)
-	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, func(c fiber.Ctx) error {
+	r.staticRoute(r.getFiberFullPath(path), false, func(c fiber.Ctx) error {
 		dir, file := filepath.Split(filePath)
 		escapedFile := url.PathEscape(file)
 		escapedPath := filepath.Join(dir, escapedFile)
@@ -212,10 +207,29 @@ func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
 }
 
 func (r *Group) StaticFS(path string, fileSystem http.FileSystem) contractsroute.Action {
-	fullPath := r.getFiberFullPath(path)
-	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, static.New("", static.Config{FS: httpFSToFS{fileSystem}}))
+	r.staticRoute(r.getFiberFullPath(path), true, static.New("", static.Config{FS: httpFSToFS{fileSystem}}))
 
 	return newAction(r.domain, contractshttp.MethodStaticFS, r.getFullPath(path), r.getHandlerName(nil))
+}
+
+// staticRoute registers a handler that serves files under the path, after the
+// middleware of the group. On a domain it is a GET and HEAD route, as in gin,
+// with a wildcard for a directory, so a request with another method or
+// outside the path goes on to the routes of any host. On any host it stays a
+// middleware on the path.
+func (r *Group) staticRoute(fullPath string, directory bool, handler fiber.Handler) {
+	if r.domain == "" {
+		r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, handler)
+
+		return
+	}
+
+	if directory {
+		fullPath = strings.TrimSuffix(fullPath, "/") + "/*"
+	}
+
+	first, rest := fiberHandlerArgs(append(r.getMiddlewares(nil), handler))
+	r.instance.Get(fullPath, first, rest...)
 }
 
 // httpFSToFS wraps an http.FileSystem to implement fs.FS for use with fiber's static middleware.

@@ -390,6 +390,8 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 	r.Router = group
 	r.instance = instance
 	r.domains = nil
+	// The routes of a previous app are gone with it, so their Info is too.
+	routes = make(map[string]map[string]contractshttp.Info)
 }
 
 // domainApp returns the app of the domain, creating it on first use, the
@@ -434,7 +436,8 @@ func (r *Route) serveDomain(ctx fiber.Ctx) error {
 		return ctx.Next()
 	}
 
-	router := r.domainFor(string(ctx.RequestCtx().Host()))
+	// The host Request().Host() reports, which a trusted proxy can forward.
+	router := r.domainFor(ctx.Hostname())
 	if router == nil || !router.serve(ctx.RequestCtx()) {
 		return ctx.Next()
 	}

@@ -21,10 +21,10 @@ const routeDomainKey = "goravel:route_domain"
 // any host handle it.
 const domainMissKey = "goravel:domain_miss"
 
-// domainRouteKey marks a request a route of the domain has run for, such as
-// a static route that doesn't find the file. A 404 then belongs to the
+// domainHandledKey marks a request a route of the domain has run for, such
+// as a static route that doesn't find the file. A 404 then belongs to the
 // domain, rather than going on to the routes of any host.
-const domainRouteKey = "goravel:domain_route"
+const domainHandledKey = "goravel:domain_handled"
 
 // domainRouter holds the routes of a domain in an app of their own, so the
 // same path can be registered on several domains. Domains that differ only in
@@ -63,10 +63,10 @@ func (r *domainRouter) serve(ctx *fasthttp.RequestCtx) bool {
 func domainHandler(domain *supporthttp.Domain) fiber.Handler {
 	return func(ctx fiber.Ctx) error {
 		requestCtx := ctx.RequestCtx()
-		params, _ := domain.Match(string(requestCtx.Host()))
+		params, _ := domain.Match(ctx.Hostname())
 		requestCtx.SetUserValue(domainParamsKey, params)
 		requestCtx.SetUserValue(routeDomainKey, domain.String())
-		requestCtx.SetUserValue(domainRouteKey, true)
+		requestCtx.SetUserValue(domainHandledKey, true)
 
 		return ctx.Next()
 	}
@@ -78,7 +78,10 @@ func domainHandler(domain *supporthttp.Domain) fiber.Handler {
 func domainErrorHandler(ctx fiber.Ctx, err error) error {
 	var fiberErr *fiber.Error
 	if errors.As(err, &fiberErr) && (fiberErr.Code == fiber.StatusNotFound || fiberErr.Code == fiber.StatusMethodNotAllowed) &&
-		ctx.RequestCtx().UserValue(domainRouteKey) == nil {
+		ctx.RequestCtx().UserValue(domainHandledKey) == nil {
+		// The response the domain's app prepared, such as its Allow header,
+		// doesn't apply to the routes of any host.
+		ctx.RequestCtx().Response.Reset()
 		ctx.RequestCtx().SetUserValue(domainMissKey, true)
 
 		return nil
