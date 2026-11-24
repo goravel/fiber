@@ -193,7 +193,7 @@ func (r *Group) Resource(path string, controller contractshttp.ResourceControlle
 
 func (r *Group) Static(path, root string) contractsroute.Action {
 	fullPath := r.getFiberFullPath(path)
-	r.instance.Use(fullPath, static.New(root, static.Config{Browse: false}))
+	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, static.New(root, static.Config{Browse: false}))
 
 	return newAction(r.domain, contractshttp.MethodStatic, r.getFullPath(path), r.getHandlerName(nil))
 }
@@ -213,7 +213,7 @@ func (r *Group) StaticFile(path, filePath string) contractsroute.Action {
 
 func (r *Group) StaticFS(path string, fileSystem http.FileSystem) contractsroute.Action {
 	fullPath := r.getFiberFullPath(path)
-	r.instance.Use(fullPath, static.New("", static.Config{FS: httpFSToFS{fileSystem}}))
+	r.instance.Use(r.getMiddlewaresWithPath(fullPath, nil)...).Use(fullPath, static.New("", static.Config{FS: httpFSToFS{fileSystem}}))
 
 	return newAction(r.domain, contractshttp.MethodStaticFS, r.getFullPath(path), r.getHandlerName(nil))
 }

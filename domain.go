@@ -21,8 +21,14 @@ const routeDomainKey = "goravel:route_domain"
 // any host handle it.
 const domainMissKey = "goravel:domain_miss"
 
+// domainRouteKey marks a request a route of the domain has run for, such as
+// a static route that doesn't find the file. A 404 then belongs to the
+// domain, rather than going on to the routes of any host.
+const domainRouteKey = "goravel:domain_route"
+
 // domainRouter holds the routes of a domain in an app of their own, so the
-// same path can be registered on several domains.
+// same path can be registered on several domains. Domains that differ only in
+// their parameter names share it.
 type domainRouter struct {
 	domain      *supporthttp.Domain
 	app         *fiber.App
@@ -32,14 +38,12 @@ type domainRouter struct {
 
 // serve handles the request with the routes of the domain, and reports whether
 // the domain had a route for it.
-func (r *domainRouter) serve(ctx *fasthttp.RequestCtx, params map[string]string) bool {
+func (r *domainRouter) serve(ctx *fasthttp.RequestCtx) bool {
 	// The handler is taken on the first request, once the routes are registered.
 	r.handlerOnce.Do(func() {
 		r.handler = r.app.Handler()
 	})
 
-	ctx.SetUserValue(domainParamsKey, params)
-	ctx.SetUserValue(routeDomainKey, r.domain.String())
 	r.handler(ctx)
 
 	if ctx.UserValue(domainMissKey) != nil {
@@ -53,11 +57,28 @@ func (r *domainRouter) serve(ctx *fasthttp.RequestCtx, params map[string]string)
 	return true
 }
 
+// domainHandler runs first on every route of the domain: it records the domain
+// of the route, and the values of its parameters, read like route parameters
+// with the route's own names.
+func domainHandler(domain *supporthttp.Domain) fiber.Handler {
+	return func(ctx fiber.Ctx) error {
+		requestCtx := ctx.RequestCtx()
+		params, _ := domain.Match(string(requestCtx.Host()))
+		requestCtx.SetUserValue(domainParamsKey, params)
+		requestCtx.SetUserValue(routeDomainKey, domain.String())
+		requestCtx.SetUserValue(domainRouteKey, true)
+
+		return ctx.Next()
+	}
+}
+
 // domainErrorHandler passes a request the domain has no route for to the
-// routes of any host, and handles the other errors as fiber does.
+// routes of any host, and handles the other errors as fiber does. Once a
+// route of the domain has run, a 404 is the domain's own.
 func domainErrorHandler(ctx fiber.Ctx, err error) error {
 	var fiberErr *fiber.Error
-	if errors.As(err, &fiberErr) && (fiberErr.Code == fiber.StatusNotFound || fiberErr.Code == fiber.StatusMethodNotAllowed) {
+	if errors.As(err, &fiberErr) && (fiberErr.Code == fiber.StatusNotFound || fiberErr.Code == fiber.StatusMethodNotAllowed) &&
+		ctx.RequestCtx().UserValue(domainRouteKey) == nil {
 		ctx.RequestCtx().SetUserValue(domainMissKey, true)
 
 		return nil

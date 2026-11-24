@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -395,8 +394,9 @@ func (r *Route) init(globalMiddleware []contractshttp.Middleware) {
 
 // domainApp returns the app of the domain, creating it on first use, the
 // handlers its routes run first, and the domain as the routes record it. A
-// request the app has no route for falls back to the routes of any host. An
-// invalid domain panics, as an invalid route does.
+// request the app has no route for falls back to the routes of any host.
+// Domains that differ only in their parameter names share the app. An invalid
+// domain panics, as an invalid route does.
 func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler, string) {
 	parsed, err := supporthttp.ParseDomain(domain)
 	if err != nil {
@@ -405,7 +405,7 @@ func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler, string) {
 
 	var router *domainRouter
 	for _, existing := range r.domains {
-		if existing.domain.String() == parsed.String() {
+		if existing.domain.Key() == parsed.Key() {
 			router = existing
 			break
 		}
@@ -419,46 +419,48 @@ func (r *Route) domainApp(domain string) (*fiber.App, []fiber.Handler, string) {
 	}
 
 	// The handlers go on each route rather than the app, so they don't run
-	// twice for a request that falls back to the routes of any host.
-	return router.app, slices.Clone(r.routeHandlers), parsed.String()
+	// twice for a request that falls back to the routes of any host. The
+	// domain's handler is first, so each route reads its own parameter names
+	// and the global middleware finds the route's Info.
+	return router.app, append([]fiber.Handler{domainHandler(parsed)}, r.routeHandlers...), parsed.String()
 }
 
 // serveDomain serves the request with the app of its domain: a domain without
 // parameters first, then the ones with parameters in the order they were
-// registered. A request on no domain, or one its domain has no route for,
+// first registered. A request on no domain, or one its domain has no route for,
 // goes on to the routes of any host.
 func (r *Route) serveDomain(ctx fiber.Ctx) error {
 	if len(r.domains) == 0 {
 		return ctx.Next()
 	}
 
-	router, params := r.domainFor(string(ctx.RequestCtx().Host()))
-	if router == nil || !router.serve(ctx.RequestCtx(), params) {
+	router := r.domainFor(string(ctx.RequestCtx().Host()))
+	if router == nil || !router.serve(ctx.RequestCtx()) {
 		return ctx.Next()
 	}
 
 	return nil
 }
 
-func (r *Route) domainFor(host string) (*domainRouter, map[string]string) {
+func (r *Route) domainFor(host string) *domainRouter {
 	for _, router := range r.domains {
 		if router.domain.HasParams() {
 			continue
 		}
 		if _, ok := router.domain.Match(host); ok {
-			return router, nil
+			return router
 		}
 	}
 	for _, router := range r.domains {
 		if !router.domain.HasParams() {
 			continue
 		}
-		if params, ok := router.domain.Match(host); ok {
-			return router, params
+		if _, ok := router.domain.Match(host); ok {
+			return router
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 // ensureTemplate compiles the view set once, from the configured callback or
