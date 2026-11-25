@@ -338,7 +338,7 @@ func (r *ContextRequest) Path() string {
 }
 
 func (r *ContextRequest) Info() contractshttp.Info {
-	methodToInfo, exist := routes[r.OriginPath()]
+	methodToInfo, exist := routes[routeKey(routeDomain(r.instance), r.OriginPath())]
 	if !exist {
 		return contractshttp.Info{}
 	}
@@ -388,6 +388,10 @@ func (r *ContextRequest) Input(key string, defaultValue ...string) string {
 
 	if r.instance.RequestCtx().QueryArgs().Has(key) {
 		return r.instance.Query(key)
+	}
+
+	if value, exist := domainParams(r.instance)[key]; exist && r.instance.Params(key) == "" {
+		return value
 	}
 
 	return r.instance.Params(key, defaultValue...)
@@ -518,19 +522,20 @@ func (r *ContextRequest) Ip() string {
 }
 
 func (r *ContextRequest) Route(key string) string {
-	return r.instance.Params(key)
+	if value := r.instance.Params(key); value != "" {
+		return value
+	}
+
+	// A parameter of the domain, such as {account}.example.com.
+	return domainParams(r.instance)[key]
 }
 
 func (r *ContextRequest) RouteInt(key string) int {
-	val := r.instance.Params(key)
-
-	return cast.ToInt(val)
+	return cast.ToInt(r.Route(key))
 }
 
 func (r *ContextRequest) RouteInt64(key string) int64 {
-	val := r.instance.Params(key)
-
-	return cast.ToInt64(val)
+	return cast.ToInt64(r.Route(key))
 }
 
 func (r *ContextRequest) Session() contractsession.Session {
@@ -695,10 +700,19 @@ func stringToBool(value string) bool {
 
 func allParams(c fiber.Ctx) map[string]string {
 	params := make(map[string]string)
+	for key, value := range domainParams(c) {
+		params[key] = value
+	}
 	route := c.Route()
 	if route != nil {
 		for _, key := range route.Params {
-			params[key] = c.Params(key)
+			// An empty path parameter keeps the domain's value, as in Route,
+			// and is still listed when the domain has no value for it.
+			if value := c.Params(key); value != "" {
+				params[key] = value
+			} else if _, exists := params[key]; !exists {
+				params[key] = ""
+			}
 		}
 	}
 	return params

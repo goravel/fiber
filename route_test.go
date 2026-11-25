@@ -184,7 +184,8 @@ func (s *RouteTestSuite) TestGlobalMiddleware() {
 
 	middleware := contractshttp.Middleware(&globalMwTestType{})
 	s.route.GlobalMiddleware(middleware)
-	s.Equal(uint32(4), s.route.instance.HandlersCount())
+	// The domain dispatcher, the recover and logger handlers, and the middleware.
+	s.Equal(uint32(5), s.route.instance.HandlersCount())
 }
 
 func (s *RouteTestSuite) TestNewRouteDefaultGlobalMiddleware() {
@@ -204,7 +205,8 @@ func (s *RouteTestSuite) TestNewRouteDefaultGlobalMiddleware() {
 	route, err := NewRoute(mockConfig, map[string]any{"driver": "fiber"})
 	s.Require().NoError(err)
 	s.Len(route.GetGlobalMiddleware(), 3)
-	s.Equal(uint32(6), route.instance.HandlersCount())
+	// The domain dispatcher, the recover and logger handlers, and the middleware.
+	s.Equal(uint32(7), route.instance.HandlersCount())
 }
 
 func (s *RouteTestSuite) TestListen() {
@@ -316,7 +318,7 @@ func (s *RouteTestSuite) TestInfo() {
 
 	s.Equal(&Action{
 		method: "GET|HEAD",
-		path:   "/test",
+		key:    "/test",
 	}, action)
 
 	info := s.route.Info("test")
