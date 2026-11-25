@@ -19,8 +19,9 @@ import (
 	"github.com/goravel/framework/support/str"
 )
 
-// domainRegistry returns the app of a domain, creating it on first use, with
-// the handlers every route of the domain runs first.
+// domainRegistry hands out the app of each domain, creating it on first use.
+// domainApp returns the app, the handlers every route of the domain runs
+// first, and the domain its routes record.
 type domainRegistry interface {
 	domainApp(domain string) (*fiber.App, []fiber.Handler, string)
 }

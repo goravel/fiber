@@ -1,6 +1,7 @@
 package fiber
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -87,7 +88,10 @@ func TestDomain(t *testing.T) {
 	})
 	route.Get("/", stringHandler("home"))
 	route.Post("/", stringHandler("home post"))
-	route.Get("/about", stringHandler("about"))
+	// The routes of any host don't see the domain's values.
+	route.Get("/about", func(ctx contractshttp.Context) contractshttp.Response {
+		return ctx.Response().String(http.StatusOK, "about ["+ctx.Request().Route("account")+"|"+ctx.Request().Input("account")+"|"+ctx.Request().Info().Domain+"]")
+	})
 
 	tests := []struct {
 		name       string
@@ -104,7 +108,8 @@ func TestDomain(t *testing.T) {
 		{name: "with a domain parameter", method: "GET", host: "goravel.example.com", path: "/", expectCode: http.StatusOK, expectBody: "account goravel goravel"},
 		{name: "a parameter matches one label", method: "GET", host: "a.b.example.com", path: "/", expectCode: http.StatusOK, expectBody: "home"},
 		{name: "another host uses the routes without a domain", method: "GET", host: "example.com", path: "/", expectCode: http.StatusOK, expectBody: "home"},
-		{name: "a path the domain doesn't have falls back to any host", method: "GET", host: "admin.example.com", path: "/about", expectCode: http.StatusOK, expectBody: "about"},
+		{name: "a path the domain doesn't have falls back to any host", method: "GET", host: "admin.example.com", path: "/about", expectCode: http.StatusOK, expectBody: "about [||]"},
+		{name: "a parameter domain falls back without its values", method: "GET", host: "goravel.example.com", path: "/about", expectCode: http.StatusOK, expectBody: "about [||]"},
 		{name: "a domain route is not on other hosts", method: "GET", host: "example.com", path: "/users/1", expectCode: http.StatusNotFound},
 		{name: "not found on the domain", method: "GET", host: "admin.example.com", path: "/missing", expectCode: http.StatusNotFound},
 		{name: "a method the domain doesn't have falls back", method: "POST", host: "admin.example.com", path: "/", expectCode: http.StatusOK, expectBody: "home post"},
@@ -412,4 +417,34 @@ func TestDomainFallbackDropsTheDomainResponse(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Empty(t, response.Header.Get("Allow"))
+}
+
+func TestDomainPrecedenceDoesNotDependOnTheOrder(t *testing.T) {
+	route := newDomainTestRoute(t)
+
+	route.Domain("{account}.example.com").Get("/", stringHandler("account"))
+	route.Domain("admin.example.com").Get("/", stringHandler("admin home"))
+
+	_, body := serveHost(t, route, "GET", "admin.example.com", "/")
+	assert.Equal(t, "admin home", body)
+
+	_, body = serveHost(t, route, "GET", "goravel.example.com", "/")
+	assert.Equal(t, "account", body)
+}
+
+func TestDomainKeepsAnEmptyPathParameter(t *testing.T) {
+	route := newDomainTestRoute(t)
+
+	handler := func(ctx contractshttp.Context) contractshttp.Response {
+		value, exists := ctx.Request().All()["id"]
+		return ctx.Response().String(http.StatusOK, fmt.Sprintf("%v %v", value, exists))
+	}
+	route.Get("/u/{id?}", handler)
+	route.Domain("{id}.example.com").Get("/u/{id?}", handler)
+
+	_, body := serveHost(t, route, "GET", "example.com", "/u")
+	assert.Equal(t, " true", body)
+
+	_, body = serveHost(t, route, "GET", "goravel.example.com", "/u")
+	assert.Equal(t, "goravel true", body)
 }

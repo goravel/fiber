@@ -706,9 +706,12 @@ func allParams(c fiber.Ctx) map[string]string {
 	route := c.Route()
 	if route != nil {
 		for _, key := range route.Params {
-			// An empty path parameter keeps the domain's value, as in Route.
+			// An empty path parameter keeps the domain's value, as in Route,
+			// and is still listed when the domain has no value for it.
 			if value := c.Params(key); value != "" {
 				params[key] = value
+			} else if _, exists := params[key]; !exists {
+				params[key] = ""
 			}
 		}
 	}
